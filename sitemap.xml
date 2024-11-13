@@ -2,57 +2,46 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://www.jkobject.com/scPRINT/</loc>
-         <lastmod>2024-09-19</lastmod>
-         <changefreq>daily</changefreq>
+         <lastmod>2024-11-13</lastmod>
     </url>
     <url>
          <loc>https://www.jkobject.com/scPRINT/cli/</loc>
-         <lastmod>2024-09-19</lastmod>
-         <changefreq>daily</changefreq>
+         <lastmod>2024-11-13</lastmod>
     </url>
     <url>
          <loc>https://www.jkobject.com/scPRINT/embedder/</loc>
-         <lastmod>2024-09-19</lastmod>
-         <changefreq>daily</changefreq>
+         <lastmod>2024-11-13</lastmod>
     </url>
     <url>
          <loc>https://www.jkobject.com/scPRINT/model/</loc>
-         <lastmod>2024-09-19</lastmod>
-         <changefreq>daily</changefreq>
+         <lastmod>2024-11-13</lastmod>
     </url>
     <url>
          <loc>https://www.jkobject.com/scPRINT/pretrain/</loc>
-         <lastmod>2024-09-19</lastmod>
-         <changefreq>daily</changefreq>
+         <lastmod>2024-11-13</lastmod>
     </url>
     <url>
          <loc>https://www.jkobject.com/scPRINT/structure/</loc>
-         <lastmod>2024-09-19</lastmod>
-         <changefreq>daily</changefreq>
+         <lastmod>2024-11-13</lastmod>
     </url>
     <url>
          <loc>https://www.jkobject.com/scPRINT/tasks/</loc>
-         <lastmod>2024-09-19</lastmod>
-         <changefreq>daily</changefreq>
+         <lastmod>2024-11-13</lastmod>
     </url>
     <url>
          <loc>https://www.jkobject.com/scPRINT/usage/</loc>
-         <lastmod>2024-09-19</lastmod>
-         <changefreq>daily</changefreq>
+         <lastmod>2024-11-13</lastmod>
     </url>
     <url>
          <loc>https://www.jkobject.com/scPRINT/utils/</loc>
-         <lastmod>2024-09-19</lastmod>
-         <changefreq>daily</changefreq>
+         <lastmod>2024-11-13</lastmod>
     </url>
     <url>
          <loc>https://www.jkobject.com/scPRINT/notebooks/cancer_usecase/</loc>
-         <lastmod>2024-09-19</lastmod>
-         <changefreq>daily</changefreq>
+         <lastmod>2024-11-13</lastmod>
     </url>
     <url>
          <loc>https://www.jkobject.com/scPRINT/notebooks/cancer_usecase_part2/</loc>
-         <lastmod>2024-09-19</lastmod>
-         <changefreq>daily</changefreq>
+         <lastmod>2024-11-13</lastmod>
     </url>
 </urlset>

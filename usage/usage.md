@@ -37,7 +37,7 @@ denoiser = Denoiser(
     model,
     batch_size=20,
     max_len=2000,
-    plot_corr_size=100_000,
+    max_cells=100_000,
     doplot=False,
     num_workers=1,
     predict_depth_mult=10,
@@ -67,7 +67,7 @@ adata.X = adata.X.tocsr()
 But you can do the same thing with a bash command line:
 
 ```bash
-$ scprint denoise --ckpt_path ../data/temp/last.ckpt --adata ../data/temp.h5ad --how "most var" --dtype "torch.bfloat16" --batch_size 20 --max_len 2000 --plot_corr_size 100000 --num_workers 1 --predict_depth_mult 10 --doplot false --species "NCBITaxon:9606"
+$ scprint denoise --ckpt_path ../data/temp/last.ckpt --adata ../data/temp.h5ad --how "most var" --dtype "torch.bfloat16" --batch_size 20 --max_len 2000 --max_cells 100000 --num_workers 1 --predict_depth_mult 10 --doplot false --species "NCBITaxon:9606"
 ```
 
 However in this context you might have somewhat less options for the preprocessing of the anndataset. However, all parameters of the denoiser, embedder and gninfer classes are available in the cli interface as well!

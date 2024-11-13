@@ -145,9 +145,9 @@
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#scprint.model.utils.Attention">Attention</a>
         <ul>
-    <li class="toctree-l4"><a class="reference internal" href="#scprint.model.utils.Attention.add">add</a>
+    <li class="toctree-l4"><a class="reference internal" href="#scprint.model.utils.Attention.add_attn">add_attn</a>
     </li>
-    <li class="toctree-l4"><a class="reference internal" href="#scprint.model.utils.Attention.agg">agg</a>
+    <li class="toctree-l4"><a class="reference internal" href="#scprint.model.utils.Attention.add_qk">add_qk</a>
     </li>
     <li class="toctree-l4"><a class="reference internal" href="#scprint.model.utils.Attention.get">get</a>
     </li>
@@ -398,7 +398,7 @@
               Bases: <code><span title="lightning.LightningModule">LightningModule</span></code>, <code><span title="huggingface_hub.PyTorchModelHubMixin">PyTorchModelHubMixin</span></code></p>
 
 
-      <p>scPRINT transformer for single cell biology and the inference of Gene Regulatory networks</p>
+        <p>scPRINT transformer for single cell biology and the inference of Gene Regulatory networks</p>
 
 
 <table class="field-list">
@@ -1261,7 +1261,7 @@
 
     <div class="doc doc-contents ">
 
-      <p>@see pl.LightningModule</p>
+        <p>@see pl.LightningModule</p>
 
             <details class="quote">
               <summary>Source code in <code>scprint/model/model.py</code></summary>
@@ -1425,7 +1425,7 @@
 
     <div class="doc doc-contents ">
 
-      <p>forward also called on self(), a full forward pass on the model</p>
+        <p>forward also called on self(), a full forward pass on the model</p>
 
 
 <table class="field-list">
@@ -1767,7 +1767,7 @@ at minima, the dictionary codntains the following:
 
     <div class="doc doc-contents ">
 
-      <p>get_cell_embs</p>
+        <p>get_cell_embs</p>
 
 
 <table class="field-list">
@@ -1898,7 +1898,7 @@ at minima, the dictionary codntains the following:
 
     <div class="doc doc-contents ">
 
-      <p>log_adata will log an adata from predictions.
+        <p>log_adata will log an adata from predictions.
 It will log to tensorboard and wandb if available</p>
 <p>see @utils.log_adata</p>
 
@@ -1994,7 +1994,7 @@ It will log to tensorboard and wandb if available</p>
 
     <div class="doc doc-contents ">
 
-      <p>@see pl.LightningModule</p>
+        <p>@see pl.LightningModule</p>
 
             <details class="quote">
               <summary>Source code in <code>scprint/model/model.py</code></summary>
@@ -2028,7 +2028,7 @@ It will log to tensorboard and wandb if available</p>
 
     <div class="doc doc-contents ">
 
-      <p>@see pl.LightningModule will</p>
+        <p>@see pl.LightningModule will</p>
 
             <details class="quote">
               <summary>Source code in <code>scprint/model/model.py</code></summary>
@@ -2062,7 +2062,7 @@ It will log to tensorboard and wandb if available</p>
 
     <div class="doc doc-contents ">
 
-      <p>@see pl.LightningModule</p>
+        <p>@see pl.LightningModule</p>
 
             <details class="quote">
               <summary>Source code in <code>scprint/model/model.py</code></summary>
@@ -2100,7 +2100,7 @@ It will log to tensorboard and wandb if available</p>
 
     <div class="doc doc-contents ">
 
-      <p>@see pl.LightningModule</p>
+        <p>@see pl.LightningModule</p>
 
             <details class="quote">
               <summary>Source code in <code>scprint/model/model.py</code></summary>
@@ -2164,7 +2164,7 @@ It will log to tensorboard and wandb if available</p>
 
     <div class="doc doc-contents ">
 
-      <p>@see pl.LightningModule</p>
+        <p>@see pl.LightningModule</p>
 
             <details class="quote">
               <summary>Source code in <code>scprint/model/model.py</code></summary>
@@ -2218,7 +2218,7 @@ It will log to tensorboard and wandb if available</p>
 
     <div class="doc doc-contents ">
 
-      <p>embed given gene expression, encode the gene embedding and cell embedding.</p>
+        <p>embed given gene expression, encode the gene embedding and cell embedding.</p>
 
 
 <table class="field-list">
@@ -2298,7 +2298,7 @@ It will log to tensorboard and wandb if available</p>
 
     <div class="doc doc-contents ">
 
-      <p>training_step defines the train loop. It is independent of forward</p>
+        <p>training_step defines the train loop. It is independent of forward</p>
 <p>@see pl.LightningModule</p>
 
 
@@ -2407,7 +2407,7 @@ It will log to tensorboard and wandb if available</p>
 
     <div class="doc doc-contents ">
 
-      <p>validation_step defines the validation loop. It is independent of forward
+        <p>validation_step defines the validation loop. It is independent of forward
 @see pl.LightningModule</p>
 
 
@@ -2605,7 +2605,7 @@ It will log to tensorboard and wandb if available</p>
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
 
 
-      <p>Discriminator for the adversarial training for batch correction.</p>
+        <p>Discriminator for the adversarial training for batch correction.</p>
 
 
 <table class="field-list">
@@ -2824,7 +2824,7 @@ It will log to tensorboard and wandb if available</p>
 
     <div class="doc doc-contents ">
 
-      <p>Computes the classification loss for a given batch of predictions and ground truth labels.</p>
+        <p>Computes the classification loss for a given batch of predictions and ground truth labels.</p>
 
 
 <table class="field-list">
@@ -3094,7 +3094,7 @@ It will log to tensorboard and wandb if available</p>
 
     <div class="doc doc-contents ">
 
-      <p>Compute the negative log-likelihood of Bernoulli distribution</p>
+        <p>Compute the negative log-likelihood of Bernoulli distribution</p>
 
             <details class="quote">
               <summary>Source code in <code>scprint/model/loss.py</code></summary>
@@ -3130,7 +3130,7 @@ It will log to tensorboard and wandb if available</p>
 
     <div class="doc doc-contents ">
 
-      <p>ecs Computes the similarity of cell embeddings based on a threshold.</p>
+        <p>ecs Computes the similarity of cell embeddings based on a threshold.</p>
 
 
 <table class="field-list">
@@ -3253,7 +3253,7 @@ It will log to tensorboard and wandb if available</p>
 
     <div class="doc doc-contents ">
 
-      <p>grad_reverse Reverses the gradient of the input tensor.</p>
+        <p>grad_reverse Reverses the gradient of the input tensor.</p>
 
 
 <table class="field-list">
@@ -3354,7 +3354,7 @@ It will log to tensorboard and wandb if available</p>
 
     <div class="doc doc-contents ">
 
-      <p>Compute the masked MAE loss between input and target.
+        <p>Compute the masked MAE loss between input and target.
 MAE = mean absolute error</p>
 
             <details class="quote">
@@ -3391,7 +3391,7 @@ MAE = mean absolute error</p>
 
     <div class="doc doc-contents ">
 
-      <p>Compute the masked MSE loss between input and target.</p>
+        <p>Compute the masked MSE loss between input and target.</p>
 
             <details class="quote">
               <summary>Source code in <code>scprint/model/loss.py</code></summary>
@@ -3425,7 +3425,7 @@ MAE = mean absolute error</p>
 
     <div class="doc doc-contents ">
 
-      <p>Compute the masked negative binomial loss between input and target.</p>
+        <p>Compute the masked negative binomial loss between input and target.</p>
 
             <details class="quote">
               <summary>Source code in <code>scprint/model/loss.py</code></summary>
@@ -3461,7 +3461,7 @@ MAE = mean absolute error</p>
 
     <div class="doc doc-contents ">
 
-      <p>Compute the masked relative error between input and target.</p>
+        <p>Compute the masked relative error between input and target.</p>
 
             <details class="quote">
               <summary>Source code in <code>scprint/model/loss.py</code></summary>
@@ -3499,7 +3499,7 @@ MAE = mean absolute error</p>
 
     <div class="doc doc-contents ">
 
-      <p>Compute the MSE loss between input and target.</p>
+        <p>Compute the MSE loss between input and target.</p>
 
             <details class="quote">
               <summary>Source code in <code>scprint/model/loss.py</code></summary>
@@ -3537,7 +3537,7 @@ MAE = mean absolute error</p>
 
     <div class="doc doc-contents ">
 
-      <p>Computes the negative binomial (NB) loss.</p>
+        <p>Computes the negative binomial (NB) loss.</p>
 <p>This function was adapted from scvi-tools.</p>
 
 
@@ -3686,7 +3686,7 @@ MAE = mean absolute error</p>
 
     <div class="doc doc-contents ">
 
-      <p>nb_dist Computes the negative binomial distribution.</p>
+        <p>nb_dist Computes the negative binomial distribution.</p>
 
 
 <table class="field-list">
@@ -3808,7 +3808,7 @@ MAE = mean absolute error</p>
 
     <div class="doc doc-contents ">
 
-      <p>Dot product or cosine similarity</p>
+        <p>Dot product or cosine similarity</p>
 
             <details class="quote">
               <summary>Source code in <code>scprint/model/loss.py</code></summary>
@@ -3842,7 +3842,7 @@ MAE = mean absolute error</p>
 
     <div class="doc doc-contents ">
 
-      <p>Computes zero-inflated negative binomial (ZINB) loss.</p>
+        <p>Computes zero-inflated negative binomial (ZINB) loss.</p>
 <p>This function was modified from scvi-tools.</p>
 
 
@@ -4065,7 +4065,7 @@ MAE = mean absolute error</p>
     <div class="doc doc-contents ">
 
 
-      <p>Initialize the Attention class.</p>
+        <p>Initialize the Attention class.</p>
 
 
 <table class="field-list">
@@ -4115,7 +4115,21 @@ MAE = mean absolute error</p>
 <span class="normal">479</span>
 <span class="normal">480</span>
 <span class="normal">481</span>
-<span class="normal">482</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gene_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">comp_attn</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="normal">482</span>
+<span class="normal">483</span>
+<span class="normal">484</span>
+<span class="normal">485</span>
+<span class="normal">486</span>
+<span class="normal">487</span>
+<span class="normal">488</span>
+<span class="normal">489</span>
+<span class="normal">490</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">gene_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">comp_attn</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">apply_softmax</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">sum_heads</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Initialize the Attention class.</span>
 
@@ -4126,8 +4140,10 @@ MAE = mean absolute error</p>
     <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">gene_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">gene_dim</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">div</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">comp_attn</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">comp_attn</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">apply_softmax</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">apply_softmax</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">sum_heads</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">sum_heads</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">shared_qk</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 </code></pre></div></td></tr></table></div>
                   </details>
 
@@ -4146,103 +4162,15 @@ MAE = mean absolute error</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="scprint.model.utils.Attention.add" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">add</span></code>
+<h4 id="scprint.model.utils.Attention.add_attn" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_attn</span></code>
 
 </h4>
 
 
     <div class="doc doc-contents ">
 
-      <p>Add data to the internal storage.</p>
-
-
-<table class="field-list">
-  <colgroup>
-    <col class="field-name" />
-    <col class="field-body" />
-  </colgroup>
-  <tbody valign="top">
-    <tr class="field">
-      <th class="field-name">Parameters:</th>
-      <td class="field-body">
-        <ul class="first simple">
-            <li>
-              <b><code>x</code></b>
-                  (<code><span title="typing.List">List</span>[<span title="torch.Tensor">Tensor</span>]</code>)
-              –
-              <div class="doc-md-description">
-                <p>List of tensors to add.</p>
-              </div>
-            </li>
-            <li>
-              <b><code>pos</code></b>
-                  (<code><span title="torch.Tensor">Tensor</span></code>)
-              –
-              <div class="doc-md-description">
-                <p>Position tensor.</p>
-              </div>
-            </li>
-        </ul>
-      </td>
-    </tr>
-  </tbody>
-</table>
-            <details class="quote">
-              <summary>Source code in <code>scprint/model/utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">518</span>
-<span class="normal">519</span>
-<span class="normal">520</span>
-<span class="normal">521</span>
-<span class="normal">522</span>
-<span class="normal">523</span>
-<span class="normal">524</span>
-<span class="normal">525</span>
-<span class="normal">526</span>
-<span class="normal">527</span>
-<span class="normal">528</span>
-<span class="normal">529</span>
-<span class="normal">530</span>
-<span class="normal">531</span>
-<span class="normal">532</span>
-<span class="normal">533</span>
-<span class="normal">534</span>
-<span class="normal">535</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">pos</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Add data to the internal storage.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        x (List[Tensor]): List of tensors to add.</span>
-<span class="sd">        pos (Tensor): Position tensor.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">pos</span> <span class="o">=</span> <span class="n">pos</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">gene_dim</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">:]))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">div</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gene_dim</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
-        <span class="c1"># loc = torch.cat([torch.Tensor([r for r in range(8)]), pos[i] + 8]).int()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-            <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">))])</span>
-        <span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-            </details>
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h4 id="scprint.model.utils.Attention.agg" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">agg</span></code>
-
-</h4>
-
-
-    <div class="doc doc-contents ">
-
-      <p>Aggregate the attention or data based on the comp_attn flag.</p>
+        <p>Aggregate the attention or data based on the comp_attn flag.</p>
 
 
 <table class="field-list">
@@ -4278,21 +4206,7 @@ MAE = mean absolute error</p>
 </table>
             <details class="quote">
               <summary>Source code in <code>scprint/model/utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">484</span>
-<span class="normal">485</span>
-<span class="normal">486</span>
-<span class="normal">487</span>
-<span class="normal">488</span>
-<span class="normal">489</span>
-<span class="normal">490</span>
-<span class="normal">491</span>
-<span class="normal">492</span>
-<span class="normal">493</span>
-<span class="normal">494</span>
-<span class="normal">495</span>
-<span class="normal">496</span>
-<span class="normal">497</span>
-<span class="normal">498</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">498</span>
 <span class="normal">499</span>
 <span class="normal">500</span>
 <span class="normal">501</span>
@@ -4310,7 +4224,27 @@ MAE = mean absolute error</p>
 <span class="normal">513</span>
 <span class="normal">514</span>
 <span class="normal">515</span>
-<span class="normal">516</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">agg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">pos</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">516</span>
+<span class="normal">517</span>
+<span class="normal">518</span>
+<span class="normal">519</span>
+<span class="normal">520</span>
+<span class="normal">521</span>
+<span class="normal">522</span>
+<span class="normal">523</span>
+<span class="normal">524</span>
+<span class="normal">525</span>
+<span class="normal">526</span>
+<span class="normal">527</span>
+<span class="normal">528</span>
+<span class="normal">529</span>
+<span class="normal">530</span>
+<span class="normal">531</span>
+<span class="normal">532</span>
+<span class="normal">533</span>
+<span class="normal">534</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">add_attn</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">pos</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">expr</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Aggregate the attention or data based on the comp_attn flag.</span>
 
@@ -4318,31 +4252,125 @@ MAE = mean absolute error</p>
 <span class="sd">        x (List[Tensor]): List of tensors to aggregate.</span>
 <span class="sd">        pos (Tensor): Position tensor.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">comp_attn</span><span class="p">:</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">attn</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">attn</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">gene_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">gene_dim</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">div</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gene_dim</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>  <span class="c1"># •cells, •context, •QK, •heads, •dim</span>
-            <span class="n">loc</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">),</span> <span class="n">pos</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="mi">8</span><span class="p">])</span><span class="o">.</span><span class="n">int</span><span class="p">()</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)):</span>
-                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">3</span><span class="p">]):</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="p">[</span><span class="n">loc</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">loc</span><span class="p">]</span> <span class="o">+=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span>
-                        <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="p">:]</span> <span class="o">@</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
-                        <span class="o">*</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">**</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">),</span>
-                        <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
-                    <span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">div</span><span class="p">[</span><span class="n">loc</span><span class="p">]</span> <span class="o">+=</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-        <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">empty_cache</span><span class="p">()</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">pos</span> <span class="o">=</span> <span class="n">pos</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">gene_dim</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">:]))</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">div</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gene_dim</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
-            <span class="n">loc</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">8</span><span class="p">),</span> <span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="mi">8</span><span class="p">])</span><span class="o">.</span><span class="n">int</span><span class="p">()</span>
-            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">loc</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">+=</span> <span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">div</span><span class="p">[</span><span class="n">loc</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">gene_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">gene_dim</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">3</span><span class="p">]],</span>
+            <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">div</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">elem</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="n">batch</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">heads</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_softmax</span><span class="p">:</span>
+            <span class="n">attn</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span>
+                <span class="n">elem</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+                <span class="o">@</span> <span class="n">elem</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">expr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">attn</span> <span class="o">=</span> <span class="n">attn</span> <span class="o">*</span> <span class="p">(</span><span class="n">expr</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">heads</span> <span class="o">*</span> <span class="n">i</span> <span class="p">:</span> <span class="n">heads</span> <span class="o">*</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="n">attn</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="n">batch</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">heads</span> <span class="o">*</span> <span class="n">i</span> <span class="p">:</span> <span class="n">heads</span> <span class="o">*</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="n">elem</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+                <span class="o">@</span> <span class="n">elem</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="n">batch</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">div</span> <span class="o">+=</span> <span class="mi">1</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="scprint.model.utils.Attention.add_qk" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">add_qk</span></code>
+
+</h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Add data to the internal storage.</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Parameters:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              <b><code>x</code></b>
+                  (<code><span title="typing.List">List</span>[<span title="torch.Tensor">Tensor</span>]</code>)
+              –
+              <div class="doc-md-description">
+                <p>List of tensors to add.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>pos</code></b>
+                  (<code><span title="torch.Tensor">Tensor</span></code>)
+              –
+              <div class="doc-md-description">
+                <p>Position tensor.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+            <details class="quote">
+              <summary>Source code in <code>scprint/model/utils.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">536</span>
+<span class="normal">537</span>
+<span class="normal">538</span>
+<span class="normal">539</span>
+<span class="normal">540</span>
+<span class="normal">541</span>
+<span class="normal">542</span>
+<span class="normal">543</span>
+<span class="normal">544</span>
+<span class="normal">545</span>
+<span class="normal">546</span>
+<span class="normal">547</span>
+<span class="normal">548</span>
+<span class="normal">549</span>
+<span class="normal">550</span>
+<span class="normal">551</span>
+<span class="normal">552</span>
+<span class="normal">553</span>
+<span class="normal">554</span>
+<span class="normal">555</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">add_qk</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">pos</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">expr</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add data to the internal storage.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x (List[Tensor]): List of tensors to add.</span>
+<span class="sd">        pos (Tensor): Position tensor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+            <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">gene_dim</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">:]),</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">div</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gene_dim</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="n">loc</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">),</span> <span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="mi">8</span><span class="p">])</span><span class="o">.</span><span class="n">int</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">loc</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">+=</span> <span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">div</span><span class="p">[</span><span class="n">loc</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4360,7 +4388,7 @@ MAE = mean absolute error</p>
 
     <div class="doc doc-contents ">
 
-      <p>Get the aggregated attention or data.</p>
+        <p>Get the aggregated attention or data.</p>
 
 
 <table class="field-list">
@@ -4387,45 +4415,39 @@ MAE = mean absolute error</p>
 </table>
             <details class="quote">
               <summary>Source code in <code>scprint/model/utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">538</span>
-<span class="normal">539</span>
-<span class="normal">540</span>
-<span class="normal">541</span>
-<span class="normal">542</span>
-<span class="normal">543</span>
-<span class="normal">544</span>
-<span class="normal">545</span>
-<span class="normal">546</span>
-<span class="normal">547</span>
-<span class="normal">548</span>
-<span class="normal">549</span>
-<span class="normal">550</span>
-<span class="normal">551</span>
-<span class="normal">552</span>
-<span class="normal">553</span>
-<span class="normal">554</span>
-<span class="normal">555</span>
-<span class="normal">556</span>
-<span class="normal">557</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">557</span>
+<span class="normal">558</span>
+<span class="normal">559</span>
+<span class="normal">560</span>
+<span class="normal">561</span>
+<span class="normal">562</span>
+<span class="normal">563</span>
+<span class="normal">564</span>
+<span class="normal">565</span>
+<span class="normal">566</span>
+<span class="normal">567</span>
+<span class="normal">568</span>
+<span class="normal">569</span>
+<span class="normal">570</span>
+<span class="normal">571</span>
+<span class="normal">572</span>
+<span class="normal">573</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get the aggregated attention or data.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Optional[np.ndarray]: The aggregated attention or data.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">comp_attn</span><span class="p">:</span>
-        <span class="n">loc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span>
-        <span class="k">return</span> <span class="p">(</span>
-            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="p">[</span><span class="n">loc</span><span class="p">][:,</span> <span class="n">loc</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="n">loc</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.0001</span><span class="p">))</span>
-            <span class="o">.</span><span class="n">detach</span><span class="p">()</span>
-            <span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
-            <span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
-        <span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">shared_qk</span><span class="p">:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
         <span class="c1"># shape is (layers, genes, qkv, heads, emb)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">div</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">div</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">div_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">div</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4452,7 +4474,7 @@ MAE = mean absolute error</p>
 
     <div class="doc doc-contents ">
 
-      <p>This function downsamples the expression profile of a given single cell RNA matrix.</p>
+        <p>This function downsamples the expression profile of a given single cell RNA matrix.</p>
 <p>The noise is applied based on the renoise parameter,
 the total counts of the matrix, and the number of genes. The function first calculates the noise
 threshold (scaler) based on the renoise parameter. It then generates an initial matrix count by
@@ -4675,7 +4697,7 @@ returns the final matrix count.</p>
 
     <div class="doc doc-contents ">
 
-      <p>This function creates an AnnData object from the given input parameters.</p>
+        <p>This function creates an AnnData object from the given input parameters.</p>
 
 
 <table class="field-list">
@@ -5247,7 +5269,7 @@ returns the final matrix count.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Randomly mask a batch of data.</p>
+        <p>Randomly mask a batch of data.</p>
 
 
 <table class="field-list">
@@ -5354,7 +5376,7 @@ returns the final matrix count.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Test the given model on the full set of benchmarks and save the results to JSON files.</p>
+        <p>Test the given model on the full set of benchmarks and save the results to JSON files.</p>
 
 
 <table class="field-list">
@@ -5421,23 +5443,7 @@ returns the final matrix count.</p>
 </table>
             <details class="quote">
               <summary>Source code in <code>scprint/model/utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">560</span>
-<span class="normal">561</span>
-<span class="normal">562</span>
-<span class="normal">563</span>
-<span class="normal">564</span>
-<span class="normal">565</span>
-<span class="normal">566</span>
-<span class="normal">567</span>
-<span class="normal">568</span>
-<span class="normal">569</span>
-<span class="normal">570</span>
-<span class="normal">571</span>
-<span class="normal">572</span>
-<span class="normal">573</span>
-<span class="normal">574</span>
-<span class="normal">575</span>
-<span class="normal">576</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">576</span>
 <span class="normal">577</span>
 <span class="normal">578</span>
 <span class="normal">579</span>
@@ -5633,7 +5639,23 @@ returns the final matrix count.</p>
 <span class="normal">769</span>
 <span class="normal">770</span>
 <span class="normal">771</span>
-<span class="normal">772</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">test</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">filedir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">772</span>
+<span class="normal">773</span>
+<span class="normal">774</span>
+<span class="normal">775</span>
+<span class="normal">776</span>
+<span class="normal">777</span>
+<span class="normal">778</span>
+<span class="normal">779</span>
+<span class="normal">780</span>
+<span class="normal">781</span>
+<span class="normal">782</span>
+<span class="normal">783</span>
+<span class="normal">784</span>
+<span class="normal">785</span>
+<span class="normal">786</span>
+<span class="normal">787</span>
+<span class="normal">788</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">test</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">filedir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Test the given model on the full set of benchmarks and save the results to JSON files.</span>
 
@@ -5863,7 +5885,7 @@ returns the final matrix count.</p>
 
     <div class="doc doc-contents ">
 
-      <p>translate This function translates the given value based on the specified type.</p>
+        <p>translate This function translates the given value based on the specified type.</p>
 
 
 <table class="field-list">
@@ -5969,15 +5991,15 @@ returns the final matrix count.</p>
 <span class="sd">        dict: A dictionary with the translated values.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;cell_type_ontology_term_id&quot;</span><span class="p">:</span>
-        <span class="n">obj</span> <span class="o">=</span> <span class="n">bt</span><span class="o">.</span><span class="n">CellType</span><span class="o">.</span><span class="n">df</span><span class="p">()</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;ontology_id&quot;</span><span class="p">)</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">bt</span><span class="o">.</span><span class="n">CellType</span><span class="o">.</span><span class="n">filter</span><span class="p">()</span><span class="o">.</span><span class="n">df</span><span class="p">()</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;ontology_id&quot;</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;assay_ontology_term_id&quot;</span><span class="p">:</span>
-        <span class="n">obj</span> <span class="o">=</span> <span class="n">bt</span><span class="o">.</span><span class="n">ExperimentalFactor</span><span class="o">.</span><span class="n">df</span><span class="p">()</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;ontology_id&quot;</span><span class="p">)</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">bt</span><span class="o">.</span><span class="n">ExperimentalFactor</span><span class="o">.</span><span class="n">filter</span><span class="p">()</span><span class="o">.</span><span class="n">df</span><span class="p">()</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;ontology_id&quot;</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;tissue_ontology_term_id&quot;</span><span class="p">:</span>
-        <span class="n">obj</span> <span class="o">=</span> <span class="n">bt</span><span class="o">.</span><span class="n">Tissue</span><span class="o">.</span><span class="n">df</span><span class="p">()</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;ontology_id&quot;</span><span class="p">)</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">bt</span><span class="o">.</span><span class="n">Tissue</span><span class="o">.</span><span class="n">filter</span><span class="p">()</span><span class="o">.</span><span class="n">df</span><span class="p">()</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;ontology_id&quot;</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;disease_ontology_term_id&quot;</span><span class="p">:</span>
-        <span class="n">obj</span> <span class="o">=</span> <span class="n">bt</span><span class="o">.</span><span class="n">Disease</span><span class="o">.</span><span class="n">df</span><span class="p">()</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;ontology_id&quot;</span><span class="p">)</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">bt</span><span class="o">.</span><span class="n">Disease</span><span class="o">.</span><span class="n">filter</span><span class="p">()</span><span class="o">.</span><span class="n">df</span><span class="p">()</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;ontology_id&quot;</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;self_reported_ethnicity_ontology_term_id&quot;</span><span class="p">:</span>
-        <span class="n">obj</span> <span class="o">=</span> <span class="n">bt</span><span class="o">.</span><span class="n">Ethnicity</span><span class="o">.</span><span class="n">df</span><span class="p">()</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;ontology_id&quot;</span><span class="p">)</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">bt</span><span class="o">.</span><span class="n">Ethnicity</span><span class="o">.</span><span class="n">filter</span><span class="p">()</span><span class="o">.</span><span class="n">df</span><span class="p">()</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;ontology_id&quot;</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
     <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span><span class="p">:</span>
@@ -6005,7 +6027,7 @@ returns the final matrix count.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Randomly mask a batch of data.</p>
+        <p>Randomly mask a batch of data.</p>
 
 
 <table class="field-list">
@@ -6156,7 +6178,7 @@ returns the final matrix count.</p>
 
     <div class="doc doc-contents ">
 
-      <p>zinb_sample This function generates a sample from a Zero-Inflated Negative Binomial (ZINB) distribution.</p>
+        <p>zinb_sample This function generates a sample from a Zero-Inflated Negative Binomial (ZINB) distribution.</p>
 
 
 <table class="field-list">
@@ -6346,7 +6368,7 @@ returns the final matrix count.</p>
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
 
 
-      <p>Encodes categorical values into a vector using an embedding layer and layer normalization.</p>
+        <p>Encodes categorical values into a vector using an embedding layer and layer normalization.</p>
 
 
 <table class="field-list">
@@ -6411,7 +6433,7 @@ returns the final matrix count.</p>
       </td>
     </tr>
   </tbody>
-</table>      <p>Note: not used in the current version of scprint.</p>
+</table>        <p>Note: not used in the current version of scprint.</p>
 
                   <details class="quote">
                     <summary>Source code in <code>scprint/model/encoders.py</code></summary>
@@ -6498,7 +6520,7 @@ returns the final matrix count.</p>
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
 
 
-      <p>Encode real number values to a vector using neural nets projection.</p>
+        <p>Encode real number values to a vector using neural nets projection.</p>
 
 
 <table class="field-list">
@@ -6758,7 +6780,7 @@ returns the final matrix count.</p>
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
 
 
-      <p>The PositionalEncoding module applies a positional encoding to a sequence of vectors.
+        <p>The PositionalEncoding module applies a positional encoding to a sequence of vectors.
 This is necessary for the Transformer model, which does not have any inherent notion of
 position in a sequence. The positional encoding is added to the input embeddings and
 allows the model to attend to positions in the sequence.</p>
@@ -6802,7 +6824,7 @@ allows the model to attend to positions in the sequence.</p>
       </td>
     </tr>
   </tbody>
-</table>      <p>Note: not used in the current version of scprint.</p>
+</table>        <p>Note: not used in the current version of scprint.</p>
 
                   <details class="quote">
                     <summary>Source code in <code>scprint/model/encoders.py</code></summary>
@@ -6960,7 +6982,7 @@ allows the model to attend to positions in the sequence.</p>
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
 
 
-      <p>Encodes gene sequences into a continuous vector space using an embedding layer.</p>
+        <p>Encodes gene sequences into a continuous vector space using an embedding layer.</p>
 <p>The output is then normalized using a LayerNorm.</p>
 
 
@@ -7032,7 +7054,7 @@ allows the model to attend to positions in the sequence.</p>
       </td>
     </tr>
   </tbody>
-</table>      <p>Note: not used in the current version of scprint.</p>
+</table>        <p>Note: not used in the current version of scprint.</p>
 
                   <details class="quote">
                     <summary>Source code in <code>scprint/model/encoders.py</code></summary>
@@ -7143,7 +7165,7 @@ allows the model to attend to positions in the sequence.</p>
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
 
 
-      <p>The PositionalEncoding module applies a positional encoding to a sequence of vectors.
+        <p>The PositionalEncoding module applies a positional encoding to a sequence of vectors.
 This is necessary for the Transformer model, which does not have any inherent notion of
 position in a sequence. The positional encoding is added to the input embeddings and
 allows the model to attend to positions in the sequence.</p>
@@ -7187,7 +7209,7 @@ allows the model to attend to positions in the sequence.</p>
       </td>
     </tr>
   </tbody>
-</table>      <p>Note: not used in the current version of scprint.</p>
+</table>        <p>Note: not used in the current version of scprint.</p>
 
                   <details class="quote">
                     <summary>Source code in <code>scprint/model/encoders.py</code></summary>
@@ -7392,7 +7414,7 @@ allows the model to attend to positions in the sequence.</p>
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
 
 
-      <p>ClsDecoder Decoder for classification task.</p>
+        <p>ClsDecoder Decoder for classification task.</p>
 
 
 <table class="field-list">
@@ -7636,7 +7658,7 @@ allows the model to attend to positions in the sequence.</p>
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
 
 
-      <p>ExprDecoder Decoder for the gene expression prediction.</p>
+        <p>ExprDecoder Decoder for the gene expression prediction.</p>
 <p>Will output the mean, variance and zero logits, parameters of a zero inflated negative binomial distribution.</p>
 
 
@@ -7782,7 +7804,7 @@ allows the model to attend to positions in the sequence.</p>
 
     <div class="doc doc-contents ">
 
-      <p>x is the output of the transformer, (batch, seq_len, d_model)</p>
+        <p>x is the output of the transformer, (batch, seq_len, d_model)</p>
 
             <details class="quote">
               <summary>Source code in <code>scprint/model/decoders.py</code></summary>
@@ -7848,7 +7870,7 @@ allows the model to attend to positions in the sequence.</p>
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
 
 
-      <p>Initialize the ExprNeuralSDEDecoder module.</p>
+        <p>Initialize the ExprNeuralSDEDecoder module.</p>
 
 
 <table class="field-list">
@@ -7955,7 +7977,7 @@ allows the model to attend to positions in the sequence.</p>
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
 
 
-      <p>MVCDecoder Decoder for the masked value prediction for cell embeddings.</p>
+        <p>MVCDecoder Decoder for the masked value prediction for cell embeddings.</p>
 <p>Will use the gene embeddings with the cell embeddings to predict the mean, variance and zero logits</p>
 
 
@@ -8304,7 +8326,7 @@ layers. Defaults to nn.PReLU.</p>
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
 
 
-      <p>FlashTransformerEncoder a transformer encoder with flash attention.</p>
+        <p>FlashTransformerEncoder a transformer encoder with flash attention.</p>
 
 
 <table class="field-list">
@@ -8775,7 +8797,7 @@ layers. Defaults to nn.PReLU.</p>
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
 
 
-      <p>Implement the scaled dot product attention with softmax.</p>
+        <p>Implement the scaled dot product attention with softmax.</p>
 <p>Args
     softmax_scale: The temperature to use for the softmax attention. Default to 1/sqrt(d_keys) where d_keys is computed at runtime
     attention_dropout: The dropout rate to apply to the attention. default to 0.0.</p>
@@ -8817,7 +8839,7 @@ layers. Defaults to nn.PReLU.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Implements the multihead softmax attention.</p>
+        <p>Implements the multihead softmax attention.</p>
 <p>Args
     q: The tensor containing the query. (B, Sq, H, D)
     kv: The tensor containing the key and value. (B, Sk, 2, H_k, D)
@@ -8947,7 +8969,7 @@ layers. Defaults to nn.PReLU.</p>
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
 
 
-      <p>Implement the scaled dot product attention with softmax.</p>
+        <p>Implement the scaled dot product attention with softmax.</p>
 <p>Args
     softmax_scale: The temperature to use for the softmax attention.
         (default: 1/sqrt(d_keys) where d_keys is computed at
@@ -9034,7 +9056,7 @@ layers. Defaults to nn.PReLU.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Implements the multihead softmax attention.</p>
+        <p>Implements the multihead softmax attention.</p>
 <p>Args
     q: The tensor containing the query. (B, Sq, H, D)
     kv: The tensor containing the key and value. (B, Sk, 2, H_k, D)
@@ -9154,7 +9176,7 @@ layers. Defaults to nn.PReLU.</p>
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
 
 
-      <p>Implement the scaled dot product attention with softmax.</p>
+        <p>Implement the scaled dot product attention with softmax.</p>
 
 
 <table class="field-list">
@@ -9284,7 +9306,7 @@ runtime)</p>
 
     <div class="doc doc-contents ">
 
-      <p>Implements the multihead softmax attention.</p>
+        <p>Implements the multihead softmax attention.</p>
 <p>Args
     qkv (Tensor): The tensor containing the query, key, and value.
         If cu_seqlens is None and max_seqlen is None, then qkv has shape (B, S, 3, H, D).
@@ -9427,7 +9449,7 @@ Returns:
               Bases: <code><span title="torch.nn.Linear">Linear</span></code></p>
 
 
-      <p>Wrap nn.Linear to return the residual as well. For compatibility with FusedDense.</p>
+        <p>Wrap nn.Linear to return the residual as well. For compatibility with FusedDense.</p>
 
 
 
@@ -9465,7 +9487,7 @@ Returns:
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
 
 
-      <p>MHA Multi-head self-attention and cross-attention</p>
+        <p>MHA Multi-head self-attention and cross-attention</p>
 
 
 <table class="field-list">
@@ -10479,7 +10501,7 @@ else (total, 3, hidden_dim) where total is the sum of the sequence lengths in th
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
 
 
-      <p>Implement the scaled dot product attention with softmax.</p>
+        <p>Implement the scaled dot product attention with softmax.</p>
 
 
 <table class="field-list">
@@ -10551,7 +10573,7 @@ runtime)</p>
 
     <div class="doc doc-contents ">
 
-      <p>Implements the multihead softmax attention.</p>
+        <p>Implements the multihead softmax attention.</p>
 
 
 <table class="field-list">
@@ -10721,7 +10743,7 @@ False means to mask out. (B, S)</p>
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
 
 
-      <p>Multi-layer perceptron (MLP) module.</p>
+        <p>Multi-layer perceptron (MLP) module.</p>
 
 
 <table class="field-list">
@@ -10930,7 +10952,7 @@ False means to mask out. (B, S)</p>
 
     <div class="doc doc-contents ">
 
-      <p>Forward pass of the MLP.</p>
+        <p>Forward pass of the MLP.</p>
 
 
 <table class="field-list">
@@ -11073,7 +11095,7 @@ False means to mask out. (B, S)</p>
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
 
 
-      <p>For prenorm=True, this Block has a slightly different structure compared to a regular
+        <p>For prenorm=True, this Block has a slightly different structure compared to a regular
 prenorm Transformer block.
 The standard block is: LN -&gt; MHA -&gt; Dropout -&gt; Add -&gt; LN -&gt; MLP -&gt; Dropout -&gt; Add.
 [Ref: https://arxiv.org/abs/2002.04745]
@@ -11483,7 +11505,7 @@ This is useful when we want to sync the norm parameters across workers. Defaults
 
     <div class="doc doc-contents ">
 
-      <p>Pass the input through the encoder layer.</p>
+        <p>Pass the input through the encoder layer.</p>
 
 
 <table class="field-list">
@@ -11993,7 +12015,7 @@ It is a dictionary of additional arguments to be passed to the mixer.</p>
 
     <div class="doc doc-contents first">
 
-      <p><em>Experimental</em> implementation of FlashAttention in Triton.
+        <p><em>Experimental</em> implementation of FlashAttention in Triton.
 Tested with triton==2.0.0.dev20221202.
 Triton 2.0 has a new backend (MLIR) but seems like it doesn't yet work for head dimensions
 other than 64:
@@ -12083,7 +12105,7 @@ than CUDA forward + backward.
 
     <div class="doc doc-contents ">
 
-      <p>Perform the forward pass of FlashAttention.</p>
+        <p>Perform the forward pass of FlashAttention.</p>
 
 
 <table class="field-list">
@@ -12307,7 +12329,7 @@ ALiBi mask for non-causal would have shape (1, nheads, seqlen_q, seqlen_k).</p>
 
     <div class="doc doc-contents ">
 
-      <p>Perform the forward pass of FlashAttention with packed key and value tensors.</p>
+        <p>Perform the forward pass of FlashAttention with packed key and value tensors.</p>
 
 
 <table class="field-list">
@@ -12529,7 +12551,7 @@ ALiBi mask for non-causal would have shape (1, nheads, seqlen_q, seqlen_k).</p>
 
     <div class="doc doc-contents ">
 
-      <p>Forward pass for FlashAttention.</p>
+        <p>Forward pass for FlashAttention.</p>
 
 
 <table class="field-list">
@@ -12751,7 +12773,7 @@ ALiBi mask for non-causal would have shape (1, nheads, seqlen, seqlen).</p>
 
     <div class="doc doc-contents ">
 
-      <p>Assume that y has shape (B, D) and bias has shape (D)</p>
+        <p>Assume that y has shape (B, D) and bias has shape (D)</p>
 
             <details class="quote">
               <summary>Source code in <code>scprint/model/flash_attn/activations.py</code></summary>
@@ -12825,7 +12847,7 @@ ALiBi mask for non-causal would have shape (1, nheads, seqlen, seqlen).</p>
 
     <div class="doc doc-contents ">
 
-      <p>Reference implementation of Layer Normalization with optional dropout and residual connections.</p>
+        <p>Reference implementation of Layer Normalization with optional dropout and residual connections.</p>
 
 
 <table class="field-list">
@@ -13170,7 +13192,7 @@ ALiBi mask for non-causal would have shape (1, nheads, seqlen, seqlen).</p>
 
     <div class="doc doc-contents ">
 
-      <p>Reference implementation of RMS Normalization with optional dropout and residual connections.</p>
+        <p>Reference implementation of RMS Normalization with optional dropout and residual connections.</p>
 
 
 <table class="field-list">
