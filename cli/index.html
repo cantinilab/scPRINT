@@ -592,6 +592,16 @@ but at the same time it has training specific methods... so we have to do this.<
                 <p>Name of the training mode. Defaults to an empty string. should be an ID for the model</p>
               </div>
             </li>
+            <li>
+              <b><code>test_every</code></b>
+                  (<code>int</code>, default:
+                      <code>1</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>Number of epochs between testing. Defaults to 1.</p>
+              </div>
+            </li>
         </ul>
       </td>
     </tr>
@@ -694,7 +704,10 @@ but at the same time it has training specific methods... so we have to do this.<
 <span class="normal"> 99</span>
 <span class="normal">100</span>
 <span class="normal">101</span>
-<span class="normal">102</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="normal">102</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">do_denoise</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">noise</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.6</span><span class="p">],</span>
@@ -711,6 +724,7 @@ but at the same time it has training specific methods... so we have to do this.<
     <span class="n">do_generate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">class_scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.5</span><span class="p">,</span>
     <span class="n">mask_ratio</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>  <span class="c1"># 0.3</span>
+    <span class="n">test_every</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">warmup_duration</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">500</span><span class="p">,</span>
     <span class="n">fused_adam</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">adv_class_scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
@@ -759,6 +773,7 @@ but at the same time it has training specific methods... so we have to do this.<
 <span class="sd">        optim (str): Optimizer to use during training. Defaults to &quot;adamW&quot;.</span>
 <span class="sd">        weight_decay (float): Weight decay to apply during optimization. Defaults to 0.01.</span>
 <span class="sd">        name (str): Name of the training mode. Defaults to an empty string. should be an ID for the model</span>
+<span class="sd">        test_every (int): Number of epochs between testing. Defaults to 1.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">do_denoise</span> <span class="o">=</span> <span class="n">do_denoise</span>
@@ -790,6 +805,7 @@ but at the same time it has training specific methods... so we have to do this.<
     <span class="bp">self</span><span class="o">.</span><span class="n">do_adv_batch</span> <span class="o">=</span> <span class="n">do_adv_batch</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">run_full_forward</span> <span class="o">=</span> <span class="n">run_full_forward</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">test_every</span> <span class="o">=</span> <span class="n">test_every</span>
 </code></pre></div></td></tr></table></div>
                   </details>
 

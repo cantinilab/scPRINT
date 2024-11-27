@@ -223,7 +223,7 @@
 )
               –
               <div class="doc-md-description">
-                <p>The method to be used for selecting valid genes. Defaults to "most expr".</p>
+                <p>The method to be used for selecting valid genes. Defaults to "random expr".</p>
               </div>
             </li>
             <li>
@@ -400,7 +400,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        batch_size (int, optional): The size of the batches to be used in the DataLoader. Defaults to 64.</span>
 <span class="sd">        num_workers (int, optional): The number of worker processes to use for data loading. Defaults to 8.</span>
-<span class="sd">        how (str, optional): The method to be used for selecting valid genes. Defaults to &quot;most expr&quot;.</span>
+<span class="sd">        how (str, optional): The method to be used for selecting valid genes. Defaults to &quot;random expr&quot;.</span>
 <span class="sd">        max_len (int, optional): The maximum length of the gene sequence. Defaults to 1000.</span>
 <span class="sd">        add_zero_genes (int, optional): The number of zero genes to add to the gene sequence. Defaults to 100.</span>
 <span class="sd">        precision (str, optional): The precision to be used in the Trainer. Defaults to &quot;16-mixed&quot;.</span>
@@ -1124,9 +1124,7 @@
 </table>
             <details class="quote">
               <summary>Source code in <code>scprint/tasks/cell_emb.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">433</span>
-<span class="normal">434</span>
-<span class="normal">435</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">435</span>
 <span class="normal">436</span>
 <span class="normal">437</span>
 <span class="normal">438</span>
@@ -1179,7 +1177,9 @@
 <span class="normal">485</span>
 <span class="normal">486</span>
 <span class="normal">487</span>
-<span class="normal">488</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">compute_classification</span><span class="p">(</span>
+<span class="normal">488</span>
+<span class="normal">489</span>
+<span class="normal">490</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">compute_classification</span><span class="p">(</span>
     <span class="n">adata</span><span class="p">:</span> <span class="n">AnnData</span><span class="p">,</span>
     <span class="n">classes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">label_decoders</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
@@ -1613,7 +1613,9 @@
 <span class="normal">427</span>
 <span class="normal">428</span>
 <span class="normal">429</span>
-<span class="normal">430</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">default_benchmark</span><span class="p">(</span>
+<span class="normal">430</span>
+<span class="normal">431</span>
+<span class="normal">432</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">default_benchmark</span><span class="p">(</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span>
     <span class="n">default_dataset</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;pancreas&quot;</span><span class="p">,</span>
     <span class="n">do_class</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -1666,7 +1668,9 @@
     <span class="n">embedder</span> <span class="o">=</span> <span class="n">Embedder</span><span class="p">(</span>
         <span class="n">pred_embedding</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;cell_type_ontology_term_id&quot;</span><span class="p">],</span>
         <span class="n">doclass</span><span class="o">=</span><span class="p">(</span><span class="n">default_dataset</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;pancreas&quot;</span><span class="p">,</span> <span class="s2">&quot;lung&quot;</span><span class="p">]),</span>
-        <span class="n">devices</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">max_len</span><span class="o">=</span><span class="mi">4000</span><span class="p">,</span>
+        <span class="n">keep_all_cls_pred</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">output_expression</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">embed_adata</span><span class="p">,</span> <span class="n">metrics</span> <span class="o">=</span> <span class="n">embedder</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">adata</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
 
@@ -2475,7 +2479,12 @@
 </table>
             <details class="quote">
               <summary>Source code in <code>scprint/tasks/grn.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">425</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">420</span>
+<span class="normal">421</span>
+<span class="normal">422</span>
+<span class="normal">423</span>
+<span class="normal">424</span>
+<span class="normal">425</span>
 <span class="normal">426</span>
 <span class="normal">427</span>
 <span class="normal">428</span>
@@ -2808,16 +2817,7 @@
 <span class="normal">755</span>
 <span class="normal">756</span>
 <span class="normal">757</span>
-<span class="normal">758</span>
-<span class="normal">759</span>
-<span class="normal">760</span>
-<span class="normal">761</span>
-<span class="normal">762</span>
-<span class="normal">763</span>
-<span class="normal">764</span>
-<span class="normal">765</span>
-<span class="normal">766</span>
-<span class="normal">767</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">default_benchmark</span><span class="p">(</span>
+<span class="normal">758</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">default_benchmark</span><span class="p">(</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">default_dataset</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;sroy&quot;</span><span class="p">,</span>
     <span class="n">cell_types</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
@@ -2904,7 +2904,6 @@
                 <span class="n">max_cells</span><span class="o">=</span><span class="n">maxcells</span><span class="p">,</span>
                 <span class="n">doplot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
-                <span class="n">devices</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">grn</span> <span class="o">=</span> <span class="n">grn_inferer</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">adata</span><span class="p">)</span>
             <span class="n">grn</span><span class="o">.</span><span class="n">varp</span><span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">grn</span><span class="o">.</span><span class="n">varp</span><span class="p">[</span><span class="s2">&quot;GRN&quot;</span><span class="p">]</span>
@@ -3034,7 +3033,6 @@
             <span class="n">doplot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">num_workers</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
             <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
-            <span class="n">devices</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">grn</span> <span class="o">=</span> <span class="n">grn_inferer</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">nadata</span><span class="p">)</span>
         <span class="n">grn</span><span class="o">.</span><span class="n">varp</span><span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">grn</span><span class="o">.</span><span class="n">varp</span><span class="p">[</span><span class="s2">&quot;GRN&quot;</span><span class="p">]</span>
@@ -3095,29 +3093,28 @@
         <span class="n">adata</span><span class="o">.</span><span class="n">var</span><span class="p">[</span><span class="s2">&quot;isTF&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="n">adata</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">adata</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">grnutils</span><span class="o">.</span><span class="n">TF</span><span class="p">),</span> <span class="s2">&quot;isTF&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">for</span> <span class="n">celltype</span> <span class="ow">in</span> <span class="n">cell_types</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="n">celltype</span><span class="p">)</span>
-            <span class="n">grn_inferer</span> <span class="o">=</span> <span class="n">GNInfer</span><span class="p">(</span>
-                <span class="n">layer</span><span class="o">=</span><span class="n">layers</span><span class="p">,</span>
-                <span class="n">how</span><span class="o">=</span><span class="s2">&quot;random expr&quot;</span><span class="p">,</span>
-                <span class="n">preprocess</span><span class="o">=</span><span class="s2">&quot;softmax&quot;</span><span class="p">,</span>
-                <span class="n">head_agg</span><span class="o">=</span><span class="s2">&quot;max&quot;</span><span class="p">,</span>
-                <span class="n">filtration</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span>
-                <span class="n">forward_mode</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span>
-                <span class="n">num_workers</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
-                <span class="n">num_genes</span><span class="o">=</span><span class="mi">2200</span><span class="p">,</span>
-                <span class="n">max_cells</span><span class="o">=</span><span class="n">maxcells</span><span class="p">,</span>
-                <span class="n">doplot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
-                <span class="n">devices</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-            <span class="p">)</span>
-
-            <span class="n">grn</span> <span class="o">=</span> <span class="n">grn_inferer</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">adata</span><span class="p">[</span><span class="n">adata</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">500</span><span class="p">],</span> <span class="n">cell_type</span><span class="o">=</span><span class="n">celltype</span><span class="p">)</span>
-            <span class="n">grn</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">make_index_unique</span><span class="p">(</span><span class="n">grn</span><span class="o">.</span><span class="n">var</span><span class="p">[</span><span class="s2">&quot;symbol&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">))</span>
-            <span class="n">metrics</span><span class="p">[</span><span class="n">celltype</span> <span class="o">+</span> <span class="s2">&quot;_scprint&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">BenGRN</span><span class="p">(</span>
-                <span class="n">grn</span><span class="p">,</span> <span class="n">doplot</span><span class="o">=</span><span class="kc">False</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">scprint_benchmark</span><span class="p">()</span>
-            <span class="k">del</span> <span class="n">grn</span>
-            <span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
+            <span class="c1"># print(celltype)</span>
+            <span class="c1"># grn_inferer = GNInfer(</span>
+            <span class="c1">#    layer=layers,</span>
+            <span class="c1">#    how=&quot;random expr&quot;,</span>
+            <span class="c1">#    preprocess=&quot;softmax&quot;,</span>
+            <span class="c1">#    head_agg=&quot;max&quot;,</span>
+            <span class="c1">#    filtration=&quot;none&quot;,</span>
+            <span class="c1">#    forward_mode=&quot;none&quot;,</span>
+            <span class="c1">#    num_workers=8,</span>
+            <span class="c1">#    num_genes=2200,</span>
+            <span class="c1">#    max_cells=maxcells,</span>
+            <span class="c1">#    doplot=False,</span>
+            <span class="c1">#    batch_size=batch_size,</span>
+            <span class="c1"># )</span>
+            <span class="c1">#</span>
+            <span class="c1"># grn = grn_inferer(model, adata[adata.X.sum(1) &gt; 500], cell_type=celltype)</span>
+            <span class="c1"># grn.var.index = make_index_unique(grn.var[&quot;symbol&quot;].astype(str))</span>
+            <span class="c1"># metrics[celltype + &quot;_scprint&quot;] = BenGRN(</span>
+            <span class="c1">#    grn, doplot=False</span>
+            <span class="c1"># ).scprint_benchmark()</span>
+            <span class="c1"># del grn</span>
+            <span class="c1"># gc.collect()</span>
             <span class="n">grn_inferer</span> <span class="o">=</span> <span class="n">GNInfer</span><span class="p">(</span>
                 <span class="n">layer</span><span class="o">=</span><span class="n">layers</span><span class="p">,</span>
                 <span class="n">how</span><span class="o">=</span><span class="s2">&quot;most var across&quot;</span><span class="p">,</span>
@@ -3130,7 +3127,6 @@
                 <span class="n">max_cells</span><span class="o">=</span><span class="n">maxcells</span><span class="p">,</span>
                 <span class="n">doplot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
-                <span class="n">devices</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">grn</span> <span class="o">=</span> <span class="n">grn_inferer</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">adata</span><span class="p">[</span><span class="n">adata</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">500</span><span class="p">],</span> <span class="n">cell_type</span><span class="o">=</span><span class="n">celltype</span><span class="p">)</span>
             <span class="n">grn</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">make_index_unique</span><span class="p">(</span><span class="n">grn</span><span class="o">.</span><span class="n">var</span><span class="p">[</span><span class="s2">&quot;symbol&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">))</span>
@@ -3926,9 +3922,7 @@
 <span class="normal">251</span>
 <span class="normal">252</span>
 <span class="normal">253</span>
-<span class="normal">254</span>
-<span class="normal">255</span>
-<span class="normal">256</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">default_benchmark</span><span class="p">(</span>
+<span class="normal">254</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">default_benchmark</span><span class="p">(</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">default_dataset</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">FILE_DIR</span> <span class="o">+</span> <span class="s2">&quot;/../../data/r4iCehg3Tw5IbCLiCIbl.h5ad&quot;</span><span class="p">,</span>
     <span class="n">max_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5000</span><span class="p">,</span>
@@ -3946,7 +3940,6 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">adata</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">read_h5ad</span><span class="p">(</span><span class="n">default_dataset</span><span class="p">)</span>
     <span class="n">denoise</span> <span class="o">=</span> <span class="n">Denoiser</span><span class="p">(</span>
-        <span class="n">model</span><span class="p">,</span>
         <span class="n">batch_size</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
         <span class="n">max_len</span><span class="o">=</span><span class="n">max_len</span><span class="p">,</span>
         <span class="n">max_cells</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span>
@@ -3954,9 +3947,8 @@
         <span class="n">num_workers</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
         <span class="n">predict_depth_mult</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
         <span class="n">downsample</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
-        <span class="n">devices</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="k">return</span> <span class="n">denoise</span><span class="p">(</span><span class="n">adata</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">denoise</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">adata</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3984,7 +3976,9 @@
 
             <details class="quote">
               <summary>Source code in <code>scprint/tasks/denoise.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">354</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">352</span>
+<span class="normal">353</span>
+<span class="normal">354</span>
 <span class="normal">355</span>
 <span class="normal">356</span>
 <span class="normal">357</span>
@@ -4007,9 +4001,7 @@
 <span class="normal">374</span>
 <span class="normal">375</span>
 <span class="normal">376</span>
-<span class="normal">377</span>
-<span class="normal">378</span>
-<span class="normal">379</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">split_molecules</span><span class="p">(</span>
+<span class="normal">377</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">split_molecules</span><span class="p">(</span>
     <span class="n">umis</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="n">data_split</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">overlap_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>

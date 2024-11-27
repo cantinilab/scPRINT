@@ -890,8 +890,7 @@
 <span class="normal">151</span>
 <span class="normal">152</span>
 <span class="normal">153</span>
-<span class="normal">154</span>
-<span class="normal">155</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_free_gpu</span><span class="p">():</span>
+<span class="normal">154</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_free_gpu</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    get_free_gpu finds the GPU with the most free memory using nvidia-smi.</span>
 
@@ -902,7 +901,6 @@
     <span class="kn">import</span> <span class="nn">sys</span>
     <span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">StringIO</span>
 
-    <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 
     <span class="n">gpu_stats</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span>
         <span class="p">[</span>
@@ -965,14 +963,14 @@
 </table>
             <details class="quote">
               <summary>Source code in <code>scprint/utils/utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">158</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">157</span>
+<span class="normal">158</span>
 <span class="normal">159</span>
 <span class="normal">160</span>
 <span class="normal">161</span>
 <span class="normal">162</span>
 <span class="normal">163</span>
-<span class="normal">164</span>
-<span class="normal">165</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_git_commit</span><span class="p">():</span>
+<span class="normal">164</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_git_commit</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    get_git_commit gets the current git commit hash.</span>
 
@@ -1001,10 +999,10 @@
 
             <details class="quote">
               <summary>Source code in <code>scprint/utils/utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">186</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">185</span>
+<span class="normal">186</span>
 <span class="normal">187</span>
-<span class="normal">188</span>
-<span class="normal">189</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">inf_loop</span><span class="p">(</span><span class="n">data_loader</span><span class="p">):</span>
+<span class="normal">188</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">inf_loop</span><span class="p">(</span><span class="n">data_loader</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;wrapper function for endless data loader.&quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">loader</span> <span class="ow">in</span> <span class="n">repeat</span><span class="p">(</span><span class="n">data_loader</span><span class="p">):</span>
         <span class="k">yield from</span> <span class="n">loader</span>
@@ -1188,7 +1186,8 @@
 
             <details class="quote">
               <summary>Source code in <code>scprint/utils/utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">192</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">191</span>
+<span class="normal">192</span>
 <span class="normal">193</span>
 <span class="normal">194</span>
 <span class="normal">195</span>
@@ -1206,8 +1205,7 @@
 <span class="normal">207</span>
 <span class="normal">208</span>
 <span class="normal">209</span>
-<span class="normal">210</span>
-<span class="normal">211</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_device</span><span class="p">(</span><span class="n">n_gpu_use</span><span class="p">):</span>
+<span class="normal">210</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_device</span><span class="p">(</span><span class="n">n_gpu_use</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    setup GPU device if available. get gpu device indices which are used for DataParallel</span>
 <span class="sd">    &quot;&quot;&quot;</span>
