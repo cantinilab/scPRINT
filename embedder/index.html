@@ -75,11 +75,11 @@
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#scprint.tokenizers.protein_embedder">protein_embedder</a>
         <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#scprint.tokenizers.protein_embedder.PROTBERT">PROTBERT</a>
+    <li class="toctree-l3"><a class="reference internal" href="#scprint.tokenizers.protein_embedder.ESM2">ESM2</a>
         <ul>
-    <li class="toctree-l4"><a class="reference internal" href="#scprint.tokenizers.protein_embedder.PROTBERT.__call__">__call__</a>
+    <li class="toctree-l4"><a class="reference internal" href="#scprint.tokenizers.protein_embedder.ESM2.__call__">__call__</a>
     </li>
-    <li class="toctree-l4"><a class="reference internal" href="#scprint.tokenizers.protein_embedder.PROTBERT.read_results">read_results</a>
+    <li class="toctree-l4"><a class="reference internal" href="#scprint.tokenizers.protein_embedder.ESM2.read_results">read_results</a>
     </li>
         </ul>
     </li>
@@ -137,6 +137,36 @@
 
 
 
+
+
+
+
+<p><span class="doc-section-title">Classes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="scprint.tokenizers.protein_embedder.ESM2" href="#scprint.tokenizers.protein_embedder.ESM2">ESM2</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
   <div class="doc doc-children">
 
 
@@ -150,8 +180,8 @@
 
 
 
-<h3 id="scprint.tokenizers.protein_embedder.PROTBERT" class="doc doc-heading">
-              <code class="highlight language-python"><span class="n">PROTBERT</span></code>
+<h3 id="scprint.tokenizers.protein_embedder.ESM2" class="doc doc-heading">
+              <code class="highlight language-python"><span class="n">ESM2</span></code>
 
 </h3>
 
@@ -159,7 +189,7 @@
     <div class="doc doc-contents ">
 
 
-        <p>PROTBERT a ghost class to call protein LLMs to encode protein sequences.</p>
+        <p>ESM2 a ghost class to call protein LLMs to encode protein sequences.</p>
 
 
 <table class="field-list">
@@ -197,11 +227,47 @@
     </tr>
   </tbody>
 </table>
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Methods:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="scprint.tokenizers.protein_embedder.ESM2.__call__" href="#scprint.tokenizers.protein_embedder.ESM2.__call__">__call__</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Call the ESM2 model on the input file.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="scprint.tokenizers.protein_embedder.ESM2.read_results" href="#scprint.tokenizers.protein_embedder.ESM2.read_results">read_results</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Read multiple .pt files in a folder and convert them into a DataFrame.</p>
+                </div>
+              </td>
+            </tr>
+      </tbody>
+    </table>
+
+
+
                   <details class="quote">
                     <summary>Source code in <code>scprint/tokenizers/protein_embedder.py</code></summary>
-                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">13</span>
-<span class="normal">14</span>
-<span class="normal">15</span>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">15</span>
 <span class="normal">16</span>
 <span class="normal">17</span>
 <span class="normal">18</span>
@@ -212,13 +278,15 @@
 <span class="normal">23</span>
 <span class="normal">24</span>
 <span class="normal">25</span>
-<span class="normal">26</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">config</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;esm-extract&quot;</span><span class="p">,</span>
     <span class="n">pretrained_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;esm2_t33_650M_UR50D&quot;</span><span class="p">,</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    PROTBERT a ghost class to call protein LLMs to encode protein sequences.</span>
+<span class="sd">    ESM2 a ghost class to call protein LLMs to encode protein sequences.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        config (str, optional): The configuration for the model. Defaults to &quot;esm-extract&quot;.</span>
@@ -244,7 +312,7 @@
 <div class="doc doc-object doc-function">
 
 
-<h4 id="scprint.tokenizers.protein_embedder.PROTBERT.__call__" class="doc doc-heading">
+<h4 id="scprint.tokenizers.protein_embedder.ESM2.__call__" class="doc doc-heading">
             <code class="highlight language-python"><span class="fm">__call__</span></code>
 
 </h4>
@@ -252,7 +320,7 @@
 
     <div class="doc doc-contents ">
 
-        <p>Call the PROTBERT model on the input file.</p>
+        <p>Call the ESM2 model on the input file.</p>
 
 
 <table class="field-list">
@@ -323,9 +391,7 @@
 </table>
             <details class="quote">
               <summary>Source code in <code>scprint/tokenizers/protein_embedder.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">28</span>
-<span class="normal">29</span>
-<span class="normal">30</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
 <span class="normal">31</span>
 <span class="normal">32</span>
 <span class="normal">33</span>
@@ -356,11 +422,13 @@
 <span class="normal">58</span>
 <span class="normal">59</span>
 <span class="normal">60</span>
-<span class="normal">61</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">input_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;/tmp/esm_out/&quot;</span><span class="p">,</span> <span class="n">cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Call the PROTBERT model on the input file.</span>
+<span class="sd">    Call the ESM2 model on the input file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        input_file (str): The input file to be processed.</span>
@@ -372,7 +440,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">output_folder</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">cache</span><span class="p">:</span>
         <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">output_folder</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;running protbert&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;running ESM2&quot;</span><span class="p">)</span>
         <span class="n">cmd</span> <span class="o">=</span> <span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">config</span>
             <span class="o">+</span> <span class="s2">&quot; &quot;</span>
@@ -399,7 +467,7 @@
 <div class="doc doc-object doc-function">
 
 
-<h4 id="scprint.tokenizers.protein_embedder.PROTBERT.read_results" class="doc doc-heading">
+<h4 id="scprint.tokenizers.protein_embedder.ESM2.read_results" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">read_results</span></code>
 
 </h4>
@@ -457,9 +525,7 @@
 </table>
             <details class="quote">
               <summary>Source code in <code>scprint/tokenizers/protein_embedder.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">63</span>
-<span class="normal">64</span>
-<span class="normal">65</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">65</span>
 <span class="normal">66</span>
 <span class="normal">67</span>
 <span class="normal">68</span>
@@ -474,7 +540,9 @@
 <span class="normal">77</span>
 <span class="normal">78</span>
 <span class="normal">79</span>
-<span class="normal">80</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">read_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">):</span>
+<span class="normal">80</span>
+<span class="normal">81</span>
+<span class="normal">82</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">read_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Read multiple .pt files in a folder and convert them into a DataFrame.</span>
 
@@ -526,6 +594,36 @@
 </h2>
 
     <div class="doc doc-contents first">
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Functions:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="scprint.tokenizers.embedder.protein_embeddings_generator" href="#scprint.tokenizers.embedder.protein_embeddings_generator">protein_embeddings_generator</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>protein_embeddings_generator embed a set of genes using fasta file and LLMs</p>
+                </div>
+              </td>
+            </tr>
+      </tbody>
+    </table>
+
+
 
 
 
@@ -710,12 +808,15 @@
 <span class="normal">81</span>
 <span class="normal">82</span>
 <span class="normal">83</span>
-<span class="normal">84</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">protein_embeddings_generator</span><span class="p">(</span>
+<span class="normal">84</span>
+<span class="normal">85</span>
+<span class="normal">86</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">protein_embeddings_generator</span><span class="p">(</span>
     <span class="n">genedf</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">organism</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;homo_sapiens&quot;</span><span class="p">,</span>  <span class="c1"># mus_musculus,</span>
     <span class="n">cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">fasta_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;/tmp/data/fasta/&quot;</span><span class="p">,</span>
     <span class="n">embedding_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span>
+    <span class="n">embedder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;esm2&quot;</span><span class="p">,</span>  <span class="c1"># or glm2</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    protein_embeddings_generator embed a set of genes using fasta file and LLMs</span>
@@ -737,20 +838,21 @@
     <span class="n">fasta_file</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
         <span class="n">file</span> <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">fasta_path</span><span class="p">)</span> <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.all.fa.gz&quot;</span><span class="p">)</span>
     <span class="p">)</span>
-    <span class="n">protgenedf</span> <span class="o">=</span> <span class="n">genedf</span><span class="p">[</span><span class="n">genedf</span><span class="p">[</span><span class="s2">&quot;biotype&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;protein_coding&quot;</span><span class="p">]</span>
-    <span class="n">utils</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">run_command</span><span class="p">([</span><span class="s2">&quot;gunzip&quot;</span><span class="p">,</span> <span class="n">fasta_path</span> <span class="o">+</span> <span class="n">fasta_file</span><span class="p">])</span>
-    <span class="n">utils</span><span class="o">.</span><span class="n">subset_fasta</span><span class="p">(</span>
-        <span class="n">protgenedf</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
-        <span class="n">subfasta_path</span><span class="o">=</span><span class="n">fasta_path</span> <span class="o">+</span> <span class="s2">&quot;subset.fa&quot;</span><span class="p">,</span>
-        <span class="n">fasta_path</span><span class="o">=</span><span class="n">fasta_path</span> <span class="o">+</span> <span class="n">fasta_file</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">],</span>
-        <span class="n">drop_unknown_seq</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="c1"># subset the gene file</span>
-    <span class="c1"># embed</span>
-    <span class="n">prot_embedder</span> <span class="o">=</span> <span class="n">PROTBERT</span><span class="p">()</span>
-    <span class="n">prot_embeddings</span> <span class="o">=</span> <span class="n">prot_embedder</span><span class="p">(</span>
-        <span class="n">fasta_path</span> <span class="o">+</span> <span class="s2">&quot;subset.fa&quot;</span><span class="p">,</span> <span class="n">output_folder</span><span class="o">=</span><span class="n">fasta_path</span> <span class="o">+</span> <span class="s2">&quot;esm_out/&quot;</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span>
-    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">embedder</span> <span class="o">==</span> <span class="s2">&quot;esm2&quot;</span><span class="p">:</span>
+        <span class="n">protgenedf</span> <span class="o">=</span> <span class="n">genedf</span><span class="p">[</span><span class="n">genedf</span><span class="p">[</span><span class="s2">&quot;biotype&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;protein_coding&quot;</span><span class="p">]</span>
+        <span class="n">utils</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">run_command</span><span class="p">([</span><span class="s2">&quot;gunzip&quot;</span><span class="p">,</span> <span class="n">fasta_path</span> <span class="o">+</span> <span class="n">fasta_file</span><span class="p">])</span>
+        <span class="n">utils</span><span class="o">.</span><span class="n">subset_fasta</span><span class="p">(</span>
+            <span class="n">protgenedf</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+            <span class="n">subfasta_path</span><span class="o">=</span><span class="n">fasta_path</span> <span class="o">+</span> <span class="s2">&quot;subset.fa&quot;</span><span class="p">,</span>
+            <span class="n">fasta_path</span><span class="o">=</span><span class="n">fasta_path</span> <span class="o">+</span> <span class="n">fasta_file</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">],</span>
+            <span class="n">drop_unknown_seq</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">prot_embedder</span> <span class="o">=</span> <span class="n">ESM2</span><span class="p">()</span>
+        <span class="n">prot_embeddings</span> <span class="o">=</span> <span class="n">prot_embedder</span><span class="p">(</span>
+            <span class="n">fasta_path</span> <span class="o">+</span> <span class="s2">&quot;subset.fa&quot;</span><span class="p">,</span> <span class="n">output_folder</span><span class="o">=</span><span class="n">fasta_path</span> <span class="o">+</span> <span class="s2">&quot;esm_out/&quot;</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Embedder </span><span class="si">{</span><span class="n">embedder</span><span class="si">}</span><span class="s2"> not supported&quot;</span><span class="p">)</span>
     <span class="c1"># load the data and erase / zip the rest</span>
     <span class="n">utils</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">run_command</span><span class="p">([</span><span class="s2">&quot;gzip&quot;</span><span class="p">,</span> <span class="n">fasta_path</span> <span class="o">+</span> <span class="n">fasta_file</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]])</span>
     <span class="c1"># return the embedding and gene file</span>
