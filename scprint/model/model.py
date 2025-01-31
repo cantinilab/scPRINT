@@ -16,6 +16,7 @@ import torch.distributed
 from huggingface_hub import PyTorchModelHubMixin
 from lightning.pytorch.callbacks.lr_finder import LearningRateFinder
 from lightning.pytorch.tuner.lr_finder import _LRCallback
+from performer_pytorch import Performer
 from scipy.sparse import load_npz
 from simpler_flash import FlashTransformer
 from torch import Tensor, nn, optim
@@ -67,7 +68,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         dropout: float = 0.1,
         use_metacell_token: bool = False,
         lr: float = 0.0001,
-        **flash_attention_kwargs,
+        nb_features: Optional[int] = None,
+        feature_redraw_interval: Optional[int] = None,
+        **attention_kwargs,
     ):
         """
         scPRINT transformer for single cell biology and the inference of Gene Regulatory networks
@@ -95,7 +98,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             label_decoders (Optional[Dict[str, Dict[int, str]]], optional): Label decoders to use for plotting the UMAP during validations. Defaults to None.
             zinb (bool, optional): Whether to use Zero-Inflated Negative Binomial distribution. Defaults to True.
             use_metacell_token (bool, optional): Whether to use a metacell token. Defaults to False.
-            **flash_attention_kwargs (dict): Additional keyword arguments for the model. see @flashformer.py
+            **attention_kwargs (dict): Additional keyword arguments for the model. see @flashformer.py
 
         Notes:
             for other parameters of the model that are not part of its class definition, see @trainer.trainer.py
@@ -272,8 +275,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.metacell_encoder = encoders.CategoryValueEncoder(2, d_model)
         # compute tensor for mat_labels_hierarchy
         for i in ["strict_loading", "optim", "weight_decay", "d_hid", "edge_dim"]:
-            if i in flash_attention_kwargs:
-                flash_attention_kwargs.pop(i)
+            if i in attention_kwargs:
+                attention_kwargs.pop(i)
         # Transformer
         # Linear
         if transformer == "linear":
@@ -282,7 +285,20 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             #    d_model, nhead, d_hid, nlayers, dropout, "linear"
             # )
             raise NotImplementedError("Linear transformer is not implemented")
-        # regular or flash
+        elif transformer == "performer":
+            self.transformer = Performer(
+                dim=d_model,
+                depth=nlayers,
+                heads=nhead,
+                dim_head=d_model // nhead,
+                causal=False,
+                attn_dropout=dropout,
+                ff_dropout=dropout,
+                qkv_bias=True,
+                nb_features=nb_features,
+                feature_redraw_interval=feature_redraw_interval,
+                **attention_kwargs,
+            )
         else:
             self.transformer = FlashTransformer(
                 d_model=d_model,
@@ -290,8 +306,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 dropout=dropout,
                 nlayers=nlayers,
                 cross_attn=cell_specific_blocks,
-                use_flash_attn=(transformer == "flash"),
-                **flash_attention_kwargs,
+                attn_type=transformer,
+                **attention_kwargs,
             )
         if cell_specific_blocks:
             self.cell_transformer = FlashTransformer(
@@ -300,8 +316,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 nlayers=6,
                 dropout=dropout,
                 cross_attn=True,
-                use_flash_attn=(transformer == "flash"),
-                **flash_attention_kwargs,
+                attn_type=transformer,
+                **attention_kwargs,
             )
         else:
             self.cell_transformer = None
@@ -441,7 +457,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             )
         except RuntimeError as e:
             if "scPrint is not attached to a `Trainer`." in str(e):
-                print("RuntimeError caught: scPrint is not attached to a `Trainer`.")
+                print("FYI: scPrint is not attached to a `Trainer`.")
         if not is_interactive():
             self.save_hyperparameters()
 
@@ -672,9 +688,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             encoding = encoding[:, self.cell_embs_count :, :]
         transformer_output = self.transformer(
             encoding,
-            return_qkv=get_attention_layer,
-            bias=bias if self.attn_bias != "none" else None,
-            bias_layer=list(range(self.nlayers - 1)),
+            # return_qkv=get_attention_layer,
+            # bias=bias if self.attn_bias != "none" else None,
+            # bias_layer=list(range(self.nlayers - 1)),
         )
         if len(get_attention_layer) > 0:
             transformer_output, qkvs = transformer_output

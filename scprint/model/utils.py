@@ -771,6 +771,7 @@ def test(
     res = grn_task.default_benchmark(
         model,
         filedir + "/../../data/yBCKp6HmXuHa0cZptMo7.h5ad",
+        # kidney dataset (2.87, 1.27) (0.00147, 0.00133)
         batch_size=32 if model.d_model <= 512 else 8,
         cell_types=[
             "kidney distal convoluted tubule epithelial cell",
