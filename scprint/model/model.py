@@ -25,6 +25,7 @@ from torch import Tensor, nn, optim
 from . import decoders, encoders, fsq, loss, utils
 from .loss import grad_reverse
 from .utils import WeightedMasker, simple_masker
+from .gnn import GNN as DeepSet
 
 FILEDIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -67,6 +68,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         zinb: bool = True,
         dropout: float = 0.1,
         use_metacell_token: bool = False,
+        : bool = False,
         lr: float = 0.0001,
         nb_features: Optional[int] = None,
         feature_redraw_interval: Optional[int] = None,
@@ -90,7 +92,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             dropout (float, optional): Dropout value. Defaults to 0.2.
             transformer (str, optional): Transformer type to use. One of "linear", "flash", "flashsparse", "scprint". Defaults to "fast".
             domain_spec_batchnorm (str, optional): Whether to apply domain-specific batch normalization. Defaults to "None".
-            expr_emb_style (str, optional): Style of input embedding. One of "continuous", "binned_pos", "cont_pos". Defaults to "continuous".
+            expr_emb_style (str, optional): Style of input embedding. One of "continuous", "binned_pos", "cont_pos", "metacell", "full_pos". Defaults to "continuous".
+                "metacell" uses a DeepSet multi gene encoder across the KNN cells
+                "full_pos" uses a positional encoding for each gene
+                "binned_pos" uses a binned expr embedding for each gene
+                "continuous" uses a continuous embedding for each gene with an MLP
             mvc_decoder (str, optional): Style of MVC decoder. One of "None", "inner product", "concat query", "sum query". Defaults to "None".
             pred_embedding (list[str], optional): List of classes to use for plotting embeddings. Defaults to [].
             cell_emb_style (str, optional): Style of cell embedding. One of "cls", "avg-pool", "w-pool". Defaults to "cls".
@@ -104,7 +110,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             for other parameters of the model that are not part of its class definition, see @trainer.trainer.py
 
         Raises:
-            ValueError: If the expr_emb_style is not one of "continuous", "binned_pos", "cont_pos".
+            ValueError: If the expr_emb_style is not one of "continuous", "binned_pos", "metacell", "full_pos".
         """
         super().__init__()
         self.save_hyperparameters()
@@ -189,7 +195,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.genes = genes
         self.vocab = {i: n for i, n in enumerate(genes)}
         self.expr_emb_style = expr_emb_style
-        if self.expr_emb_style not in ["category", "continuous", "none"]:
+        if self.expr_emb_style not in ["category", "continuous", "none", "metacell", "full_pos"]:
             raise ValueError(
                 f"expr_emb_style should be one of category, continuous, scaling, "
                 f"got {expr_emb_style}"
@@ -240,6 +246,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         elif expr_emb_style == "binned_pos":
             assert n_input_bins > 0
             self.expr_encoder = encoders.CategoryValueEncoder(n_input_bins, d_model)
+        elif expr_emb_style == "metacell":
+            self.expr_encoder = DeepSet(1, d_model, expr_encoder_layers, dropout, "deepset")
         else:
             self.expr_encoder = torch.nn.Identity()
 
@@ -355,6 +363,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 d_model,
                 arch_style=mvc_decoder,
                 zinb=zinb,
+                use_depth=not self.depth_atinput,
             )
         else:
             self.mvc_decoder = None
@@ -506,14 +515,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             if timepoint is not None:
                 pass
                 # cell_embs[:, 2, :] = self.time_encoder(timepoint)
-            if metacell_token is not None:
+            if self.use_metacell_token:
+                metacell_token = metacell_token if metacell_token is not None else torch.zeros(expression.shape[0], device=expression.device)
                 cell_embs = torch.cat(
                     (self.metacell_encoder(metacell_token).unsqueeze(1), cell_embs),
                     dim=1,
-                )
-            elif self.use_metacell_token:
-                raise ValueError(
-                    "metacell_token is not provided but use_metacell_token is True"
                 )
             if req_depth is not None:
                 depth_encoded = self.depth_encoder(torch.log2(1 + req_depth)).unsqueeze(
@@ -570,7 +576,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 output["cell_embs"][:, loc, :] = self.bottleneck_mlps[clsname](
                     output["cell_embs"][:, loc, :]
                 )[0]
-        output["cell_emb"] = torch.mean(output["cell_embs"].clone(), dim=1)
         if len(self.classes) > 0 and do_class:
             for i, clsname in enumerate(self.classes):
                 loc = (
@@ -590,6 +595,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 self.mvc_decoder(
                     torch.mean(output["cell_embs"], dim=1),
                     self.cur_gene_token_embs,
+                    req_depth=req_depth if not self.depth_atinput else None,
                 )
             )
             output["mvc_mean"] = (
@@ -882,6 +888,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         batch_idx = batch.get("dataset", None)
 
         metacell_token = batch.get("is_meta", None)
+        if self.use_metacell_token and metacell_token is None:
+            raise ValueError(
+                "metacell_token is not provided but use_metacell_token is True"
+            )
+        knn_cells = batch.get("knn_cells", None)
+        if knn_cells is not None:
+            print("nice")
 
         total_loss = 0
         losses = {}
@@ -1172,17 +1185,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 1 if self.depth_atinput else 0
             )
             mean_emb = torch.mean(
-                torch.cat(
-                    [
-                        output["cell_embs"][
-                            :,
-                            pos:,
-                            :,
-                        ].clone(),
-                        output["cell_embs"][:, pos + 1 :, :].clone(),
-                    ],
-                    dim=1,
-                )
+                output["cell_embs"][:, pos + 1 :, :].clone(),
+                dim=1,
             )
             loss_adv = self.grad_reverse_discriminator_loss(mean_emb, batch_idx)
             total_loss += loss_adv * self.class_scale / 16

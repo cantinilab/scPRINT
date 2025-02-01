@@ -285,12 +285,12 @@ class Embedder:
                         if true in cur_labels_hierarchy:
                             res.append(pred in cur_labels_hierarchy[true])
                             continue
+                        elif true != "unknown":
+                            res.append(False)
                         elif true not in class_topred:
                             raise ValueError(
                                 f"true label {true} not in available classes"
                             )
-                        elif true != "unknown":
-                            res.append(False)
                     elif true not in class_topred:
                         raise ValueError(f"true label {true} not in available classes")
                     elif true != "unknown":
