@@ -68,7 +68,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         zinb: bool = True,
         dropout: float = 0.1,
         use_metacell_token: bool = False,
-        : bool = False,
         lr: float = 0.0001,
         nb_features: Optional[int] = None,
         feature_redraw_interval: Optional[int] = None,
@@ -195,7 +194,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.genes = genes
         self.vocab = {i: n for i, n in enumerate(genes)}
         self.expr_emb_style = expr_emb_style
-        if self.expr_emb_style not in ["category", "continuous", "none", "metacell", "full_pos"]:
+        if self.expr_emb_style not in [
+            "category",
+            "continuous",
+            "none",
+            "metacell",
+            "full_pos",
+        ]:
             raise ValueError(
                 f"expr_emb_style should be one of category, continuous, scaling, "
                 f"got {expr_emb_style}"
@@ -247,7 +252,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             assert n_input_bins > 0
             self.expr_encoder = encoders.CategoryValueEncoder(n_input_bins, d_model)
         elif expr_emb_style == "metacell":
-            self.expr_encoder = DeepSet(1, d_model, expr_encoder_layers, dropout, "deepset")
+            self.expr_encoder = DeepSet(
+                1, d_model, expr_encoder_layers, dropout, "deepset"
+            )
         else:
             self.expr_encoder = torch.nn.Identity()
 
@@ -516,7 +523,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 pass
                 # cell_embs[:, 2, :] = self.time_encoder(timepoint)
             if self.use_metacell_token:
-                metacell_token = metacell_token if metacell_token is not None else torch.zeros(expression.shape[0], device=expression.device)
+                metacell_token = (
+                    metacell_token
+                    if metacell_token is not None
+                    else torch.zeros(expression.shape[0], device=expression.device)
+                )
                 cell_embs = torch.cat(
                     (self.metacell_encoder(metacell_token).unsqueeze(1), cell_embs),
                     dim=1,

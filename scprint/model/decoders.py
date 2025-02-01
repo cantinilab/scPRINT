@@ -96,6 +96,7 @@ class MVCDecoder(nn.Module):
         tot_labels: int = 1,
         query_activation: nn.Module = nn.Sigmoid,
         hidden_activation: nn.Module = nn.PReLU,
+        use_depth: bool = False,
         zinb: bool = True,
     ) -> None:
         """
@@ -109,25 +110,32 @@ class MVCDecoder(nn.Module):
                 1. "inner product" or 2. "cell product" 3. "concat query" or 4. "sum query".
             query_activation (:obj:`nn.Module`): activation function for the query
                 vectors. Defaults to nn.Sigmoid.
+            use_depth (:obj:`bool`): whether to use depth as an additional feature. Defaults to False.
             hidden_activation (:obj:`nn.Module`): activation function for the hidden
                 layers. Defaults to nn.PReLU.
         """
         super(MVCDecoder, self).__init__()
         if arch_style == "inner product":
-            self.gene2query = nn.Linear(d_model, d_model)
+            self.gene2query = nn.Linear(
+                d_model if not use_depth else d_model + 1, d_model
+            )
             self.norm = nn.LayerNorm(d_model)
             self.query_activation = query_activation()
             self.pred_var_zero = nn.Linear(
                 d_model, d_model * (3 if zinb else 1), bias=False
             )
         elif arch_style == "concat query":
-            self.gene2query = nn.Linear(d_model, d_model)
+            self.gene2query = nn.Linear(
+                d_model if not use_depth else d_model + 1, d_model
+            )
             self.query_activation = query_activation()
             self.fc1 = nn.Linear(d_model * (1 + tot_labels), d_model // 2)
             self.hidden_activation = hidden_activation()
             self.fc2 = nn.Linear(d_model // 2, (3 if zinb else 1))
         elif arch_style == "sum query":
-            self.gene2query = nn.Linear(d_model, d_model)
+            self.gene2query = nn.Linear(
+                d_model if not use_depth else d_model + 1, d_model
+            )
             self.query_activation = query_activation()
             self.fc1 = nn.Linear(d_model, 64)
             self.hidden_activation = hidden_activation()
@@ -144,12 +152,26 @@ class MVCDecoder(nn.Module):
         self,
         cell_emb: Tensor,
         gene_embs: Tensor,
+        req_depth: Optional[Tensor] = None,
     ) -> Union[Tensor, Dict[str, Tensor]]:
         """
         Args:
             cell_emb: Tensor, shape (batch, embsize=d_model)
             gene_embs: Tensor, shape (batch, seq_len, embsize=d_model)
         """
+        if req_depth is not None:
+            import pdb
+
+            pdb.set_trace()
+            gene_embs = torch.cat(
+                [
+                    gene_embs,
+                    req_depth.unsqueeze(1)
+                    .unsqueeze(-1)
+                    .expand(-1, gene_embs.shape[1], -1),
+                ],
+                dim=-1,
+            )
         if self.arch_style == "inner product":
             query_vecs = self.query_activation(self.norm(self.gene2query(gene_embs)))
             if self.zinb:
