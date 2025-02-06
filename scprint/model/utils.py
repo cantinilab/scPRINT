@@ -616,56 +616,56 @@ def test(
         None
     """
     metrics = {}
-    res = embbed_task.default_benchmark(
-        model, default_dataset="lung", do_class=do_class, coarse=False
-    )
-    f = open("metrics_" + name + ".json", "a")
-    f.write(json.dumps({"embed_lung": res}, indent=4))
-    f.close()
-    metrics.update(
-        {
-            "emb_lung/scib": float(res["scib"]["Total"]),
-            "emb_lung/ct_class": float(
-                res["classif"]["cell_type_ontology_term_id"]["accuracy"]
-                if do_class
-                else 0
-            ),
-        }
-    )
-    print(metrics)
-    res = embbed_task.default_benchmark(
-        model, default_dataset="pancreas", do_class=do_class, coarse=False
-    )
-    f = open("metrics_" + name + ".json", "a")
-    f.write(json.dumps({"embed_panc": res}, indent=4))
-    f.close()
-    metrics.update(
-        {
-            "emb_panc/scib": float(res["scib"]["Total"]),
-            "emb_panc/ct_class": float(
-                res["classif"]["cell_type_ontology_term_id"]["accuracy"]
-                if do_class
-                else 0
-            ),
-        }
-    )
-    print(metrics)
-    gc.collect()
-    res = denoise_task.default_benchmark(
-        model, filedir + "/../../data/gNNpgpo6gATjuxTE7CCp.h5ad"
-    )
-    metrics.update(
-        {
-            "denoise/reco2full_vs_noisy2full": float(
-                res["reco2full"] - res["noisy2full"]
-            ),
-        }
-    )
-    gc.collect()
-    print(metrics)
-    f = open("metrics_" + name + ".json", "a")
-    f.write(json.dumps({"denoise": res}, indent=4))
-    f.close()
+    # res = embbed_task.default_benchmark(
+    #    model, default_dataset="lung", do_class=do_class, coarse=False
+    # )
+    # f = open("metrics_" + name + ".json", "a")
+    # f.write(json.dumps({"embed_lung": res}, indent=4))
+    # f.close()
+    # metrics.update(
+    #    {
+    #        "emb_lung/scib": float(res["scib"]["Total"]),
+    #        "emb_lung/ct_class": float(
+    #            res["classif"]["cell_type_ontology_term_id"]["accuracy"]
+    #            if do_class
+    #            else 0
+    #        ),
+    #    }
+    # )
+    # print(metrics)
+    # res = embbed_task.default_benchmark(
+    #    model, default_dataset="pancreas", do_class=do_class, coarse=False
+    # )
+    # f = open("metrics_" + name + ".json", "a")
+    # f.write(json.dumps({"embed_panc": res}, indent=4))
+    # f.close()
+    # metrics.update(
+    #    {
+    #        "emb_panc/scib": float(res["scib"]["Total"]),
+    #        "emb_panc/ct_class": float(
+    #            res["classif"]["cell_type_ontology_term_id"]["accuracy"]
+    #            if do_class
+    #            else 0
+    #        ),
+    #    }
+    # )
+    # print(metrics)
+    # gc.collect()
+    # res = denoise_task.default_benchmark(
+    #    model, filedir + "/../../data/gNNpgpo6gATjuxTE7CCp.h5ad"
+    # )
+    # metrics.update(
+    #    {
+    #        "denoise/reco2full_vs_noisy2full": float(
+    #            res["reco2full"] - res["noisy2full"]
+    #        ),
+    #    }
+    # )
+    # gc.collect()
+    # print(metrics)
+    # f = open("metrics_" + name + ".json", "a")
+    # f.write(json.dumps({"denoise": res}, indent=4))
+    # f.close()
     res = grn_task.default_benchmark(
         model, "gwps", batch_size=32 if model.d_model <= 512 else 8
     )

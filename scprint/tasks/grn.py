@@ -710,9 +710,6 @@ def default_benchmark(
             grn.var.index = make_index_unique(grn.var["symbol"].astype(str))
             grn.varp["all"] = grn.varp["GRN"]
             grn.varp["GRN"] = grn.varp["GRN"].mean(-1)
-            import pdb
-
-            pdb.set_trace()
             metrics[celltype + "_scprint_mean"] = BenGRN(
                 grn, doplot=False
             ).scprint_benchmark()

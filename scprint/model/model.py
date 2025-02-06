@@ -160,14 +160,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.cell_separation = True
 
         self.depth_atinput = depth_atinput
-        self.attn = utils.Attention(
-            len(genes),
-            additional_tokens=(
-                len(classes) + (2 if self.depth_atinput else 1)
-                if not cell_specific_blocks
-                else 0
-            ),
-        )
         self.tf_masker = WeightedMasker(genes, inv_weight=0.05)
         # should be stored somehow
         self.d_model = d_model
@@ -212,6 +204,17 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.hparams["label_counts"] = self.label_counts
         self.hparams["gene_pos_enc"] = self.gene_pos_enc
         self.hparams["genes"] = self.genes
+
+        self.attn = utils.Attention(
+            len(genes),
+            additional_tokens=(
+                len(classes)
+                + (2 if self.depth_atinput else 1)
+                + (1 if self.use_metacell_token else 0)
+                if not cell_specific_blocks
+                else 0
+            ),
+        )
 
         self.mat_labels_hierarchy = {}
         for k, v in labels_hierarchy.items():
@@ -502,7 +505,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if expression is not None:
             if self.normalization == "sum":
                 norm_expr = expression / expression.sum(1).unsqueeze(1)
-
             elif self.normalization == "log":
                 norm_expr = torch.log2(1 + expression)
             else:
@@ -1253,8 +1255,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             #    pg["lr"] = 2e-5
             self.log("lr_" + str(i), pg["lr"])
         if optimizer.param_groups[0]["lr"] > self.hparams.lr:
-            print(optimizer.param_groups[0]["lr"], self.hparams.lr)
-            print(lr_scale, self.warmup_duration, self.trainer.global_step, prev_lr)
             if prev_lr is not None:
                 pg["lr"] = prev_lr
             else:
@@ -1453,6 +1453,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 metacell_token=metacell_token,
             )
             if len(get_attention_layer) > 0:
+                # only first 2 (QK)
                 self.attn.add([i[:, :, :2, :] for i in output[1]], gene_pos)
                 output = output[0]
             cell_embs = output["cell_embs"]
@@ -1468,6 +1469,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 metacell_token=metacell_token,
             )
             if len(get_attention_layer) > 0:
+                # only first 2 (QK)
                 self.attn.add([i[:, :, :2, :] for i in output[1]], gene_pos)
                 output = output[0]
             cell_embs = output["cell_embs"]
