@@ -703,12 +703,15 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if self.cell_transformer:
             cell_encoding = encoding[:, : self.cell_embs_count, :]
             encoding = encoding[:, self.cell_embs_count :, :]
-        transformer_output = self.transformer(
-            encoding,
-            # return_qkv=get_attention_layer,
-            # bias=bias if self.attn_bias != "none" else None,
-            # bias_layer=list(range(self.nlayers - 1)),
-        )
+        if type(self.transformer) is FlashTransformer:
+            transformer_output = self.transformer(
+                encoding,
+                return_qkv=get_attention_layer,
+                bias=bias if self.attn_bias != "none" else None,
+                bias_layer=list(range(self.nlayers - 1)),
+            )
+        else:
+            transformer_output = self.transformer(encoding)
         if len(get_attention_layer) > 0:
             transformer_output, qkvs = transformer_output
         if self.cell_transformer:

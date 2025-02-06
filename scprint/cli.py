@@ -125,8 +125,11 @@ class MyCLI(LightningCLI):
                 help=(
                     "If not included in the anndata under 'organism_ontology_term_id', the species of the dataset."
                 ),
-                required=True,
+                required=False,
             )
+            parser.add_argument("--use_raw", type=bool, default=False)
+            parser.add_argument("--skip_validate", type=bool, default=True)
+            parser.add_argument("--is_symbol", type=bool, default=False)
             parser.add_class_arguments(subcommand[1])
             added = parser.add_method_arguments(
                 subcommand[1],
@@ -160,12 +163,16 @@ class MyCLI(LightningCLI):
 
             adata = sc.read_h5ad(self.config_init[subcommand]["adata"])
             adata.obs.drop(columns="is_primary_data", inplace=True, errors="ignore")
-            adata.obs["organism_ontology_term_id"] = self.config_init[subcommand][
-                "species"
-            ]
+            if self.config_init[subcommand]["species"] is not None:
+                adata.obs["organism_ontology_term_id"] = self.config_init[subcommand][
+                    "species"
+                ]
             preprocessor = Preprocessor(
                 do_postp=False,
                 force_preprocess=True,
+                skip_validate=self.config_init[subcommand].get("skip_validate", True),
+                use_raw=self.config_init[subcommand].get("use_raw", False),
+                is_symbol=self.config_init[subcommand].get("is_symbol", False),
             )
             adata = preprocessor(adata)
             conf = dict(self.config_init[subcommand])

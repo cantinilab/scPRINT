@@ -160,9 +160,6 @@ class MVCDecoder(nn.Module):
             gene_embs: Tensor, shape (batch, seq_len, embsize=d_model)
         """
         if req_depth is not None:
-            import pdb
-
-            pdb.set_trace()
             gene_embs = torch.cat(
                 [
                     gene_embs,
