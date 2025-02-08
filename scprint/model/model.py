@@ -45,6 +45,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         nhead: int = 4,
         nlayers: int = 8,
         precpt_gene_emb: Optional[str] = None,
+        finetune_gene_emb: bool = False,
         gene_pos_enc: Optional[list] = None,
         normalization: str = "sum",
         attn_bias: str = "none",
@@ -245,6 +246,18 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             )
         else:
             self.gene_encoder = encoders.GeneEncoder(len(self.vocab), d_model)
+        if finetune_gene_emb:
+            if precpt_gene_emb is None or freeze_embeddings is False:
+                raise ValueError(
+                    "finetune_gene_emb is True but precpt_gene_emb is None or freeze_embeddings is False"
+                )
+            # add an adapter layer to the gene encoder
+            self.gene_encoder = torch.nn.Sequential(
+                self.gene_encoder,
+                torch.nn.Linear(d_model, d_model),
+                torch.nn.ReLU(),
+                torch.nn.Linear(d_model, d_model),
+            )
 
         # Value Encoder, NOTE: the scaling style is also handled in _encode method
         if expr_emb_style in ["continuous", "full_pos"]:
