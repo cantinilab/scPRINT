@@ -240,23 +240,30 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 torch.tensor(embeddings.values)
             )
 
-            self.gene_encoder = encoders.GeneEncoder(
+            base_encoder = encoders.GeneEncoder(
                 len(self.vocab), d_model, weights=sembeddings, freeze=freeze_embeddings
             )
-        else:
-            self.gene_encoder = encoders.GeneEncoder(len(self.vocab), d_model)
-        if finetune_gene_emb:
-            if precpt_gene_emb is None or freeze_embeddings is False:
-                raise ValueError(
-                    "finetune_gene_emb is True but precpt_gene_emb is None or freeze_embeddings is False"
+
+            if finetune_gene_emb:
+                if not freeze_embeddings:
+                    raise ValueError(
+                        "finetune_gene_emb is True but freeze_embeddings is False"
+                    )
+                # Create adapter layers after the frozen base encoder
+                self.gene_encoder = torch.nn.Sequential(
+                    base_encoder,
+                    torch.nn.Linear(d_model, d_model),
+                    torch.nn.ReLU(),
+                    torch.nn.Linear(d_model, d_model),
                 )
-            # add an adapter layer to the gene encoder
-            self.gene_encoder = torch.nn.Sequential(
-                self.gene_encoder,
-                torch.nn.Linear(d_model, d_model),
-                torch.nn.ReLU(),
-                torch.nn.Linear(d_model, d_model),
-            )
+            else:
+                self.gene_encoder = base_encoder
+        else:
+            if finetune_gene_emb:
+                raise ValueError(
+                    "finetune_gene_emb is True but precpt_gene_emb is None"
+                )
+            self.gene_encoder = encoders.GeneEncoder(len(self.vocab), d_model)
 
         # Value Encoder, NOTE: the scaling style is also handled in _encode method
         if expr_emb_style in ["continuous", "full_pos"]:
