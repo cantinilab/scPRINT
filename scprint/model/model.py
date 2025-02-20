@@ -25,7 +25,6 @@ from torch import Tensor, nn, optim
 from . import decoders, encoders, fsq, loss, utils
 from .loss import grad_reverse
 from .utils import WeightedMasker, simple_masker
-from .gnn import GNN as DeepSet
 
 FILEDIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -268,9 +267,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             assert n_input_bins > 0
             self.expr_encoder = encoders.CategoryValueEncoder(n_input_bins, d_model)
         elif expr_emb_style == "metacell":
-            self.expr_encoder = DeepSet(
-                1, d_model, expr_encoder_layers, dropout, "deepset"
-            )
+            print("nothing")
         else:
             self.expr_encoder = torch.nn.Identity()
 
@@ -386,7 +383,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 d_model,
                 arch_style=mvc_decoder,
                 zinb=zinb,
-                use_depth=not self.depth_atinput,
+            #    use_depth=not self.depth_atinput,
             )
         else:
             self.mvc_decoder = None
@@ -434,7 +431,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 "the discriminator for batch effect correction has been resized\
                 and re-initiliazed. It will start from scratch during this training if "
             )
-
+        print('callbacks', self.trainer.callbacks)
         # if len(checkpoints["state_dict"]["pos_encoder.pe"].shape) == 3:
         #    self.pos_encoder.pe = checkpoints["state_dict"]["pos_encoder.pe"].squeeze(1)
 
