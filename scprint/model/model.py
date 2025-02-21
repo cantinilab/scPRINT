@@ -56,6 +56,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         num_batch_labels: int = 0,
         mvc_decoder: str = "None",
         pred_embedding: list[str] = [],
+        label_counts: Dict[str, int] = {},
         layers_cls: list[int] = [],
         classes: Dict[str, int] = {},
         labels_hierarchy: Dict[str, Dict[int, list[int]]] = {},
@@ -83,7 +84,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             gene_pos_enc (list, optional): Gene position encoding of the same size as genes. Provides a location value for each gene in genes. Defaults to None.
             d_model (int, optional): Dimension of the model. Defaults to 512.
             nhead (int, optional): Number of heads in the multihead attention models. Defaults to 8.
-            d_hid (int, optional): Dimension of the feedforward network model. Defaults to 512.
             nlayers (int, optional): Number of layers in the transformer model. Defaults to 6.
             expr_encoder_layers (int, optional): Number of layers in the expression encoder. Defaults to 2.
             layers_cls (list[int], optional): List specifying the number of layers in the classifier. Defaults to [].
@@ -199,13 +199,12 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 f"got {expr_emb_style}"
             )
         self.labels_hierarchy = labels_hierarchy
-        self.hparams["labels_hierarchy"] = self.labels_hierarchy
-        self.hparams["classes"] = self.classes
-        self.hparams["label_decoders"] = self.label_decoders
-        self.hparams["label_counts"] = self.label_counts
-        self.hparams["gene_pos_enc"] = self.gene_pos_enc
-        self.hparams["genes"] = self.genes
-
+        self.hparams["labels_hierarchy"] = labels_hierarchy
+        self.hparams["classes"] = classes
+        self.hparams["label_decoders"] = label_decoders
+        self.hparams["gene_pos_enc"] = gene_pos_enc
+        self.hparams["genes"] = genes
+        self.hparams["num_batch_labels"] = num_batch_labels
         self.attn = utils.Attention(
             len(genes),
             additional_tokens=(
@@ -393,7 +392,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 d_model,
                 arch_style=mvc_decoder,
                 zinb=zinb,
-                use_depth=not self.depth_atinput,
+                # use_depth=not self.depth_atinput,
             )
         else:
             self.mvc_decoder = None
@@ -436,16 +435,23 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             "grad_reverse_discriminator_loss.out_layer.bias"
         ].shape[0]
         # we won't use it but still need to take care of it. for now will still add it to the model
-        if size != self.grad_reverse_discriminator_loss.out_layer.bias.shape[0]:
+        if self.grad_reverse_discriminator_loss is not None:
+            if size != self.grad_reverse_discriminator_loss.out_layer.bias.shape[0]:
+                self.grad_reverse_discriminator_loss = (
+                    loss.AdversarialDiscriminatorLoss(
+                        self.d_model,
+                        n_cls=size,
+                    )
+                )
+                print(
+                    "the discriminator for batch effect correction has been resized\
+                    and re-initiliazed. It will start from scratch during this training if "
+                )
+        else:
             self.grad_reverse_discriminator_loss = loss.AdversarialDiscriminatorLoss(
                 self.d_model,
                 n_cls=size,
             )
-            print(
-                "the discriminator for batch effect correction has been resized\
-                and re-initiliazed. It will start from scratch during this training if "
-            )
-        print("callbacks", self.trainer.callbacks)
         # if len(checkpoints["state_dict"]["pos_encoder.pe"].shape) == 3:
         #    self.pos_encoder.pe = checkpoints["state_dict"]["pos_encoder.pe"].squeeze(1)
 
@@ -453,13 +459,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if "classes" in checkpoints["hyper_parameters"]:
             if self.classes != checkpoints["hyper_parameters"]["classes"]:
                 print("changing the number of classes, could lead to issues")
-
-            if "label_counts" in checkpoints["hyper_parameters"]:
                 self.label_counts = checkpoints["hyper_parameters"]["label_counts"]
-                self.classes = checkpoints["hyper_parameters"]["classes"]
-            else:
-                self.label_counts = checkpoints["hyper_parameters"]["classes"]
-                self.classes = list(self.label_counts.keys())
+                self.classes = list(checkpoints["hyper_parameters"]["classes"].keys())
             self.label_decoders = checkpoints["hyper_parameters"]["label_decoders"]
             self.labels_hierarchy = checkpoints["hyper_parameters"]["labels_hierarchy"]
             for k, v in self.labels_hierarchy.items():
@@ -478,6 +479,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 )
         mencoders = {}
         try:
+            print("callbacks", self.trainer.callbacks)
             if self.trainer.datamodule.decoders != self.label_decoders:
                 # if we don't have the same decoders, we need to update the one on the datamodule side
                 for k, v in checkpoints["hyper_parameters"]["label_decoders"].items():
@@ -497,7 +499,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 int(os.getenv("SLURM_RESTART_COUNT", 0))
                 + 1
                 + int(os.getenv("MY_SLURM_RESTART_COUNT", 0))
-            )
         except RuntimeError as e:
             if "scPrint is not attached to a `Trainer`." in str(e):
                 print("FYI: scPrint is not attached to a `Trainer`.")
@@ -552,7 +553,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     - (1 if self.use_metacell_token else 0),
                     device=expression.device,
                 ).repeat(expression.shape[0], 1)
-            )
             if timepoint is not None:
                 pass
                 # cell_embs[:, 2, :] = self.time_encoder(timepoint)
@@ -614,9 +614,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
         if self.vae_decoder is not None:
             # Apply VAE to cell embeddings
-            output["cell_emb"] = self.vae_decoder(
-                output["cell_emb"], return_latent=False
+            decoded, _, _, kl_loss = self.vae_decoder(
+                output["cell_emb"], return_latent=True
             )
+            output["cell_emb"] = decoded
+            output["vae_kl_loss"] = kl_loss
 
         elif self.bottleneck_mlps is not None:
             for i, clsname in enumerate(self.classes):
@@ -624,7 +626,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     i
                     + (2 if self.depth_atinput else 1)
                     + (1 if self.use_metacell_token else 0)
-                )
                 output["cell_embs"][:, loc, :] = self.bottleneck_mlps[clsname](
                     output["cell_embs"][:, loc, :]
                 )[0]
@@ -634,7 +635,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     i
                     + (2 if self.depth_atinput else 1)
                     + (1 if self.use_metacell_token else 0)
-                )
                 output.update(
                     {
                         "cls_output_" + clsname: self.cls_decoders[clsname](
@@ -928,6 +928,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             do_mvc (bool, optional): A flag to indicate whether to perform multi-view coding. Defaults to False.
             do_adv_cls (bool, optional): A flag to indicate whether to perform adversarial classification. Defaults to False.
             do_generate (bool, optional): A flag to indicate whether to perform data generation. Defaults to False.
+            run_full_forward (bool, optional): A flag to indicate whether to perform a full forward pass. Defaults to True.
             mask_ratio (list, optional): A list of mask ratios to be used in the training. Defaults to [0.15].
 
         Returns:
@@ -1280,6 +1281,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             loss_ecs = loss.ecs(output["cell_emb"], ecs_threshold=self.ecs_threshold)
             total_loss += self.ecs_scale * loss_ecs
             losses.update({"ecs": loss_ecs})
+
+        # Add VAE KL loss if present
+        if "vae_kl_loss" in output:
+            vae_kl_loss = output["vae_kl_loss"]
+            total_loss += vae_kl_loss  # Scale factor of 0.1 for KL loss
+            losses.update({"vae_kl": vae_kl_loss})
+
         return losses, total_loss
 
     def optimizer_step(self, epoch, batch_idx, optimizer, optimizer_closure):

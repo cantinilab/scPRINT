@@ -325,9 +325,24 @@ class VAEDecoder(nn.Module):
         eps = torch.randn_like(std)
         return mu + eps * std
 
+    def kl_divergence(self, mu: Tensor, log_var: Tensor) -> Tensor:
+        """
+        Compute KL divergence between N(mu, var) and N(0, 1).
+
+        Args:
+            mu (Tensor): Mean of the latent Gaussian
+            log_var (Tensor): Log variance of the latent Gaussian
+
+        Returns:
+            Tensor: KL divergence loss
+        """
+        # KL(N(mu, var) || N(0, 1)) = -0.5 * sum(1 + log(var) - mu^2 - var)
+        kl_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp(), dim=1)
+        return kl_loss.mean()
+
     def forward(
         self, x: Tensor, return_latent: bool = False
-    ) -> Union[Tensor, Tuple[Tensor, Tensor, Tensor]]:
+    ) -> Union[Tensor, Tuple[Tensor, Tensor, Tensor, Tensor]]:
         """
         Forward pass through VAE.
 
@@ -337,10 +352,11 @@ class VAEDecoder(nn.Module):
 
         Returns:
             If return_latent:
-                Tuple[Tensor, Tensor, Tensor]: (reconstructed_x, mu, log_var) where:
+                Tuple[Tensor, Tensor, Tensor, Tensor]: (reconstructed_x, mu, log_var, kl_loss) where:
                     - reconstructed_x has shape [batch_size, d_model]
                     - mu has shape [batch_size, latent_dim]
                     - log_var has shape [batch_size, latent_dim]
+                    - kl_loss is a scalar tensor
             Else:
                 Tensor: reconstructed_x of shape [batch_size, d_model]
         """
@@ -358,5 +374,6 @@ class VAEDecoder(nn.Module):
         decoded = self.decoder(z)
 
         if return_latent:
-            return decoded, mu, log_var
+            kl_loss = self.kl_divergence(mu, log_var)
+            return decoded, mu, log_var, kl_loss
         return decoded
