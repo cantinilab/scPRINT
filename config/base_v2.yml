@@ -8,7 +8,7 @@ log_graph: True
 trainer:
   precision: 16-mixed
   strategy: ddp_find_unused_parameters_true
-  gradient_clip_val: 40
+  gradient_clip_val: 10
   log_every_n_steps: 100
   limit_train_batches: 20000
   gradient_clip_algorithm: norm
@@ -40,9 +40,10 @@ scprint_training:
   zinb_and_mse: True
   var_context_length: True
 model:
-  dropout: 0.1
-  num_heads_kv: 2
+  dropout: 0
+  num_heads_kv: 4
   transformer: flash
+  finetune_gene_emb: True
   mvc_decoder: inner product
   residual_in_fp32: True
   checkpointing: True
@@ -66,6 +67,7 @@ model:
   #  self_reported_ethnicity_ontology_term_id: 10
   #  sex_ontology_term_id: 2
   #  organism_ontology_term_id: 8
+  class_compression: "none"
 data:
   organisms:
     - NCBITaxon:9606
@@ -74,7 +76,7 @@ data:
   gene_embeddings: ./data/main/gene_embeddings.parquet
   collection_name: scPRINT-V2 full #scPRINT-V2 (good quality) # scPRINT-V2 (some)
   how: random expr
-  max_len: 2200
+  max_len: 3200
   pin_memory: True
   prefetch_factor: 3
   metacell_mode: 0.2

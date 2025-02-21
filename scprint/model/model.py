@@ -25,7 +25,6 @@ from torch import Tensor, nn, optim
 from . import decoders, encoders, fsq, loss, utils
 from .loss import grad_reverse
 from .utils import WeightedMasker, simple_masker
-from .gnn import GNN as DeepSet
 
 FILEDIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -61,6 +60,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         classes: Dict[str, int] = {},
         labels_hierarchy: Dict[str, Dict[int, list[int]]] = {},
         label_decoders: Optional[Dict[str, Dict[int, str]]] = None,
+        class_compression: str = "none",  # "none", "fsq", "vae"
         compress_class_dim: Optional[Dict[str, int]] = None,
         cell_emb_style: str = "cls",
         cell_specific_blocks: bool = False,
@@ -275,7 +275,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             assert n_input_bins > 0
             self.expr_encoder = encoders.CategoryValueEncoder(n_input_bins, d_model)
         elif expr_emb_style == "metacell":
-            self.expr_encoder = DeepSet(
+            self.expr_encoder = encoders.GNN(
                 1, d_model, expr_encoder_layers, dropout, "deepset"
             )
         else:
@@ -407,12 +407,16 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         for i, dec in self.cls_decoders.items():
             torch.nn.init.constant_(dec.out_layer.bias, -0.13)
 
-        if compress_class_dim is not None:
+        self.bottleneck_mlps = None
+        self.vae_decoder = None
+        if class_compression == "fsq":
             self.bottleneck_mlps = torch.nn.ModuleDict()
             for k, v in compress_class_dim.items():
                 self.bottleneck_mlps[k] = fsq.FSQ(levels=[2] * v, dim=self.d_model)
-        else:
-            self.bottleneck_mlps = None
+        elif class_compression == "vae":
+            self.vae_decoder = decoders.VAEDecoder(
+                d_model, layers=[128, 64], dropout=dropout
+            )
 
     def on_load_checkpoint(self, checkpoints):
         for name, clss in self.cls_decoders.items():
@@ -504,6 +508,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self,
         gene_pos: Tensor,
         expression: Optional[Tensor] = None,
+        neighbors: Optional[Tensor] = None,
         mask: Optional[Tensor] = None,
         req_depth: Optional[Tensor] = None,
         timepoint: Optional[Tensor] = None,
@@ -521,15 +526,22 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         """
         enc = self.gene_encoder(gene_pos)  # (minibatch, seq_len, embsize)
         self.cur_gene_token_embs = enc.clone()
-
         if expression is not None:
             if self.normalization == "sum":
-                norm_expr = expression / expression.sum(1).unsqueeze(1)
+                expression = expression / expression.sum(1).unsqueeze(1)
+                if neighbors is not None:
+                    neighbors = neighbors / neighbors.sum(2).unsqueeze(1)
             elif self.normalization == "log":
-                norm_expr = torch.log2(1 + expression)
+                expression = torch.log2(1 + expression)
+                if neighbors is not None:
+                    neighbors = torch.log2(1 + neighbors)
             else:
                 raise ValueError(f"Unknown normalization: {self.normalization}")
-            enc.add_(self.expr_encoder(norm_expr, mask))
+            if neighbors is not None:
+                expr_emb = self.expr_encoder(expression, mask=mask, neighbors=neighbors)
+            else:
+                expr_emb = self.expr_encoder(expression, mask=mask)
+            enc.add_(expr_emb)
         if self.gene_pos_enc:
             enc.add_(self.pos_encoder(gene_pos))
         if cell_embs is None:
@@ -599,7 +611,14 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             dim=1,
         )
         output["cell_embs"] = transformer_output[:, : self.cell_embs_count]
-        if self.bottleneck_mlps is not None:
+
+        if self.vae_decoder is not None:
+            # Apply VAE to cell embeddings
+            output["cell_emb"] = self.vae_decoder(
+                output["cell_emb"], return_latent=False
+            )
+
+        elif self.bottleneck_mlps is not None:
             for i, clsname in enumerate(self.classes):
                 loc = (
                     i
@@ -645,6 +664,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self,
         gene_pos: Tensor,
         expression: Optional[Tensor] = None,
+        neighbors: Optional[Tensor] = None,
         mask: Optional[Tensor] = None,
         req_depth: Optional[Tensor] = None,
         timepoint: Optional[Tensor] = None,  # (new_minibatch_of_nxt_cells,)
@@ -664,6 +684,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 representing the genes used for each cell in the minibatch.
             expression (Tensor, optional): A tensor of shape (minibatch, seq_len)
                 representing the expression levels of genes in the minibatch. Defaults to None.
+            neighbors (Tensor, optional): A tensor of shape (minibatch, seq_len, n_neighbors)
+                representing the neighbors of each gene in the minibatch. Defaults to None.
             mask (Tensor, optional): A tensor of shape (minibatch, seq_len)
                 used to mask certain elements in the sequence during the forward pass. Defaults to None.
             req_depth (Tensor, optional): A tensor of shape (minibatch,)
@@ -693,6 +715,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         encoding = self._encoder(
             gene_pos,
             expression,
+            neighbors,
             mask,
             req_depth=req_depth if self.depth_atinput else None,
             timepoint=timepoint,
@@ -928,9 +951,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             raise ValueError(
                 "metacell_token is not provided but use_metacell_token is True"
             )
-        knn_cells = batch.get("knn_cells", None)
-        if knn_cells is not None:
-            print("nice")
+        knn_cells = batch.get("knn_cells", None)[:, :, :context_length]
 
         total_loss = 0
         losses = {}
@@ -939,6 +960,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             output = self.forward(
                 gene_pos,
                 expression,
+                neighbors=knn_cells,
                 mask=None,
                 req_depth=total_count,
                 do_mvc=do_mvc,
@@ -971,6 +993,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             # do noise and mask
             if do_denoise:
                 expr = utils.downsample_profile(expression, dropout=0.5, randsamp=True)
+                if knn_cells is not None:
+                    knn_cells = utils.downsample_profile(knn_cells, dropout=i)
             else:
                 expr = expression
             if i == "TF":
@@ -986,6 +1010,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             output = self.forward(
                 gene_pos,
                 expression=expr,
+                neighbors=knn_cells,
                 mask=mask,
                 req_depth=expr.sum(1),
                 do_mvc=do_mvc,
@@ -1014,9 +1039,12 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if do_denoise:
             for i in noise:
                 expr = utils.downsample_profile(expression, dropout=i)
+                if knn_cells is not None:
+                    knn_cells = utils.downsample_profile(knn_cells, dropout=i)
                 output = self.forward(
                     gene_pos,
                     expression=expr,
+                    neighbors=knn_cells,
                     mask=None,
                     depth_mult=expression.sum(1),
                     req_depth=total_count,
@@ -1322,6 +1350,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         gene_pos = batch["genes"]
         depth = batch["depth"]
         metacell_token = batch.get("is_meta", None)
+        knn_cells = batch.get("knn_cells", None)
+
         # TODO: make this faster by only calling val loss
         if self.embs is not None:
             if self.embs.shape[0] < 100_000:
@@ -1330,6 +1360,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     gene_pos,
                     expression,
                     depth,
+                    knn_cells=knn_cells,
                     pred_embedding=self.pred_embedding,
                     max_size_in_mem=120_000,
                     metacell_token=metacell_token,
@@ -1340,6 +1371,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 gene_pos,
                 expression,
                 depth,
+                knn_cells=knn_cells,
                 pred_embedding=self.pred_embedding,
                 max_size_in_mem=120_000,
                 metacell_token=metacell_token,
@@ -1422,6 +1454,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             batch["genes"],
             batch["x"],
             batch["depth"],
+            batch.get("knn_cells", None),
             self.predict_mode,
             self.pred_embedding,
             self.get_attention_layer,
@@ -1433,6 +1466,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         gene_pos,
         expression,
         depth,
+        knn_cells=None,
         predict_mode="none",
         pred_embedding=[],
         get_attention_layer=[],
@@ -1466,6 +1500,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 gene_pos,
                 expression,
                 depth_mult=expression.sum(1),
+                neighbors=knn_cells,
                 req_depth=depth,
                 get_attention_layer=get_attention_layer,
                 do_class=True,
@@ -1482,6 +1517,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 gene_pos,
                 expression,
                 depth_mult=expression.sum(1) * depth_mult,
+                neighbors=knn_cells,
                 req_depth=depth * depth_mult,
                 get_attention_layer=get_attention_layer,
                 do_class=True,
@@ -1497,6 +1533,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             output = self.forward(
                 gene_pos,
                 expression,
+                neighbors=knn_cells,
                 req_depth=depth,
                 do_mvc=False,
                 do_class=False,

@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Optional, Union
+from typing import Callable, Dict, Optional, Union, Tuple
 
 import torch
 from torch import Tensor, nn
@@ -258,3 +258,105 @@ class ClsDecoder(nn.Module):
         """
         x = self.decoder(x)
         return self.out_layer(x)
+
+
+class VAEDecoder(nn.Module):
+    def __init__(
+        self,
+        d_model: int,
+        layers: list[int] = [64, 64],
+        activation: Callable = nn.ReLU,
+        dropout: float = 0.1,
+    ):
+        """
+        VAEDecoder for variational autoencoding of cell embeddings.
+
+        Args:
+            d_model (int): Input dimension (original embedding size)
+            layers (list[int]): List of hidden layer sizes for encoder and decoder
+            activation (Callable): Activation function to use
+            dropout (float): Dropout rate
+        """
+        super(VAEDecoder, self).__init__()
+
+        # Encoder layers
+        encoder_layers = [d_model] + layers
+        self.encoder = nn.Sequential()
+        for i, (in_size, out_size) in enumerate(
+            zip(encoder_layers[:-2], encoder_layers[1:-1])
+        ):
+            self.encoder.append(nn.Linear(in_size, out_size))
+            self.encoder.append(nn.LayerNorm(out_size))
+            self.encoder.append(activation())
+            self.encoder.append(nn.Dropout(dropout))
+
+        # VAE latent parameters
+        self.fc_mu = nn.Linear(encoder_layers[-2], encoder_layers[-1])
+        self.fc_var = nn.Linear(encoder_layers[-2], encoder_layers[-1])
+
+        # Decoder layers
+        decoder_layers = [encoder_layers[-1]] + list(reversed(layers[:-1])) + [d_model]
+        self.decoder = nn.Sequential()
+        for i, (in_size, out_size) in enumerate(
+            zip(
+                decoder_layers[:-1], decoder_layers[1:]
+            )  # Changed to include final layer
+        ):
+            self.decoder.append(nn.Linear(in_size, out_size))
+            if (
+                i < len(decoder_layers) - 2
+            ):  # Don't apply activation/norm to final layer
+                self.decoder.append(nn.LayerNorm(out_size))
+                self.decoder.append(activation())
+                self.decoder.append(nn.Dropout(dropout))
+
+    def reparameterize(self, mu: Tensor, log_var: Tensor) -> Tensor:
+        """
+        Reparameterization trick to sample from N(mu, var) from N(0,1).
+
+        Args:
+            mu (Tensor): Mean of the latent Gaussian
+            log_var (Tensor): Log variance of the latent Gaussian
+
+        Returns:
+            Tensor: Sampled latent vector
+        """
+        std = torch.exp(0.5 * log_var)
+        eps = torch.randn_like(std)
+        return mu + eps * std
+
+    def forward(
+        self, x: Tensor, return_latent: bool = False
+    ) -> Union[Tensor, Tuple[Tensor, Tensor, Tensor]]:
+        """
+        Forward pass through VAE.
+
+        Args:
+            x (Tensor): Input tensor of shape [batch_size, d_model]
+            return_latent (bool): Whether to return the latent vectors
+
+        Returns:
+            If return_latent:
+                Tuple[Tensor, Tensor, Tensor]: (reconstructed_x, mu, log_var) where:
+                    - reconstructed_x has shape [batch_size, d_model]
+                    - mu has shape [batch_size, latent_dim]
+                    - log_var has shape [batch_size, latent_dim]
+            Else:
+                Tensor: reconstructed_x of shape [batch_size, d_model]
+        """
+        # Encode
+        encoded = self.encoder(x)
+
+        # Get latent parameters
+        mu = self.fc_mu(encoded)
+        log_var = self.fc_var(encoded)
+
+        # Sample latent vector
+        z = self.reparameterize(mu, log_var)
+
+        # Decode
+        decoded = self.decoder(z)
+
+        if return_latent:
+            return decoded, mu, log_var
+        return decoded

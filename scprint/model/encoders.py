@@ -4,6 +4,7 @@ from typing import Optional
 import numpy as np
 import torch
 from torch import Tensor, nn
+from torch.nn import functional as F
 
 
 class GeneEncoder(nn.Module):
@@ -236,3 +237,129 @@ class CategoryValueEncoder(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:
         return self.embedding(x.long())  # (batch, seq_len, embsize)
+
+
+from torch_geometric.data import Batch, Data
+from torch_geometric.nn import MLP, GATConv, GCNConv, SAGEConv
+from torch_geometric.nn.aggr import DeepSetsAggregation
+
+
+class GNN(nn.Module):
+    def __init__(
+        self,
+        input_dim: int = 1,  # here, 1 or 2
+        output_dim: int = 256,
+        num_layers: int = 3,
+        dropout: float = 0.1,
+        gnn_type: str = "gcn",
+        add_connection_feature: bool = False,
+    ):
+        """
+        Graph Neural Network model
+
+        Args:
+            input_dim: Dimension of input node features
+            output_dim: Dimension of output node features
+            num_layers: Number of GNN layers
+            dropout: Dropout probability
+            gnn_type: Type of GNN layer ('gcn', 'gat', 'sage', or 'deepset')
+        """
+        super().__init__()
+
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        self.num_layers = num_layers
+        self.dropout = dropout
+        self.gnn_type = gnn_type
+        self.add_connection_feature = add_connection_feature
+
+        if gnn_type == "deepset":
+            # Local MLP (phi) for processing individual nodes
+            self.input_nn_layer = MLP(
+                in_channels=input_dim,
+                hidden_channels=output_dim // 2,
+                out_channels=output_dim // 2,
+                num_layers=2,
+                dropout=dropout,
+                act="relu",
+                norm="layer_norm",
+            )
+
+            self.input_self_layer = MLP(
+                in_channels=input_dim,
+                hidden_channels=output_dim // 2,
+                out_channels=output_dim // 2,
+                num_layers=1,
+                dropout=dropout,
+                act="relu",
+                norm="layer_norm",
+            )
+
+            # Global MLP (rho) for processing aggregated features
+            self.output_layer = MLP(
+                in_channels=output_dim + 1 if add_connection_feature else output_dim,
+                hidden_channels=output_dim,
+                out_channels=output_dim,
+                num_layers=num_layers,
+                dropout=dropout,
+                act="relu",
+                norm="layer_norm",
+            )
+
+            return
+
+        # Select GNN layer type for other architectures
+        else:
+            if gnn_type == "gcn":
+                gnn_layer = GCNConv
+            elif gnn_type == "gat":
+                gnn_layer = GATConv
+            elif gnn_type == "sage":
+                gnn_layer = SAGEConv
+            else:
+                raise ValueError(f"Unknown GNN type: {gnn_type}")
+
+            self.gnn_layer = gnn_layer(
+                output_dim,
+                output_dim,
+                add_self_loops=False,
+                normalize=False,
+                aggr="mean",
+            )
+
+    def forward(self, x, neighbors, edge_info=None, batch=None, mask=None):
+        """
+        Forward pass
+
+        Args:
+            x: Node features [minibatch_size, ngenes]
+            neighbors: Neighbor nodes [minibatch_size, ngenes, n_neighbors] or [minibatch_size, ngenes, n_neighbors, 2]
+            edge_info:
+                - Graph connectivity [2, num_edges] if gnn_type != deepset
+                - Edge features [num_edges, 1] if gnn_type == deepset
+                - None if gnn_type == deepset and no edge features
+            batch: Batch assignment vector [num_nodes]
+
+        Returns:
+            Node embeddings [num_nodes, hidden_dim]
+        """
+
+        # Standard GNN forward pass
+        x = x.unsqueeze(-1)
+        neighbors = neighbors.unsqueeze(-1)
+        if self.gnn_type == "deepset":
+            x = self.input_nn_layer(x)
+            neighbors = self.input_self_layer(neighbors)
+            x = torch.cat([x, neighbors.sum(dim=-3)], dim=-1)
+        else:
+            x = self.gnn_layer(x, edge_info)
+            neighbors = self.gnn_layer(neighbors, edge_info)
+            for layer in self.layers:
+                x = layer(x, edge_info)
+                x = F.relu(x)
+                x = F.dropout(x, p=self.dropout, training=self.training)
+
+        x = self.output_layer(x)
+        if mask is not None:
+            x = x.masked_fill_(mask.unsqueeze(-1), 0)
+        return x

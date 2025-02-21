@@ -60,6 +60,13 @@ class MyCLI(LightningCLI):
         parser.link_arguments(
             "data.num_datasets", "model.num_batch_labels", apply_on="instantiate"
         )
+        # If get_knn_cells is True, set expr_emb_style to "metacell", otherwise keep original value
+        parser.link_arguments(
+            "data.get_knn_cells",
+            "model.expr_emb_style",
+            apply_on="parse",
+            compute_fn=lambda x: "metacell" if x else None,
+        )
         parser.add_argument("--set_float32_matmul_precision", type=bool, default=False)
         parser.add_argument("--wandblog", type=str, default="")
         parser.add_argument("--log_freq", type=int, default=500)
