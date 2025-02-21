@@ -499,6 +499,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 int(os.getenv("SLURM_RESTART_COUNT", 0))
                 + 1
                 + int(os.getenv("MY_SLURM_RESTART_COUNT", 0))
+            )
         except RuntimeError as e:
             if "scPrint is not attached to a `Trainer`." in str(e):
                 print("FYI: scPrint is not attached to a `Trainer`.")
@@ -553,6 +554,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     - (1 if self.use_metacell_token else 0),
                     device=expression.device,
                 ).repeat(expression.shape[0], 1)
+            )
             if timepoint is not None:
                 pass
                 # cell_embs[:, 2, :] = self.time_encoder(timepoint)
@@ -626,6 +628,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     i
                     + (2 if self.depth_atinput else 1)
                     + (1 if self.use_metacell_token else 0)
+                )
                 output["cell_embs"][:, loc, :] = self.bottleneck_mlps[clsname](
                     output["cell_embs"][:, loc, :]
                 )[0]
@@ -635,6 +638,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     i
                     + (2 if self.depth_atinput else 1)
                     + (1 if self.use_metacell_token else 0)
+                )
                 output.update(
                     {
                         "cls_output_" + clsname: self.cls_decoders[clsname](
