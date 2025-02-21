@@ -445,7 +445,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 "the discriminator for batch effect correction has been resized\
                 and re-initiliazed. It will start from scratch during this training if "
             )
-
+        print("callbacks", self.trainer.callbacks)
         # if len(checkpoints["state_dict"]["pos_encoder.pe"].shape) == 3:
         #    self.pos_encoder.pe = checkpoints["state_dict"]["pos_encoder.pe"].squeeze(1)
 
