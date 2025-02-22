@@ -11,12 +11,12 @@ requires-python = ">=3.10, <3.12"
 keywords = ["scRNAseq", "transformer", "GRN", "gene regulatory network", "scPRINT", "large cell model", "foundation model"]
 dependencies = [
     "torch==2.2.0",
-    "lightning>=2.0.0",
-    "lamindb[bionty,jupyter,ourprojects,cellregistry,zarr]==1.0.4",
+    "pytorch-lightning>=2.0.0",
+    "lightning>=2.3.0",
+    "lamindb[bionty,jupyter,ourprojects,cellregistry,zarr]==1.0.5",
     "matplotlib>=3.5.0",
     "seaborn>=0.11.0",
     "ipykernel>=6.20.0",
-    "torchdata>=0.5.0",
     "biomart>=0.9.0",
     "pandas>=2.0.0",
     "leidenalg>=0.10.0",
@@ -43,16 +43,15 @@ dependencies = [
     "docstring-parser>=0.15",
     "wandb>=0.12.0",
     "tensorly>=0.6.0",
-    "torchvision>=0.13.0",
-    "torchaudio>=0.12.0",
-    "torchtext>=0.13.0",
     "numba>=0.56.0",
     "sparse>=0.15.4",
     "bio>=1.7.1",
     "future>=1.0.0",
-    "simpler_flash>=1.0.5",
+    "simpler_flash>=1.0.4",
     "storage3<=0.11.1",
-    "performer-pytorch>=1.0.0",
+    "jupytext>=1.16.0",
+    "torch_geometric>=2.6.0",
+    "torchmetrics>=1.6.0",
 ]
 
 [project.optional-dependencies]
