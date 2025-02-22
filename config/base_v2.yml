@@ -33,7 +33,7 @@ trainer:
         save_last: True
 scprint_training:
   run_full_forward: True
-  noise: [0.6]
+  noise: [0.9]
   do_ecs: True
   do_cce: True
   mask_ratio: ["TF"]
@@ -79,7 +79,7 @@ data:
   max_len: 3200
   pin_memory: True
   prefetch_factor: 3
-  metacell_mode: 0.2
+  metacell_mode: 0
   weight_scaler: 200
   do_gene_pos: ./data/main/biomart_pos.parquet
   add_zero_genes: 0

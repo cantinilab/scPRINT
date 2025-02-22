@@ -50,7 +50,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         attn_bias: str = "none",
         expr_encoder_layers: int = 2,
         transformer: str = "flash",  # "performer", "flash", "normal", "crisscross"
-        expr_emb_style: str = "continuous",  # "binned_pos", "cont_pos"
+        expr_emb_style: str = "continuous",  # "binned_pos", "cont_pos", "metacell", "full_pos"
         domain_spec_batchnorm: str = "None",
         n_input_bins: int = 0,
         num_batch_labels: int = 0,
@@ -992,9 +992,15 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         for i in mask_ratio:
             # do noise and mask
             if do_denoise:
-                expr = utils.downsample_profile(expression, dropout=0.5, randsamp=True)
                 if knn_cells is not None:
-                    knn_cells = utils.downsample_profile(knn_cells, dropout=i)
+                    knn_cells = utils.downsample_profile(
+                        knn_cells, dropout=0.5, randsamp=True
+                    )
+                    expr = expression
+                else:
+                    expr = utils.downsample_profile(
+                        expression, dropout=0.5, randsamp=True
+                    )
             else:
                 expr = expression
             if i == "TF":
@@ -1038,9 +1044,12 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # TASK 3. denoising
         if do_denoise:
             for i in noise:
-                expr = utils.downsample_profile(expression, dropout=i)
+                expr = utils.downsample_profile(expression, dropout=i, randsamp=True)
                 if knn_cells is not None:
-                    knn_cells = utils.downsample_profile(knn_cells, dropout=i)
+                    # knn_cells = utils.downsample_profile(
+                    #    knn_cells, dropout=i, randsamp=True
+                    # )
+                    pass
                 output = self.forward(
                     gene_pos,
                     expression=expr,
