@@ -7,4 +7,3 @@
 
 # run script from above
 eval "srun scprint fit $1" --trainer.default_root_dir ./$SLURM_JOB_ID
-exit 99
