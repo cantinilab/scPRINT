@@ -190,7 +190,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if self.expr_emb_style not in [
             "category",
             "continuous",
-            "none",
             "metacell",
             "full_pos",
         ]:
@@ -277,8 +276,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.expr_encoder = encoders.GNN(
                 1, d_model, expr_encoder_layers, dropout, "deepset"
             )
-        else:
-            self.expr_encoder = torch.nn.Identity()
 
         # Positional Encoding
         if self.gene_pos_enc is not None:
@@ -952,11 +949,15 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         batch_idx = batch.get("dataset", None)
 
         metacell_token = batch.get("is_meta", None)
-        if self.use_metacell_token and metacell_token is None:
-            raise ValueError(
-                "metacell_token is not provided but use_metacell_token is True"
-            )
-        knn_cells = batch.get("knn_cells", None)[:, :, :context_length]
+        if metacell_token is None:
+            if self.use_metacell_token:
+                raise ValueError(
+                    "metacell_token is not provided but use_metacell_token is True"
+                )
+
+        knn_cells = batch.get("knn_cells", None)
+        if knn_cells is not None:
+            knn_cells = knn_cells[:, :, :context_length]
 
         total_loss = 0
         losses = {}

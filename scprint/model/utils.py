@@ -338,22 +338,34 @@ def downsample_profile(mat: Tensor, dropout: float, method="new", randsamp=False
     # here we try to get the scale of the distribution so as to remove the right number of counts from each gene
     # https://genomebiology.biomedcentral.com/articles/10.1186/s13059-022-02601-5#:~:text=Zero%20measurements%20in%20scRNA%2Dseq,generation%20of%20scRNA%2Dseq%20data.
     if randsamp:
-        dropout = torch.rand(mat.shape, device=mat.device) * dropout
+        dropout = torch.rand(mat.shape[0], device=mat.device) * dropout
+        dropout = (
+            dropout.unsqueeze(1)
+            if len(mat.shape) == 2
+            else dropout.unsqueeze(1).unsqueeze(1)
+        )
     if method == "old":
-        totcounts = mat.sum(1)
+        totcounts = mat.sum(-1)
         batch = mat.shape[0]
-        ngenes = mat.shape[1]
+        ngenes = mat.shape[-1]
         tnoise = 1 - (1 - dropout) ** (1 / 2)
         # we model the sampling zeros (dropping 30% of the reads)
         res = torch.poisson(
-            torch.rand((batch, ngenes)).to(device=mat.device)
-            * ((tnoise * totcounts.unsqueeze(1)) / (0.5 * ngenes))
+            torch.rand(mat.shape, device=mat.device)
+            * ((tnoise * totcounts.unsqueeze(-1)) / (0.5 * ngenes))
         ).int()
         # we model the technical zeros (dropping 50% of the genes)
-        drop = (torch.rand((batch, ngenes)) > tnoise).int().to(device=mat.device)
+        drop = (torch.rand(mat.shape, device=mat.device) > tnoise).int()
 
         mat = (mat - res) * drop
-        return torch.maximum(mat, torch.Tensor([[0]]).to(device=mat.device)).int()
+        return torch.maximum(
+            mat,
+            torch.zeros(
+                (1, 1) if len(mat.shape) == 2 else (1, 1, 1),
+                device=mat.device,
+                dtype=torch.int,
+            ),
+        )
     elif method == "jules":
         scaler = (1 - dropout) ** (1 / 2)
         notdrop = (
@@ -367,18 +379,19 @@ def downsample_profile(mat: Tensor, dropout: float, method="new", randsamp=False
         # apply the dropout after the poisson, right?
         return notdrop * torch.poisson(mat * scaler)
     elif method == "new":
-        batch = mat.shape[0]
-        ngenes = mat.shape[1]
         dropout = dropout * 1.1
         # we model the sampling zeros (dropping 30% of the reads)
         res = torch.poisson((mat * (dropout / 2))).int()
         # we model the technical zeros (dropping 50% of the genes)
-        notdrop = (
-            torch.rand((batch, ngenes), device=mat.device) >= (dropout / 2)
-        ).int()
+        notdrop = (torch.rand(mat.shape, device=mat.device) >= (dropout / 2)).int()
         mat = (mat - res) * notdrop
         return torch.maximum(
-            mat, torch.zeros((1, 1), device=mat.device, dtype=torch.int)
+            mat,
+            torch.zeros(
+                (1, 1) if len(mat.shape) == 2 else (1, 1, 1),
+                device=mat.device,
+                dtype=torch.int,
+            ),
         )
     else:
         raise ValueError(f"method {method} not recognized")
