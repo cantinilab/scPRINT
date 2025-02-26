@@ -118,20 +118,19 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.do_denoise = True
         self.noise = [0.6]
         self.do_cce = False
-        self.cce_temp = 0.2
+        self.cce_temp = 0.3
         self.lr = 0.0001
-        self.cce_scale = 0.1
+        self.cce_scale = 0.2
         self.do_ecs = False
         self.ecs_threshold = 0.4
-        self.ecs_scale = 0.1
+        self.ecs_scale = 0.2
         self.do_mvc = False
         self.mvc_scale = 1.0
-        self.class_embd_diss_scale = 0.1
+        self.vae_kl_scale = 0.3
+        self.class_embd_diss_scale = 0.3
         self.do_adv_cls = False
         self.adv_class_scale = 0.1
         self.do_cls = False
-        self.mean_attn_tot = None
-        self.mean_attn_tot_c = 0
         self.do_adv_batch = False
         self.run_full_forward = True
         self.class_scale = 1
@@ -1299,7 +1298,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # Add VAE KL loss if present
         if "vae_kl_loss" in output:
             vae_kl_loss = output["vae_kl_loss"]
-            total_loss += vae_kl_loss  # Scale factor of 0.1 for KL loss
+            total_loss += (
+                self.vae_kl_scale * vae_kl_loss
+            )  # Scale factor of 0.1 for KL loss
             losses.update({"vae_kl": vae_kl_loss})
 
         return losses, total_loss
