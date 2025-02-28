@@ -3,7 +3,6 @@ import os
 import pandas as pd
 import torch
 from torch import load
-from transformers import AutoModel, AutoTokenizer
 
 from scprint.utils.utils import run_command
 
@@ -41,6 +40,10 @@ class ESM2:
         Returns:
             pd.DataFrame: The results of the model as a DataFrame.
         """
+        
+        import pdb
+
+        pdb.set_trace()
         if not os.path.exists(output_folder) or not cache:
             os.makedirs(output_folder, exist_ok=True)
             print("running ESM2")

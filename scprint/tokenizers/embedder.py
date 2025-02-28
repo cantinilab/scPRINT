@@ -8,7 +8,7 @@ from torch.nn import AdaptiveAvgPool1d
 
 from scprint import utils
 
-from . import ESM2
+from .protein_embedder import ESM2
 
 
 def protein_embeddings_generator(
@@ -18,6 +18,7 @@ def protein_embeddings_generator(
     fasta_path: str = "/tmp/data/fasta/",
     embedding_size: int = 512,
     embedder: str = "esm2",  # or glm2
+    cuda: bool = True,
 ):
     """
     protein_embeddings_generator embed a set of genes using fasta file and LLMs
@@ -34,14 +35,17 @@ def protein_embeddings_generator(
     """
     # given a gene file and organism
     # load the organism fasta if not already done
+    import pdb
+
+    pdb.set_trace()
     utils.load_fasta_species(species=organism, output_path=fasta_path, cache=cache)
     # subset the fasta
     fasta_file = next(
         file for file in os.listdir(fasta_path) if file.endswith(".all.fa.gz")
     )
+    utils.utils.run_command(["gunzip", fasta_path + fasta_file])
+    protgenedf = genedf[genedf["biotype"] == "protein_coding"]
     if embedder == "esm2":
-        protgenedf = genedf[genedf["biotype"] == "protein_coding"]
-        utils.utils.run_command(["gunzip", fasta_path + fasta_file])
         utils.subset_fasta(
             protgenedf.index.tolist(),
             subfasta_path=fasta_path + "subset.fa",
@@ -52,6 +56,26 @@ def protein_embeddings_generator(
         prot_embeddings = prot_embedder(
             fasta_path + "subset.fa", output_folder=fasta_path + "esm_out/", cache=cache
         )
+    elif embedder == "esm3":
+        from esm.models.esmc import ESMC
+        from esm.sdk.api import ESMProtein, LogitsConfig
+        from Bio import SeqIO
+
+        prot_embeddings = {}
+        client = ESMC.from_pretrained("esmc_300m").to("cuda" if cuda else "cpu")
+        import pdb
+
+        pdb.set_trace()
+        conf = LogitsConfig(sequence=True, return_embeddings=True)
+        with (
+            open(fasta_path, "r") as fasta,
+        ):
+            for record in SeqIO.parse(fasta, "fasta"):
+                if record.id in protgenedf.index:
+                    protein = ESMProtein(sequence=record.seq)
+                    protein_tensor = client.encode(protein)
+                    logits_output = client.logits(protein_tensor, conf)
+                    prot_embeddings[record.id] = logits_output.embeddings
     else:
         raise ValueError(f"Embedder {embedder} not supported")
     # load the data and erase / zip the rest
