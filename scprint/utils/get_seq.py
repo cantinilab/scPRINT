@@ -5,6 +5,7 @@ from typing import List, Optional, Union
 
 import numpy as np
 from Bio import SeqIO
+import pandas as pd
 
 # Constants
 from gget.constants import ENSEMBL_REST_API, UNIPROT_REST_API
@@ -52,18 +53,20 @@ def load_fasta_species(
             ftp.retrbinary("RETR " + file, local_file.write)
     ftp.cwd("/pub/release-110/fasta/" + species + "/ncrna/")
     file = list_files(ftp, ".ncrna.fa.gz")[0]
-    local_file_path = output_path + file
-    if not os.path.exists(local_file_path) or not cache:
-        with open(local_file_path, "wb") as local_file:
+    local_file_path2 = output_path + file
+    if not os.path.exists(local_file_path2) or not cache:
+        with open(local_file_path2, "wb") as local_file:
             ftp.retrbinary("RETR " + file, local_file.write)
     ftp.quit()
+    return local_file_path, local_file_path2
 
 
 def subset_fasta(
-    gene_tosubset: set,
-    fasta_path: str,
+    gene_tosubset: set = None,
+    fasta_path: str = None,
     subfasta_path: str = "./data/fasta/subset.fa",
     drop_unknown_seq: bool = True,
+    subset_protein_coding: bool = True,
 ) -> set:
     """
     subset_fasta: creates a new fasta file with only the sequence which names contain one of gene_names
@@ -73,7 +76,7 @@ def subset_fasta(
         fasta_path (str): The path to the original FASTA file.
         subfasta_path (str, optional): The path to save the subsetted FASTA file. Defaults to "./data/fasta/subset.fa".
         drop_unknown_seq (bool, optional): If True, drop sequences containing unknown amino acids (denoted by '*'). Defaults to True.
-
+        subset_protein_coding (bool, optional): If True, subset only protein coding genes. Defaults to True.
     Returns:
         set: A set of gene names that were found and included in the subsetted FASTA file.
 
@@ -83,18 +86,29 @@ def subset_fasta(
     dup = set()
     weird = 0
     genes_found = set()
-    gene_tosubset = set(gene_tosubset)
+    gene_tosubset = set(gene_tosubset) if gene_tosubset else []
+    names = []
     with (
         open(fasta_path, "r") as original_fasta,
         open(subfasta_path, "w") as subset_fasta,
     ):
         for record in SeqIO.parse(original_fasta, "fasta"):
             gene_name = (
-                record.description.split(" gene:")[1]
-                .split(" transcript")[0]
-                .split(".")[0]
+                record.description.split(" gene:")[1].split(" ")[0].split(".")[0]
             )
-            if gene_name in gene_tosubset:
+            gene_biotype = record.description.split("gene_biotype:")[1].split(" ")[0]
+            if "gene_symbol:" not in record.description:
+                gene_symbol = gene_name
+            else:
+                gene_symbol = record.description.split("gene_symbol:")[1].split(" ")[0]
+            if "description:" not in record.description:
+                description = ""
+            else:
+                description = record.description.split("description:")[1]
+            names.append([gene_name, gene_biotype, record.id, gene_symbol, description])
+            if subset_protein_coding and gene_biotype != "protein_coding":
+                continue
+            if len(gene_tosubset) == 0 or gene_name in gene_tosubset:
                 if drop_unknown_seq:
                     if "*" in record.seq:
                         weird += 1
@@ -111,7 +125,9 @@ def subset_fasta(
                 genes_found.add(gene_name)
     print(len(dup), " genes had duplicates")
     print("dropped", weird, "weird sequences")
-    return genes_found
+    return genes_found, pd.DataFrame(
+        names, columns=["name", "biotype", "ensembl_id", "gene_symbol", "description"]
+    )
 
 
 def seq(
