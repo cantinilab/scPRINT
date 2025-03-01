@@ -34,6 +34,7 @@ dependencies = [
     "gget>=0.2.0",
     "hdbscan>=0.8.36",
     "fair-esm>=0.5.0",
+    "esm==3.1.2",
     "hydra-core>=1.1.0",
     "pynndescent>=0.5.11",
     "einops>=0.3.0",

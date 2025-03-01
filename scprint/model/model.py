@@ -235,11 +235,15 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 )
                 print("number of genes: ", len(embeddings))
             sembeddings = torch.nn.AdaptiveAvgPool1d(d_model)(
-                torch.tensor(embeddings.values)
+                torch.tensor(embeddings.values, dtype=torch.float32)
             )
 
             base_encoder = encoders.GeneEncoder(
-                len(self.vocab), d_model, weights=sembeddings, freeze=freeze_embeddings
+                len(self.vocab),
+                d_model,
+                # weights_file=precpt_gene_emb,
+                weights=sembeddings,
+                freeze=freeze_embeddings,
             )
 
             if finetune_gene_emb:
@@ -450,12 +454,30 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             )
         # if len(checkpoints["state_dict"]["pos_encoder.pe"].shape) == 3:
         #    self.pos_encoder.pe = checkpoints["state_dict"]["pos_encoder.pe"].squeeze(1)
-
         self.normalization = checkpoints["hyper_parameters"].get("normalization", "sum")
+        if (
+            checkpoints["state_dict"].get("gene_encoder.0.embedding.weight", None)
+            is not None
+        ):
+            # replace it with the new one gene_encoder.0.embeddings.weight in the state_dict
+            checkpoints["state_dict"]["gene_encoder.0.embeddings.weight"] = checkpoints[
+                "state_dict"
+            ]["gene_encoder.0.embedding.weight"]
+            del checkpoints["state_dict"]["gene_encoder.0.embedding.weight"]
+        if (
+            checkpoints["state_dict"].get("gene_encoder.embedding.weight", None)
+            is not None
+        ):
+            # replace it with the new one gene_encoder.embeddings.weight in the state_dict
+            checkpoints["state_dict"]["gene_encoder.embeddings.weight"] = checkpoints[
+                "state_dict"
+            ]["gene_encoder.embedding.weight"]
+            del checkpoints["state_dict"]["gene_encoder.embedding.weight"]
+
         if "classes" in checkpoints["hyper_parameters"]:
-            if self.classes != checkpoints["hyper_parameters"]["classes"]:
+            if self.label_counts != checkpoints["hyper_parameters"]["classes"]:
                 print("changing the number of classes, could lead to issues")
-                self.label_counts = checkpoints["hyper_parameters"]["label_counts"]
+                self.label_counts = checkpoints["hyper_parameters"]["classes"]
                 self.classes = list(checkpoints["hyper_parameters"]["classes"].keys())
             self.label_decoders = checkpoints["hyper_parameters"]["label_decoders"]
             self.labels_hierarchy = checkpoints["hyper_parameters"]["labels_hierarchy"]
@@ -475,7 +497,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 )
         mencoders = {}
         try:
-            print("callbacks", self.trainer.callbacks)
             if self.trainer.datamodule.decoders != self.label_decoders:
                 # if we don't have the same decoders, we need to update the one on the datamodule side
                 for k, v in checkpoints["hyper_parameters"]["label_decoders"].items():

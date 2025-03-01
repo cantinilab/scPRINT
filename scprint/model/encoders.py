@@ -14,38 +14,97 @@ class GeneEncoder(nn.Module):
         embedding_dim: int,
         padding_idx: Optional[int] = None,
         weights: Optional[Tensor] = None,
+        weights_file: Optional[str] = None,
         freeze: bool = False,
     ):
         """
         Encodes gene sequences into a continuous vector space using an embedding layer.
-
-        The output is then normalized using a LayerNorm.
+        Uses memory mapping for efficient access to large embedding files.
 
         Args:
-            num_embeddings (int): The number of possible values.
-            embedding_dim (int): The dimension of the output vectors.
-            padding_idx (int, optional): The index of the padding token. Defaults to None.
-            weights (Tensor, optional): The initial weights for the embedding layer. Defaults to None.
-            dropout (float, optional): The dropout rate to apply to the output of the positional encoding. Defaults to 0.1.
-            freeze (bool, optional): Whether to freeze the weights of the embedding layer. Defaults to False.
-
-        Note: not used in the current version of scprint.
+            num_embeddings (int): The number of possible values
+            embedding_dim (int): The dimension of the output vectors
+            padding_idx (int, optional): The index of the padding token
+            weights (Tensor, optional): The initial weights for the embedding layer
+            weights_file (str, optional): Path to parquet file containing embeddings
+            freeze (bool, optional): Whether to freeze the weights of the embedding layer
         """
         super(GeneEncoder, self).__init__()
-        self.embedding = nn.Embedding(
-            num_embeddings, embedding_dim, padding_idx=padding_idx, _freeze=freeze
-        )
+        self.embedding_dim = embedding_dim
 
-        if weights is not None:
-            # concat a zero vector to the weight
-            # this is to make the embedding of the padding token to be zero
-            # weights = torch.cat(
-            #    [torch.Tensor(weights), torch.zeros(1, embedding_dim)], dim=0
-            # )
-            self.embedding.weight.data.copy_(torch.Tensor(weights))
+        if weights_file is not None:
+            self.memmap = True
+            if freeze:
+                raise ValueError(
+                    "freeze must be False when using memory-mapped embeddings"
+                )
+            # Load the parquet file and create memory-mapped array
+            import pandas as pd
+            import os
+
+            # Create memory-mapped file path
+            self.mmap_file = f"{weights_file}.mmap"
+
+            # Only create the memory-mapped file if it doesn't exist
+            if not os.path.exists(self.mmap_file):
+                print(f"Creating memory-mapped file for embeddings at {self.mmap_file}")
+                df = pd.read_parquet(weights_file)
+                embeddings = torch.nn.AdaptiveAvgPool1d(self.embedding_dim)(
+                    torch.tensor(df.values)
+                )
+
+                # Create memory-mapped array
+                self.embeddings = np.memmap(
+                    self.mmap_file, dtype="float32", mode="w+", shape=embeddings.shape
+                )
+                # Copy data to memory-mapped array
+                self.embeddings[:] = embeddings.numpy()
+                #
+                self.embeddings.flush()
+
+                # Clean up memory
+                del df
+                del embeddings
+            else:
+                print(
+                    f"Loading existing memory-mapped embeddings from {self.mmap_file}"
+                )
+                # Load existing memory-mapped file
+                self.embeddings = np.memmap(
+                    self.mmap_file,
+                    dtype="float32",
+                    mode="r",  # Read-only mode since we don't need to modify
+                    shape=(num_embeddings, embedding_dim),
+                )
+        else:
+            self.memmap = False
+            self.embeddings = nn.Embedding(
+                num_embeddings, embedding_dim, padding_idx=padding_idx, _freeze=freeze
+            )
+            if weights is not None:
+                self.embeddings.weight.data.copy_(torch.Tensor(weights))
 
     def forward(self, x: Tensor) -> Tensor:
-        return self.embedding(x)  # (batch, seq_len, embsize)
+        """
+        Forward pass of the encoder.
+
+        Args:
+            x (Tensor): Input tensor of indices [batch_size, seq_len]
+
+        Returns:
+            Tensor: Embedded vectors [batch_size, seq_len, embedding_dim]
+        """
+        if self.memmap:
+            # Use .copy() to ensure we get a clean copy from the memory-mapped array
+            return torch.from_numpy(self.embeddings[x].copy()).to(x.device)
+
+        else:
+            return self.embeddings(x)
+
+    def __del__(self):
+        """Cleanup method to ensure proper handling of memory-mapped file."""
+        if hasattr(self, "embeddings") and self.embeddings is not None:
+            self.embeddings._mmap.close()
 
 
 class PositionalEncoding(nn.Module):
