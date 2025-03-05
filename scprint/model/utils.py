@@ -9,6 +9,7 @@ import bionty as bt
 import numpy as np
 import pandas as pd
 import scanpy as sc
+from scipy.sparse import csr_matrix
 import torch
 from anndata import AnnData
 from matplotlib import pyplot as plt
@@ -27,140 +28,135 @@ FILEDIR = os.path.dirname(os.path.realpath(__file__))
 
 
 def make_adata(
+    pos: Tensor,
+    expr_pred: Tensor,
+    genes: List[str],
     embs: Tensor,
-    labels: List[str],
+    classes: List[str],
     pred: Tensor = None,
     attention: Optional[Tensor] = None,
-    step: int = 0,
     label_decoders: Optional[Dict] = None,
     labels_hierarchy: Dict = {},
     gtclass: Optional[Tensor] = None,
-    name: str = "",
-    mdir: str = "/tmp",
     doplot: bool = True,
 ):
     """
     This function creates an AnnData object from the given input parameters.
 
     Args:
+        pos (torch.Tensor): Positions of the cells. The shape of the tensor is (n_cells,).
+        expr_pred (torch.Tensor): Predicted expression. The shape of the tensor is (n_cells, n_genes).
+        genes (list): List of genes.
         embs (torch.Tensor): Embeddings of the cells. The shape of the tensor is (n_cells, n_features).
-        labels (list): List of labels for the predicted classes.
+        classes (list): List of classes.
         pred (torch.Tensor, optional): Predicted labels. The shape of the tensor is (n_cells, n_classes). Default is None.
         attention (torch.Tensor, optional): Attention weights. Default is None.
-        step (int, optional): Step number for storing the AnnData without overwriting others. Default is 0.
         label_decoders (dict, optional): Dictionary to map class codes to class names. Default is None.
         labels_hierarchy (dict, optional): Dictionary representing the hierarchy of labels. Default is {}.
         gtclass (torch.Tensor, optional): Ground truth class. Default is None.
-        name (str, optional): Name of the AnnData object. Default is an empty string.
-        mdir (str, optional): Directory to save the AnnData object. Default is "/tmp".
         doplot (bool, optional): Whether to generate plots. Default is True.
 
     Returns:
         anndata.AnnData: The created AnnData object.
     """
-    colname = ["pred_" + i for i in labels]
-    if pred is not None:
-        obs = np.array(pred.to(device="cpu", dtype=torch.int32))
-        # label decoders is not cls_decoders. one is a dict to map class codes (ints)
-        # to class names the other is the module the predict the class
+    colname = ["pred_" + i for i in classes]
+    obs = np.array(pred.to(device="cpu", dtype=torch.int32))
+    # label decoders is not cls_decoders. one is a dict to map class codes (ints)
+    # to class names the other is the module the predict the class
+    if label_decoders is not None:
+        obs = np.array(
+            [
+                [label_decoders[labels[i]][n] for n in name]
+                for i, name in enumerate(obs.T)
+            ]
+        ).T
+
+    if gtclass is not None:
+        colname += labels
+        nobs = np.array(gtclass.to(device="cpu", dtype=torch.int32))
         if label_decoders is not None:
-            obs = np.array(
+            nobs = np.array(
                 [
                     [label_decoders[labels[i]][n] for n in name]
-                    for i, name in enumerate(obs.T)
+                    for i, name in enumerate(nobs.T)
                 ]
             ).T
+        obs = np.hstack([obs, nobs])
 
+    size = len(genes)
+    n_cells = pos.shape[0]
+
+    # Create empty array with same shape as expr_pred[0]
+    mu_array = np.zeros((n_cells, size))
+    # Fill array with values from expr_pred[0]
+    for idx in range(n_cells):
+        mu_array[idx, pos[idx]] = expr_pred[0][idx].cpu().numpy()
+    layers = {
+        "scprint_mu": csr_matrix(mu_array),
+    }
+    if len(expr_pred) > 1:
+        theta_array = np.zeros((n_cells, size))
+        # Fill array with values from expr_pred[0]
+        for idx in range(n_cells):
+            theta_array[idx, pos[idx]] = expr_pred[1][idx].cpu().numpy()
+        layers["scprint_theta"] = csr_matrix(theta_array)
+
+        pi_array = np.zeros((n_cells, size))
+        # Fill array with values from expr_pred[0]
+        for idx in range(n_cells):
+            pi_array[idx, pos[idx]] = expr_pred[2][idx].cpu().numpy()
+        layers["scprint_pi"] = csr_matrix(pi_array)
+
+    adata = AnnData(
+        X=csr_matrix(mu_array.shape),
+        layers=layers,
+        obs=pd.DataFrame(
+            obs,
+            columns=colname,
+        ),
+    )
+    adata.obsm["scprint_emb"] = (np.array(embs.to(device="cpu", dtype=torch.float32)),)
+    adata.var_names = genes
+    accuracy = {}
+    for label in labels:
         if gtclass is not None:
-            colname += labels
-            nobs = np.array(gtclass.to(device="cpu", dtype=torch.int32))
-            if label_decoders is not None:
-                nobs = np.array(
-                    [
-                        [label_decoders[labels[i]][n] for n in name]
-                        for i, name in enumerate(nobs.T)
-                    ]
-                ).T
-            obs = np.hstack([obs, nobs])
-
-        adata = AnnData(
-            np.array(embs.to(device="cpu", dtype=torch.float32)),
-            obs=pd.DataFrame(
-                obs,
-                columns=colname,
-            ),
-        )
-        accuracy = {}
-        for label in labels:
-            if gtclass is not None:
-                tr = translate(adata.obs[label].tolist(), label)
-                if tr is not None:
-                    adata.obs["conv_" + label] = adata.obs[label].replace(tr)
-            tr = translate(adata.obs["pred_" + label].tolist(), label)
+            tr = translate(adata.obs[label].tolist(), label)
             if tr is not None:
-                adata.obs["conv_pred_" + label] = adata.obs["pred_" + label].replace(tr)
-            res = []
-            if label_decoders is not None and gtclass is not None:
-                class_topred = label_decoders[label].values()
-                if label in labels_hierarchy:
-                    cur_labels_hierarchy = {
-                        label_decoders[label][k]: [label_decoders[label][i] for i in v]
-                        for k, v in labels_hierarchy[label].items()
-                    }
-                else:
-                    cur_labels_hierarchy = {}
-                for pred, true in adata.obs[["pred_" + label, label]].values:
-                    if pred == true:
-                        res.append(True)
-                        continue
-                    if len(labels_hierarchy) > 0:
-                        if true in cur_labels_hierarchy:
-                            res.append(pred in cur_labels_hierarchy[true])
-                        elif true not in class_topred:
-                            raise ValueError(
-                                f"true label {true} not in available classes"
-                            )
-                        elif true != "unknown":
-                            res.append(False)
+                adata.obs["conv_" + label] = adata.obs[label].replace(tr)
+        tr = translate(adata.obs["pred_" + label].tolist(), label)
+        if tr is not None:
+            adata.obs["conv_pred_" + label] = adata.obs["pred_" + label].replace(tr)
+        res = []
+        if label_decoders is not None and gtclass is not None:
+            class_topred = label_decoders[label].values()
+            if label in labels_hierarchy:
+                cur_labels_hierarchy = {
+                    label_decoders[label][k]: [label_decoders[label][i] for i in v]
+                    for k, v in labels_hierarchy[label].items()
+                }
+            else:
+                cur_labels_hierarchy = {}
+            for pred, true in adata.obs[["pred_" + label, label]].values:
+                if pred == true:
+                    res.append(True)
+                    continue
+                if len(labels_hierarchy) > 0:
+                    if true in cur_labels_hierarchy:
+                        res.append(pred in cur_labels_hierarchy[true])
                     elif true not in class_topred:
                         raise ValueError(f"true label {true} not in available classes")
                     elif true != "unknown":
                         res.append(False)
-                    else:
-                        pass
-                accuracy["pred_" + label] = sum(res) / len(res) if len(res) > 0 else 0
-        adata.obs = adata.obs.astype("category")
-    else:
-        adata = AnnData(
-            np.array(embs.to(device="cpu", dtype=torch.float32)),
-        )
-    if False:
-        adata.varm["Qs"] = (
-            attention[:, :, 0, :, :]
-            .permute(1, 3, 0, 2)
-            .view(
-                attention.shape[0],
-                attention.shape[1],
-                attention.shape[3] * attention.shape[4],
-            )
-            .detach()
-            .cpu()
-            .numpy()
-        )
-        adata.varm["Ks"] = (
-            attention[:, :, 1, :, :]
-            .permute(1, 3, 0, 2)
-            .view(
-                attention.shape[0],
-                attention.shape[1],
-                attention.shape[3] * attention.shape[4],
-            )
-            .detach()
-            .cpu()
-            .numpy()
-        )
+                elif true not in class_topred:
+                    raise ValueError(f"true label {true} not in available classes")
+                elif true != "unknown":
+                    res.append(False)
+                else:
+                    pass
+            accuracy["pred_" + label] = sum(res) / len(res) if len(res) > 0 else 0
+    adata.obs = adata.obs.astype("category")
     print(adata)
-    if doplot and adata.shape[0] > 100 and pred is not None:
+    if doplot and adata.shape[0] > 100:
         sc.pp.neighbors(adata, use_rep="X")
         sc.tl.umap(adata)
         sc.tl.leiden(adata, key_added="sprint_leiden")
@@ -254,7 +250,6 @@ def make_adata(
         plt.show()
     else:
         fig = None
-    adata.write(mdir + "/step_" + str(step) + "_" + name + ".h5ad")
     return adata, fig
 
 

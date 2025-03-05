@@ -1764,17 +1764,29 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if not os.path.exists(mdir):
             os.makedirs(mdir)
         adata, fig = utils.make_adata(
-            self.embs,
-            self.classes,
-            self.pred if not self.keep_all_cls_pred else None,
-            self.attn.get(),
-            self.global_step,
-            self.label_decoders,
-            self.labels_hierarchy,
-            gtclass,
-            self.name + "_" + name + "_" + str(self.global_rank),
-            mdir,
-            self.doplot,
+            pos=self.pos,
+            expr_pred=self.expr_pred,
+            genes=self.genes,
+            embs=self.embs,
+            classes=self.classes,
+            pred=self.pred,
+            attention=self.attn.get(),
+            label_decoders=self.label_decoders,
+            labels_hierarchy=self.labels_hierarchy,
+            gtclass=gtclass,
+            doplot=self.doplot,
+        )
+        adata.write(
+            mdir
+            + "/step_"
+            + str(self.global_step)
+            + "_"
+            + self.name
+            + "_"
+            + name
+            + "_"
+            + str(self.global_rank)
+            + ".h5ad"
         )
         if self.doplot:
             try:

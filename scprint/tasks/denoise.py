@@ -7,7 +7,7 @@ import numpy as np
 import scanpy as sc
 import sklearn.metrics
 import torch
-from anndata import AnnData
+from anndata import AnnData, concat
 from scdataloader import Collator, Preprocessor
 from scdataloader.data import SimpleAnnDataset
 from scipy.sparse import issparse
@@ -137,19 +137,34 @@ class Denoiser:
                     depth_mult=self.predict_depth_mult,
                 )
         torch.cuda.empty_cache()
-        self.genes = (
-            model.pos.cpu().numpy()
-            if self.how != "most var"
-            else list(set(model.genes) & set(self.genelist))
-        )
+        model.log_adata(name="predict_part_" + str(model.counter))
+        try:
+            mdir = (
+                model.logger.save_dir if model.logger.save_dir is not None else "data"
+            )
+        except:
+            mdir = "data"
+        pred_adata = []
+        for i in range(model.counter + 1):
+            file = (
+                mdir
+                + "/step_"
+                + str(model.global_step)
+                + "_"
+                + model.name
+                + "_predict_part_"
+                + str(i)
+                + "_"
+                + str(model.global_rank)
+                + ".h5ad"
+            )
+            pred_adata.append(sc.read_h5ad(file))
+        pred_adata = concat(pred_adata)
         tokeep = None
         metrics = None
         if self.downsample is not None:
-            reco = model.expr_pred[0]
-            reco = reco.cpu().numpy()
-            tokeep = np.isnan(reco).sum(1) == 0
-            reco = reco[tokeep]
-            noisy = np.loadtxt(f"collator_output_{num}.txt")[tokeep]
+            tokeep = pred_adata.layers["scprint_mu"] == 0
+            noisy = np.loadtxt(f"collator_output_{num}.txt")
             os.remove(f"collator_output_{num}.txt")
 
             if random_indices is not None:

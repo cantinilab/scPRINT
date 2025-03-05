@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import scanpy as sc
 import torch
-from anndata import AnnData
+from anndata import AnnData, concat
 from lightning.pytorch import Trainer
 from networkx import average_node_connectivity
 from scdataloader import Collator, Preprocessor
@@ -88,7 +88,6 @@ class Embedder:
         Args:
             model (torch.nn.Module): The scPRINT model to be used for embedding and annotation.
             adata (AnnData): The annotated data matrix of shape n_obs x n_vars. Rows correspond to cells and columns to genes.
-            cache (bool, optional): Whether to use cached results if available. Defaults to False.
 
         Raises:
             ValueError: If the model does not have a logger attribute.
@@ -101,86 +100,62 @@ class Embedder:
             dict: Additional metrics and information from the embedding process.
         """
         # one of "all" "sample" "none"
+        model.predict_mode = "none"
+        model.keep_all_cls_pred = self.keep_all_cls_pred
+        # Add at least the organism you are working with
+        if self.how == "most var":
+            sc.pp.highly_variable_genes(
+                adata, flavor="seurat_v3", n_top_genes=self.max_len
+            )
+            self.genelist = adata.var.index[adata.var.highly_variable]
+        adataset = SimpleAnnDataset(adata, obs_to_output=["organism_ontology_term_id"])
+        col = Collator(
+            organisms=model.organisms,
+            valid_genes=model.genes,
+            how=self.how if self.how != "most var" else "some",
+            max_len=self.max_len,
+            add_zero_genes=self.add_zero_genes,
+            genelist=self.genelist if self.how in ["most var", "some"] else [],
+        )
+        dataloader = DataLoader(
+            adataset,
+            collate_fn=col,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=False,
+        )
+        model.eval()
+        model.on_predict_epoch_start()
+        device = model.device.type
+        model.doplot = self.doplot
+        with (
+            torch.no_grad(),
+            torch.autocast(device_type=device, dtype=self.dtype),
+        ):
+            for batch in tqdm(dataloader):
+                gene_pos, expression, depth = (
+                    batch["genes"].to(device),
+                    batch["x"].to(device),
+                    batch["depth"].to(device),
+                )
+                model._predict(
+                    gene_pos,
+                    expression,
+                    depth,
+                    predict_mode="none",
+                    pred_embedding=self.pred_embedding,
+                    get_gene_emb=self.get_gene_emb,
+                )
+                torch.cuda.empty_cache()
+        model.log_adata(name="predict_part_" + str(model.counter))
         try:
             mdir = (
                 model.logger.save_dir if model.logger.save_dir is not None else "data"
             )
         except:
             mdir = "data"
-        try:
-            file = (
-                mdir
-                + "/step_"
-                + str(model.global_step)
-                + "_predict_part_"
-                + str(model.counter)
-                + "_"
-                + str(model.global_rank)
-                + ".h5ad"
-            )
-            hasfile = os.path.exists(file)
-        except:
-            hasfile = False
-
-        if not cache or not hasfile:
-            model.predict_mode = "none"
-            model.keep_all_cls_pred = self.keep_all_cls_pred
-            # Add at least the organism you are working with
-            if self.how == "most var":
-                sc.pp.highly_variable_genes(
-                    adata, flavor="seurat_v3", n_top_genes=self.max_len
-                )
-                self.genelist = adata.var.index[adata.var.highly_variable]
-            adataset = SimpleAnnDataset(
-                adata, obs_to_output=["organism_ontology_term_id"]
-            )
-            col = Collator(
-                organisms=model.organisms,
-                valid_genes=model.genes,
-                how=self.how if self.how != "most var" else "some",
-                max_len=self.max_len,
-                add_zero_genes=self.add_zero_genes,
-                genelist=self.genelist if self.how in ["most var", "some"] else [],
-            )
-            dataloader = DataLoader(
-                adataset,
-                collate_fn=col,
-                batch_size=self.batch_size,
-                num_workers=self.num_workers,
-                shuffle=False,
-            )
-            model.eval()
-            model.on_predict_epoch_start()
-            device = model.device.type
-            model.doplot = self.doplot
-            with (
-                torch.no_grad(),
-                torch.autocast(device_type=device, dtype=self.dtype),
-            ):
-                for batch in tqdm(dataloader):
-                    gene_pos, expression, depth = (
-                        batch["genes"].to(device),
-                        batch["x"].to(device),
-                        batch["depth"].to(device),
-                    )
-                    model._predict(
-                        gene_pos,
-                        expression,
-                        depth,
-                        predict_mode="none",
-                        pred_embedding=self.pred_embedding,
-                        get_gene_emb=self.get_gene_emb,
-                    )
-                    torch.cuda.empty_cache()
-            model.log_adata(name="predict_part_" + str(model.counter))
-            try:
-                mdir = (
-                    model.logger.save_dir
-                    if model.logger.save_dir is not None
-                    else "data"
-                )
-            except:
-                mdir = "data"
+        pred_adata = []
+        for i in range(model.counter + 1):
             file = (
                 mdir
                 + "/step_"
@@ -188,45 +163,23 @@ class Embedder:
                 + "_"
                 + model.name
                 + "_predict_part_"
-                + str(model.counter)
+                + str(i)
                 + "_"
                 + str(model.global_rank)
                 + ".h5ad"
             )
-
-        pred_adata = sc.read_h5ad(file)
-        if self.output_expression == "all":
-            adata.obsm["scprint_mu"] = model.expr_pred[0]
-            adata.obsm["scprint_theta"] = model.expr_pred[1]
-            adata.obsm["scprint_pi"] = model.expr_pred[2]
-            adata.obsm["scprint_pos"] = model.pos.cpu().numpy()
-        elif self.output_expression == "sample":
-            adata.obsm["scprint_expr"] = (
+            pred_adata.append(sc.read_h5ad(file))
+        pred_adata = concat(pred_adata)
+        if self.output_expression == "sample":
+            adata.layers["sampled"] = (
                 utils.zinb_sample(
-                    model.expr_pred[0],
-                    model.expr_pred[1],
-                    model.expr_pred[2],
+                    torch.from_numpy(pred_adata.layers["scprint_mu"]),
+                    torch.from_numpy(pred_adata.layers["scprint_theta"]),
+                    torch.from_numpy(pred_adata.layers["scprint_pi"]),
                 )
                 .cpu()
                 .numpy()
             )
-            adata.obsm["scprint_pos"] = model.pos.cpu().numpy()
-        elif self.output_expression == "old":
-            expr = np.array(model.expr_pred[0])
-            expr[
-                np.random.binomial(
-                    1,
-                    p=np.array(
-                        torch.nn.functional.sigmoid(
-                            model.expr_pred[2].to(torch.float32)
-                        )
-                    ),
-                ).astype(bool)
-            ] = 0
-            expr[expr <= 0.3] = 0
-            expr[(expr >= 0.3) & (expr <= 1)] = 1
-            adata.obsm["scprint_expr"] = expr.astype(int)
-            adata.obsm["scprint_pos"] = model.pos.cpu().numpy()
         else:
             pass
         pred_adata.obs.index = adata.obs.index
