@@ -54,7 +54,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         domain_spec_batchnorm: str = "None",
         n_input_bins: int = 0,
         num_batch_labels: int = 0,
-        label_counts: Dict[str, int] = {},
         mvc_decoder: str = "None",
         pred_embedding: list[str] = [],
         label_counts: Dict[str, int] = {},
@@ -1439,6 +1438,17 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             else None
         )
         self.pos = self.all_gather(self.pos).view(-1, self.pos.shape[-1])
+        self.expr_pred[0] = self.all_gather(self.expr_pred[0]).view(
+            -1, self.expr_pred[0].shape[-1]
+        )
+        if len(self.expr_pred) > 1:
+            self.expr_pred[1] = self.all_gather(self.expr_pred[1]).view(
+                -1, self.expr_pred[1].shape[-1]
+            )
+            self.expr_pred[2] = self.all_gather(self.expr_pred[2]).view(
+                -1, self.expr_pred[2].shape[-1]
+            )
+
         if self.trainer.state.stage != "sanity_check":
             if self.trainer.is_global_zero:
                 print("logging anndata")

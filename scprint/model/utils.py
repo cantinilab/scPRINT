@@ -85,7 +85,6 @@ def make_adata(
     size = len(genes)
     n_cells = pos.shape[0]
     pos = pos.cpu().numpy()
-
     # Create empty array with same shape as expr_pred[0]
     mu_array = np.zeros((n_cells, size))
     # Fill array with values from expr_pred[0]
