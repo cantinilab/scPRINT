@@ -9,12 +9,13 @@ class TrainingMode(Callback):
         do_denoise: bool = True,
         noise: List[float] = [0.6],
         do_cce: bool = False,
-        cce_temp: float = 0.2,  # .6
-        cce_scale: float = 0.1,  # .01
+        cce_temp: float = 0.3,  # .6
+        cce_scale: float = 0.2,  # .01
         do_ecs: bool = False,
         ecs_threshold: float = 0.4,
-        class_embd_diss_scale: float = 0.1,
-        ecs_scale: float = 0.1,  # .1
+        class_embd_diss_scale: float = 0.3,
+        ecs_scale: float = 0.2,  # .1
+        vae_kl_scale: float = 0.3,
         do_mvc: bool = False,
         mvc_scale: float = 1.0,
         do_adv_cls: bool = False,
@@ -22,7 +23,7 @@ class TrainingMode(Callback):
         do_generate: bool = True,
         class_scale: float = 1,
         mask_ratio: List[float | str] = [],  # 0.3
-        test_every: int = 20,
+        test_every: int = 5,
         warmup_duration: int = 500,
         fused_adam: bool = False,
         adv_class_scale: float = 0.1,
@@ -81,6 +82,7 @@ class TrainingMode(Callback):
             var_context_length (bool): Whether to use variable context length. Defaults to False.
             dropout (float): Dropout rate for the model. Defaults to 0.1.
             set_step (int, optional): Set the global step for the model. Defaults to None.
+            vae_kl_scale (float): Scaling factor for the VAE KL loss. Defaults to 0.3.
         """
         super().__init__()
         self.do_denoise = do_denoise
@@ -92,6 +94,7 @@ class TrainingMode(Callback):
         self.ecs_threshold = ecs_threshold
         self.ecs_scale = ecs_scale
         self.do_mvc = do_mvc
+        self.vae_kl_scale = vae_kl_scale
         self.do_adv_cls = do_adv_cls
         self.do_next_tp = do_next_tp
         self.do_generate = do_generate
@@ -134,6 +137,7 @@ class TrainingMode(Callback):
             f"lr={self.lr},"
             f"optim={self.optim},"
             f"weight_decay={self.weight_decay},"
+            f"vae_kl_scale={self.vae_kl_scale},"
             f"do_adv_cls={self.do_adv_cls}, "
             f"adv_class_scale={self.adv_class_scale}, "
             f"do_next_tp={self.do_next_tp}, "
@@ -172,6 +176,7 @@ class TrainingMode(Callback):
         model.do_adv_cls = self.do_adv_cls
         model.do_next_tp = self.do_next_tp
         model.class_scale = self.class_scale
+        model.vae_kl_scale = self.vae_kl_scale
         model.mask_ratio = self.mask_ratio
         model.warmup_duration = self.warmup_duration
         model.fused_adam = self.fused_adam
