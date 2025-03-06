@@ -66,18 +66,17 @@ def make_adata(
     if label_decoders is not None:
         obs = np.array(
             [
-                [label_decoders[labels[i]][n] for n in name]
+                [label_decoders[classes[i]][n] for n in name]
                 for i, name in enumerate(obs.T)
             ]
         ).T
-
     if gtclass is not None:
-        colname += labels
+        colname += classes
         nobs = np.array(gtclass.to(device="cpu", dtype=torch.int32))
         if label_decoders is not None:
             nobs = np.array(
                 [
-                    [label_decoders[labels[i]][n] for n in name]
+                    [label_decoders[classes[i]][n] for n in name]
                     for i, name in enumerate(nobs.T)
                 ]
             ).T
@@ -85,6 +84,7 @@ def make_adata(
 
     size = len(genes)
     n_cells = pos.shape[0]
+    pos = pos.cpu().numpy()
 
     # Create empty array with same shape as expr_pred[0]
     mu_array = np.zeros((n_cells, size))
@@ -93,6 +93,7 @@ def make_adata(
         mu_array[idx, pos[idx]] = expr_pred[0][idx].cpu().numpy()
     layers = {
         "scprint_mu": csr_matrix(mu_array),
+        #  "used_scprint": csr_matrix(pos),
     }
     if len(expr_pred) > 1:
         theta_array = np.zeros((n_cells, size))
@@ -115,28 +116,28 @@ def make_adata(
             columns=colname,
         ),
     )
-    adata.obsm["scprint_emb"] = (np.array(embs.to(device="cpu", dtype=torch.float32)),)
+    adata.obsm["scprint_emb"] = embs.cpu().numpy()
     adata.var_names = genes
     accuracy = {}
-    for label in labels:
+    for clss in classes:
         if gtclass is not None:
-            tr = translate(adata.obs[label].tolist(), label)
+            tr = translate(adata.obs[clss].tolist(), clss)
             if tr is not None:
-                adata.obs["conv_" + label] = adata.obs[label].replace(tr)
-        tr = translate(adata.obs["pred_" + label].tolist(), label)
+                adata.obs["conv_" + clss] = adata.obs[clss].replace(tr)
+        tr = translate(adata.obs["pred_" + clss].tolist(), clss)
         if tr is not None:
-            adata.obs["conv_pred_" + label] = adata.obs["pred_" + label].replace(tr)
+            adata.obs["conv_pred_" + clss] = adata.obs["pred_" + clss].replace(tr)
         res = []
         if label_decoders is not None and gtclass is not None:
-            class_topred = label_decoders[label].values()
-            if label in labels_hierarchy:
+            class_topred = label_decoders[clss].values()
+            if clss in labels_hierarchy:
                 cur_labels_hierarchy = {
-                    label_decoders[label][k]: [label_decoders[label][i] for i in v]
-                    for k, v in labels_hierarchy[label].items()
+                    label_decoders[clss][k]: [label_decoders[clss][i] for i in v]
+                    for k, v in labels_hierarchy[clss].items()
                 }
             else:
                 cur_labels_hierarchy = {}
-            for pred, true in adata.obs[["pred_" + label, label]].values:
+            for pred, true in adata.obs[["pred_" + clss, clss]].values:
                 if pred == true:
                     res.append(True)
                     continue
@@ -153,11 +154,11 @@ def make_adata(
                     res.append(False)
                 else:
                     pass
-            accuracy["pred_" + label] = sum(res) / len(res) if len(res) > 0 else 0
+            accuracy["pred_" + clss] = sum(res) / len(res) if len(res) > 0 else 0
     adata.obs = adata.obs.astype("category")
     print(adata)
     if doplot and adata.shape[0] > 100:
-        sc.pp.neighbors(adata, use_rep="X")
+        sc.pp.neighbors(adata, use_rep="scprint_emb")
         sc.tl.umap(adata)
         sc.tl.leiden(adata, key_added="sprint_leiden")
         if gtclass is not None:
@@ -166,7 +167,7 @@ def make_adata(
                 for pair in zip(
                     [
                         "conv_" + i if "conv_" + i in adata.obs.columns else i
-                        for i in labels
+                        for i in classes
                     ],
                     [
                         (
@@ -174,7 +175,7 @@ def make_adata(
                             if "conv_pred_" + i in adata.obs.columns
                             else "pred_" + i
                         )
-                        for i in labels
+                        for i in classes
                     ],
                 )
                 for i in pair
@@ -226,7 +227,7 @@ def make_adata(
                     if "conv_pred_" + i in adata.obs.columns
                     else "pred_" + i
                 )
-                for i in labels
+                for i in classes
             ]
             if len(color) > 1:
                 fig, axs = plt.subplots(len(color), 1, figsize=(16, len(color) * 8))

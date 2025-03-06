@@ -22,26 +22,3 @@
 
 ::: scprint.model.decoders
     handler: python
-
-## flashattention
-
-::: scprint.model.flash_attn.flashformer
-    handler: python
-
-::: scprint.model.flash_attn.mha
-    handler: python
-
-::: scprint.model.flash_attn.mlp
-    handler: python
-
-::: scprint.model.flash_attn.block
-    handler: python
-
-::: scprint.model.flash_attn.flashattention
-    handler: python
-
-::: scprint.model.flash_attn.activations
-    handler: python
-
-::: scprint.model.flash_attn.layer_norm
-    handler: python

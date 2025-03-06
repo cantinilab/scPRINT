@@ -68,6 +68,7 @@ virtualenv:       ## Create a virtual environment.
 .PHONY: release
 release:          ## Create a new tag for release.
 	@echo "WARNING: This operation will create s version tag and push to github"
+	@read -p "Remote name? (e.g. origin) : " REMOTE
 	@read -p "Version? (provide the next x.y.z semver) : " TAG
 	@echo "$${TAG}" > scprint/VERSION
 	@sed -i 's/^version = .*/version = "'$${TAG}'"/' pyproject.toml
@@ -76,9 +77,10 @@ release:          ## Create a new tag for release.
 	@git commit -m "release: version $${TAG} 🚀"
 	@echo "creating git tag : $${TAG}"
 	@git tag $${TAG}
-	@git push -u origin HEAD --tags
+	@git push -u $${REMOTE} HEAD --tag
 	@echo "Github Actions will detect the new tag and release the new version."
 	@mkdocs gh-deploy
+	@git push -f $${REMOTE} gh-pages
 	@echo "Documentation deployed to https://jkobject.github.io/scPRINT/"
 
 .PHONY: docs

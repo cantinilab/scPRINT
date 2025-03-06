@@ -44,14 +44,33 @@ def load_fasta_species(
     """
     ftp = ftplib.FTP("ftp.ensembl.org")
     ftp.login()
-    ftp.cwd("/pub/release-110/fasta/" + species + "/pep/")
+    try:
+        ftp.cwd("/pub/release-110/fasta/" + species + "/pep/")
+        types = "animals"
+    except ftplib.error_perm:
+        try:
+            ftp = ftplib.FTP("ftp.ensemblgenomes.ebi.ac.uk")
+            ftp.login()
+            ftp.cwd("/pub/plants/release-60/fasta/" + species + "/pep/")
+            types = "plants"
+        except ftplib.error_perm:
+            try:
+                ftp.cwd("/pub/metazoa/release-60/fasta/" + species + "/pep/")
+                types = "metazoa"
+            except ftplib.error_perm:
+                raise ValueError(
+                    f"Species {species} not found in Ensembl or Ensembl Genomes."
+                )
     file = list_files(ftp, ".all.fa.gz")[0]
     local_file_path = output_path + file
     if not os.path.exists(local_file_path) or not cache:
         os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
         with open(local_file_path, "wb") as local_file:
             ftp.retrbinary("RETR " + file, local_file.write)
-    ftp.cwd("/pub/release-110/fasta/" + species + "/ncrna/")
+    if types == "animals":
+        ftp.cwd("/pub/release-110/fasta/" + species + "/ncrna/")
+    elif types == "plants":
+        ftp.cwd("/pub/plants/release-60/fasta/" + species + "/ncrna/")
     file = list_files(ftp, ".ncrna.fa.gz")[0]
     local_file_path2 = output_path + file
     if not os.path.exists(local_file_path2) or not cache:
@@ -114,8 +133,6 @@ def subset_fasta(
                         weird += 1
 
                         continue
-                if not gene_name.startswith("ENS"):
-                    raise ValueError("issue", gene_name)
                 if gene_name in genes_found:
                     dup.add(gene_name)
                     continue

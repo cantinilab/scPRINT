@@ -189,3 +189,6 @@ config/torm.txt
 torm.json
 notebooks/additional/figures/
 notebooks/data/temp/
+data/main/*.parquet
+!data/main/avg_embedding.parquet
+!data/main/biomart_pos.parquet

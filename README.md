@@ -10,7 +10,7 @@
 [![Downloads](https://pepy.tech/badge/scprint/week)](https://pepy.tech/project/scprint)
 [![GitHub issues](https://img.shields.io/github/issues/cantinilab/scPRINT)](https://img.shields.io/github/issues/cantinilab/scPRINT)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![DOI](https://zenodo.org/badge/391909874.svg)](https://doi.org/10.1101/2024.07.29.605556)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14749466.svg)](https://doi.org/10.5281/zenodo.14749466)
 [![hugging face](https://huggingface.co/datasets/huggingface/badges/resolve/main/model-on-hf-md.svg)](https://huggingface.co/jkobject/scPRINT)
 
 ![logo](docs/logo.png)
@@ -29,6 +29,8 @@ scPRINT can be used to perform the following analyses:
 [Read the manuscript!](https://www.biorxiv.org/content/10.1101/2024.07.29.605556v1) if you would like to know more about scPRINT. Have a look at some of my [X-plainers](https://twitter.com/jkobject). 
 
 ![figure1](docs/figure1.png)
+
+🎊 test scPRINT and scDataloader on this simple [google collab](https://colab.research.google.com/drive/1CacoQDAwJn86tq2sBhUoZ6M-xAqsYFDI#scrollTo=Lb4E9IhQ7NK8)
 
 ## Table of Contents
 

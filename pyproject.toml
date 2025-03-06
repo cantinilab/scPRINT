@@ -1,6 +1,6 @@
 [project]
 name = "scprint"
-version = "2.0.0"
+version = "2.1.2"
 description = "scPRINT is a Large Cell Model for Gene Network Inference, Denoising and more from scRNAseq data"
 authors = [
     {name = "jeremie kalfon", email = "jkobject@gmail.com"}
@@ -11,9 +11,9 @@ requires-python = ">=3.10, <3.12"
 keywords = ["scRNAseq", "transformer", "GRN", "gene regulatory network", "scPRINT", "large cell model", "foundation model"]
 dependencies = [
     "torch==2.2.0",
-    "pytorch-lightning>=2.0.0",
     "lightning>=2.3.0",
-    "lamindb[bionty,jupyter,ourprojects,cellregistry,zarr]==1.0.5",
+    "pytorch-lightning>=2.3.0",
+    "lamindb[bionty,jupyter,cellregistry,zarr]==1.0.4",
     "matplotlib>=3.5.0",
     "seaborn>=0.11.0",
     "ipykernel>=6.20.0",
@@ -21,9 +21,9 @@ dependencies = [
     "pandas>=2.0.0",
     "leidenalg>=0.10.0",
     "scikit-misc>=0.5.0",
-    "scDataLoader>=1.7.0",
-    "GRnnData>=1.1.4",
-    "BenGRN>=1.2.4",
+    "scDataLoader>=1.8.0",
+    "GRnnData>=1.1.5",
+    "BenGRN>=1.3.0",
     "owlready2>=0.36",
     "huggingface_hub>=0.10.0",
     "scib>=1.0.0",
@@ -48,7 +48,7 @@ dependencies = [
     "sparse>=0.15.4",
     "bio>=1.7.1",
     "future>=1.0.0",
-    "simpler_flash>=1.0.4",
+    "simpler_flash>=1.0.6",
     "storage3<=0.11.1",
     "jupytext>=1.16.0",
     "torch_geometric>=2.6.0",
@@ -94,17 +94,18 @@ ignore = ["E501", "E203", "E266", "E265", "F401", "F403", "E722", "E741", "E731"
 
 [tool.hatch.build.targets.sdist]
 only-include = [
-    "/scprint",
-    "/slurm",
-    "/config",
-    "/data/main/TFs.txt",
+    "scprint",
+    "slurm",
+    "config",
+    "data/main/TFs.txt",
 ]
 
 [tool.hatch.build.targets.wheel]
 only-include = [
-    "/scprint",
-    "/slurm",
-    "/config",
+    "scprint",
+    "slurm",
+    "config",
+    "data/main/TFs.txt",
 ]
 
 [build-system]

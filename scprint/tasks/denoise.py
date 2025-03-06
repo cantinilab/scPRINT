@@ -8,7 +8,7 @@ import scanpy as sc
 import sklearn.metrics
 import torch
 from anndata import AnnData, concat
-from scdataloader import Collator, Preprocessor
+from scdataloader import Collator
 from scdataloader.data import SimpleAnnDataset
 from scipy.sparse import issparse
 from scipy.stats import spearmanr
@@ -160,36 +160,36 @@ class Denoiser:
             )
             pred_adata.append(sc.read_h5ad(file))
         pred_adata = concat(pred_adata)
-        tokeep = None
         metrics = None
         if self.downsample is not None:
-            tokeep = pred_adata.layers["scprint_mu"] == 0
             noisy = np.loadtxt(f"collator_output_{num}.txt")
+            loc = np.loadtxt(f"collator_output_{num}.txt_loc")
             os.remove(f"collator_output_{num}.txt")
+            os.remove(f"collator_output_{num}.txt_loc")
+            # Sort loc indices per row and apply same sorting to noisy expression matrix
+            sorted_indices = np.array([np.argsort(row) for row in loc])
+            # Create row indices array for advanced indexing
+            row_indices = np.arange(len(loc))[:, np.newaxis]
+            # Sort loc and noisy using the row-wise indices
+            del loc
+            noisy = noisy[row_indices, sorted_indices]
+            del sorted_indices, row_indices
 
-            if random_indices is not None:
-                true = adata.X[random_indices][tokeep]
-            else:
-                true = adata.X[tokeep]
-            true = true.toarray() if issparse(true) else true
-            if self.how == "most var":
-                true = true[:, adata.var.index.isin(self.genes)]
-                # noisy[true==0]=0
-            else:
-                true = np.vstack(
-                    [
-                        true[
-                            i,
-                            adata.var.index.get_indexer(np.array(model.genes)[val]),
-                        ].copy()
-                        for i, val in enumerate(self.genes)
-                    ]
-                )
-            # reco[true==0] = 0
-            # reco[reco!=0] = 2
-            # corr_coef = np.corrcoef(
-            #    np.vstack([reco[true!=0], noisy[true!=0], true[true!=0]])
-            # )
+            reco = pred_adata.layers["scprint_mu"].data.reshape(pred_adata.shape[0], -1)
+            adata = (
+                adata[random_indices, adata.var.index.isin(pred_adata.var.index)]
+                if random_indices is not None
+                else adata[:, adata.var.index.isin(pred_adata.var.index)]
+            )
+            true = adata.X[
+                :,
+                pred_adata.layers["scprint_mu"][
+                    :, pred_adata.var.index.isin(adata.var.index)
+                ]
+                .toarray()
+                .any(axis=0),
+            ].toarray()
+
             corr_coef, p_value = spearmanr(
                 np.vstack([reco[true != 0], noisy[true != 0], true[true != 0]]).T
             )
@@ -223,20 +223,7 @@ class Denoiser:
             #        ].diagonal()
             #    ),
             # }
-        return (
-            metrics,
-            (
-                random_indices[tokeep]
-                if random_indices is not None and tokeep is not None
-                else random_indices
-            ),
-            self.genes,
-            (
-                model.expr_pred[0][tokeep].cpu().numpy()
-                if tokeep is not None
-                else model.expr_pred[0].cpu().numpy()
-            ),
-        )
+        return metrics, random_indices, pred_adata
 
 
 # testdatasets=['/R4ZHoQegxXdSFNFY5LGe.h5ad', '/SHV11AEetZOms4Wh7Ehb.h5ad',
@@ -281,6 +268,8 @@ def open_benchmark(model):
         FILE_DIR + "/../../data/pancreas_atlas.h5ad",
         backup_url="https://figshare.com/ndownloader/files/24539828",
     )
+    from scdataloader import Preprocessor
+
     adata = adata[adata.obs.tech == "inDrop1"]
 
     train, test = split_molecules(adata.layers["counts"].round().astype(int), 0.9)

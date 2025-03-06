@@ -37,18 +37,17 @@ def protein_embeddings_generator(
     """
     # given a gene file and organism
     # load the organism fasta if not already done
-    import pdb
-
-    pdb.set_trace()
     fasta_path_pep, fasta_path_ncrna = utils.load_fasta_species(
         species=organism, output_path=fasta_path, cache=cache
     )
     # subset the fasta
     fasta_name = fasta_path_pep.split("/")[-1]
     utils.utils.run_command(["gunzip", fasta_path_pep])
-    protgenedf = genedf[genedf["biotype"] == "protein_coding"] if genedf else None
+    protgenedf = (
+        genedf[genedf["biotype"] == "protein_coding"] if genedf is not None else None
+    )
     found, naming_df = utils.subset_fasta(
-        protgenedf.index.tolist() if protgenedf else None,
+        protgenedf.index.tolist() if protgenedf is not None else None,
         subfasta_path=fasta_path + "subset.fa",
         fasta_path=fasta_path + fasta_name[:-3],
         drop_unknown_seq=True,
@@ -81,7 +80,7 @@ def protein_embeddings_generator(
     else:
         raise ValueError(f"Embedder {embedder} not supported")
     # load the data and erase / zip the rest
-    utils.utils.run_command(["gzip", fasta_path + fasta_name[:-3]])
+    # utils.utils.run_command(["gzip", fasta_path + fasta_name[:-3]])
     # return the embedding and gene file
     # TODO: to redebug
     # do the same for RNA

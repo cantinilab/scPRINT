@@ -54,6 +54,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         domain_spec_batchnorm: str = "None",
         n_input_bins: int = 0,
         num_batch_labels: int = 0,
+        label_counts: Dict[str, int] = {},
         mvc_decoder: str = "None",
         pred_embedding: list[str] = [],
         label_counts: Dict[str, int] = {},
@@ -448,10 +449,14 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     and re-initiliazed. It will start from scratch during this training if "
                 )
         else:
-            self.grad_reverse_discriminator_loss = loss.AdversarialDiscriminatorLoss(
-                self.d_model,
-                n_cls=size,
-            )
+            if (
+                "grad_reverse_discriminator_loss.out_layer.bias"
+                in checkpoints["state_dict"]
+            ):
+                for k in list(checkpoints["state_dict"].keys()):
+                    if "grad_reverse_discriminator_loss" in k:
+                        del checkpoints["state_dict"][k]
+
         # if len(checkpoints["state_dict"]["pos_encoder.pe"].shape) == 3:
         #    self.pos_encoder.pe = checkpoints["state_dict"]["pos_encoder.pe"].squeeze(1)
         self.normalization = checkpoints["hyper_parameters"].get("normalization", "sum")

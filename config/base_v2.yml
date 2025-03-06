@@ -12,7 +12,7 @@ trainer:
   log_every_n_steps: 100
   limit_train_batches: 20000
   gradient_clip_algorithm: norm
-  limit_val_batches: 4000
+  limit_val_batches: 2000
   limit_test_batches: 1 # we don't perform tests this way
   reload_dataloaders_every_n_epochs: 5
   accumulate_grad_batches: 1
@@ -39,6 +39,8 @@ scprint_training:
   mask_ratio: ["TF"]
   zinb_and_mse: True
   var_context_length: True
+scprint_early_stopping:
+  patience: 4
 model:
   dropout: 0
   num_heads_kv: 4
