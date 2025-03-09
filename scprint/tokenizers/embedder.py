@@ -1,16 +1,16 @@
 import os
 
+import numpy as np
 import pandas as pd
 import torch
 
 # from RNABERT import RNABERT
 from torch.nn import AdaptiveAvgPool1d
+from tqdm import tqdm
 
 from scprint import utils
 
 from .protein_embedder import ESM2
-from tqdm import tqdm
-import numpy as np
 
 
 def protein_embeddings_generator(
@@ -58,9 +58,9 @@ def protein_embeddings_generator(
             fasta_path + "subset.fa", output_folder=fasta_path + "esm_out/", cache=cache
         )
     elif embedder == "esm3":
+        from Bio import SeqIO
         from esm.models.esmc import ESMC
         from esm.sdk.api import ESMProtein, LogitsConfig
-        from Bio import SeqIO
 
         prot_embeddings = []
         names = []

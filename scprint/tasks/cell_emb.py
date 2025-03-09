@@ -184,14 +184,17 @@ class Embedder:
             pass
         pred_adata.obs.index = adata.obs.index
         try:
-            adata.obsm["scprint_umap"] = pred_adata.obsm["X_umap"]
+            adata.obsm["X_scprint_umap"] = pred_adata.obsm["X_umap"]
         except:
             print("too few cells to embed into a umap")
         try:
             adata.obsm["scprint_leiden"] = pred_adata.obsm["sprint_leiden"]
         except:
             print("too few cells to compute a clustering")
-        adata.obsm["scprint"] = pred_adata.X
+        adata.obsm["scprint_emb"] = pred_adata.obsm["scprint_emb"]
+        for key, value in pred_adata.uns.items():
+            adata.uns[key] = value
+
         pred_adata.obs.index = adata.obs.index
         adata.obs = pd.concat([adata.obs, pred_adata.obs], axis=1)
         if self.keep_all_cls_pred:

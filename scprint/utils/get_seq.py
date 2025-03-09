@@ -4,8 +4,8 @@ import os
 from typing import List, Optional, Union
 
 import numpy as np
-from Bio import SeqIO
 import pandas as pd
+from Bio import SeqIO
 
 # Constants
 from gget.constants import ENSEMBL_REST_API, UNIPROT_REST_API

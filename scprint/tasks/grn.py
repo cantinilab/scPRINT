@@ -267,6 +267,7 @@ class GNInfer:
                     get_attention_layer=layer if type(layer) is list else [layer],
                 )
                 torch.cuda.empty_cache()
+                
         return subadata
 
     def aggregate(self, attn, genes):

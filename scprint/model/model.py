@@ -238,7 +238,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 torch.tensor(embeddings.values, dtype=torch.float32)
             )
 
-            base_encoder = encoders.GeneEncoder(
+            self.gene_encoder = encoders.GeneEncoder(
                 len(self.vocab),
                 d_model,
                 # weights_file=precpt_gene_emb,

@@ -19,7 +19,7 @@ from scprint.trainer import TrainingMode
 def test_base():
     assert NAME == "scprint"
     populate_my_ontology(
-        organisms=["NCBITaxon:10090", "NCBITaxon:9606"],
+        organisms_clade=["vertebrates"],
         sex=["PATO:0000384", "PATO:0000383"],
         # celltypes=None,
         # ethnicities=None,
@@ -58,7 +58,7 @@ def test_base():
         predict_depth_mult=3,
         dtype=torch.float32,
     )
-    metrics, random_indices, genes, expr_pred = dn(
+    metrics, random_indices, adata_denoised = dn(
         model=model,
         adata=adata,
     )
@@ -83,11 +83,13 @@ def test_base():
         dtype=torch.float32,
     )
     adata_emb, metrics = cell_embedder(model, adata[:10, :])
-    assert "scprint" in adata_emb.obsm, "Cell embedding failed"
-
-    assert any(
-        col.startswith("pred_") for col in adata_emb.obs.columns
-    ), "Classification failed"
+    assert "scprint_emb" in adata_emb.obsm, "Cell embedding failed"
+    assert np.isnan(adata_emb.obsm["scprint_emb"]).sum() == 0, (
+        "Cell embedding contains NaNs"
+    )
+    assert any(col.startswith("pred_") for col in adata_emb.obs.columns), (
+        "Classification failed"
+    )
 
     # GRN inference
     grn_inferer = GNInfer(
@@ -184,9 +186,9 @@ def test_base():
         if initial_loss is None:
             initial_loss = current_loss
         else:
-            assert (
-                current_loss < initial_loss
-            ), f"Loss not decreasing: initial {initial_loss}, current {current_loss}"
+            assert current_loss < initial_loss, (
+                f"Loss not decreasing: initial {initial_loss}, current {current_loss}"
+            )
             initial_loss = current_loss
     # cli
     # get_Seq

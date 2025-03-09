@@ -9,11 +9,11 @@ import bionty as bt
 import numpy as np
 import pandas as pd
 import scanpy as sc
-from scipy.sparse import csr_matrix
 import torch
 from anndata import AnnData
 from matplotlib import pyplot as plt
 from scdataloader.utils import translate
+from scipy.sparse import csr_matrix
 from torch import Tensor
 from torch.distributions import Gamma, Poisson
 
@@ -60,27 +60,28 @@ def make_adata(
         anndata.AnnData: The created AnnData object.
     """
     colname = ["pred_" + i for i in classes]
-    obs = np.array(pred.to(device="cpu", dtype=torch.int32))
-    # label decoders is not cls_decoders. one is a dict to map class codes (ints)
-    # to class names the other is the module the predict the class
-    if label_decoders is not None:
-        obs = np.array(
-            [
-                [label_decoders[classes[i]][n] for n in name]
-                for i, name in enumerate(obs.T)
-            ]
-        ).T
-    if gtclass is not None:
-        colname += classes
-        nobs = np.array(gtclass.to(device="cpu", dtype=torch.int32))
+    if pred is not None:
+        obs = np.array(pred.to(device="cpu", dtype=torch.int32))
+        # label decoders is not cls_decoders. one is a dict to map class codes (ints)
+        # to class names the other is the module the predict the class
         if label_decoders is not None:
-            nobs = np.array(
+            obs = np.array(
                 [
                     [label_decoders[classes[i]][n] for n in name]
-                    for i, name in enumerate(nobs.T)
+                    for i, name in enumerate(obs.T)
                 ]
             ).T
-        obs = np.hstack([obs, nobs])
+        if gtclass is not None:
+            colname += classes
+            nobs = np.array(gtclass.to(device="cpu", dtype=torch.int32))
+            if label_decoders is not None:
+                nobs = np.array(
+                    [
+                        [label_decoders[classes[i]][n] for n in name]
+                        for i, name in enumerate(nobs.T)
+                    ]
+                ).T
+            obs = np.hstack([obs, nobs])
 
     size = len(genes)
     n_cells = pos.shape[0]
@@ -113,48 +114,53 @@ def make_adata(
         obs=pd.DataFrame(
             obs,
             columns=colname,
-        ),
+        )
+        if pred is not None
+        else None,
     )
     adata.obsm["scprint_emb"] = embs.cpu().numpy()
     adata.var_names = genes
     accuracy = {}
-    for clss in classes:
-        if gtclass is not None:
-            tr = translate(adata.obs[clss].tolist(), clss)
+    if pred is not None:
+        for clss in classes:
+            if gtclass is not None:
+                tr = translate(adata.obs[clss].tolist(), clss)
+                if tr is not None:
+                    adata.obs["conv_" + clss] = adata.obs[clss].replace(tr)
+            tr = translate(adata.obs["pred_" + clss].tolist(), clss)
             if tr is not None:
-                adata.obs["conv_" + clss] = adata.obs[clss].replace(tr)
-        tr = translate(adata.obs["pred_" + clss].tolist(), clss)
-        if tr is not None:
-            adata.obs["conv_pred_" + clss] = adata.obs["pred_" + clss].replace(tr)
-        res = []
-        if label_decoders is not None and gtclass is not None:
-            class_topred = label_decoders[clss].values()
-            if clss in labels_hierarchy:
-                cur_labels_hierarchy = {
-                    label_decoders[clss][k]: [label_decoders[clss][i] for i in v]
-                    for k, v in labels_hierarchy[clss].items()
-                }
-            else:
-                cur_labels_hierarchy = {}
-            for pred, true in adata.obs[["pred_" + clss, clss]].values:
-                if pred == true:
-                    res.append(True)
-                    continue
-                if len(labels_hierarchy) > 0:
-                    if true in cur_labels_hierarchy:
-                        res.append(pred in cur_labels_hierarchy[true])
+                adata.obs["conv_pred_" + clss] = adata.obs["pred_" + clss].replace(tr)
+            res = []
+            if label_decoders is not None and gtclass is not None:
+                class_topred = label_decoders[clss].values()
+                if clss in labels_hierarchy:
+                    cur_labels_hierarchy = {
+                        label_decoders[clss][k]: [label_decoders[clss][i] for i in v]
+                        for k, v in labels_hierarchy[clss].items()
+                    }
+                else:
+                    cur_labels_hierarchy = {}
+                for pred, true in adata.obs[["pred_" + clss, clss]].values:
+                    if pred == true:
+                        res.append(True)
+                        continue
+                    if len(labels_hierarchy) > 0:
+                        if true in cur_labels_hierarchy:
+                            res.append(pred in cur_labels_hierarchy[true])
+                        elif true not in class_topred:
+                            raise ValueError(
+                                f"true label {true} not in available classes"
+                            )
+                        elif true != "unknown":
+                            res.append(False)
                     elif true not in class_topred:
                         raise ValueError(f"true label {true} not in available classes")
                     elif true != "unknown":
                         res.append(False)
-                elif true not in class_topred:
-                    raise ValueError(f"true label {true} not in available classes")
-                elif true != "unknown":
-                    res.append(False)
-                else:
-                    pass
-            accuracy["pred_" + clss] = sum(res) / len(res) if len(res) > 0 else 0
-    adata.obs = adata.obs.astype("category")
+                    else:
+                        pass
+                accuracy["pred_" + clss] = sum(res) / len(res) if len(res) > 0 else 0
+        adata.obs = adata.obs.astype("category")
     print(adata)
     if doplot and adata.shape[0] > 100:
         sc.pp.neighbors(adata, use_rep="scprint_emb")
