@@ -188,7 +188,7 @@ class Embedder:
         except:
             print("too few cells to embed into a umap")
         try:
-            adata.obsm["scprint_leiden"] = pred_adata.obsm["leiden"]
+            adata.obsm["scprint_leiden"] = pred_adata.obsm["sprint_leiden"]
         except:
             print("too few cells to compute a clustering")
         adata.obsm["scprint"] = pred_adata.X
@@ -379,11 +379,13 @@ def default_benchmark(
         embed_adata,
         batch_key="tech" if default_dataset == "pancreas" else "batch",
         label_key="celltype" if default_dataset == "pancreas" else "cell_type",
-        embedding_obsm_keys=["scprint"],
+        embedding_obsm_keys=["scprint_emb"],
         n_jobs=6,
     )
     bm.benchmark()
-    metrics.update({"scib": bm.get_results(min_max_scale=False).T.to_dict()["scprint"]})
+    metrics.update(
+        {"scib": bm.get_results(min_max_scale=False).T.to_dict()["scprint_emb"]}
+    )
     metrics["classif"] = compute_classification(
         embed_adata, model.classes, model.label_decoders, model.labels_hierarchy
     )
