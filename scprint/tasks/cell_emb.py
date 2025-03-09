@@ -188,7 +188,7 @@ class Embedder:
         except:
             print("too few cells to embed into a umap")
         try:
-            adata.obsm["scprint_leiden"] = pred_adata.obsm["sprint_leiden"]
+            adata.obsm["scprint_leiden"] = pred_adata.obsm["scprint_leiden"]
         except:
             print("too few cells to compute a clustering")
         adata.obsm["scprint_emb"] = pred_adata.obsm["scprint_emb"]
