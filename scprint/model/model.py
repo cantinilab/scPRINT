@@ -238,7 +238,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 torch.tensor(embeddings.values, dtype=torch.float32)
             )
 
-            self.gene_encoder = encoders.GeneEncoder(
+            gene_encoder = encoders.GeneEncoder(
                 len(self.vocab),
                 d_model,
                 # weights_file=precpt_gene_emb,
@@ -253,13 +253,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     )
                 # Create adapter layers after the frozen base encoder
                 self.gene_encoder = torch.nn.Sequential(
-                    base_encoder,
+                    gene_encoder,
                     torch.nn.Linear(d_model, d_model),
                     torch.nn.ReLU(),
                     torch.nn.Linear(d_model, d_model),
                 )
             else:
-                self.gene_encoder = base_encoder
+                self.gene_encoder = gene_encoder
         else:
             if finetune_gene_emb:
                 raise ValueError(
