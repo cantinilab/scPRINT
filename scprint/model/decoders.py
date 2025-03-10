@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Optional, Union
+from typing import Callable, Dict, Optional, Union, Tuple
 
 import torch
 from torch import Tensor, nn
@@ -96,6 +96,7 @@ class MVCDecoder(nn.Module):
         tot_labels: int = 1,
         query_activation: nn.Module = nn.Sigmoid,
         hidden_activation: nn.Module = nn.PReLU,
+        use_depth: bool = False,
         zinb: bool = True,
     ) -> None:
         """
@@ -109,25 +110,32 @@ class MVCDecoder(nn.Module):
                 1. "inner product" or 2. "cell product" 3. "concat query" or 4. "sum query".
             query_activation (:obj:`nn.Module`): activation function for the query
                 vectors. Defaults to nn.Sigmoid.
+            use_depth (:obj:`bool`): whether to use depth as an additional feature. Defaults to False.
             hidden_activation (:obj:`nn.Module`): activation function for the hidden
                 layers. Defaults to nn.PReLU.
         """
         super(MVCDecoder, self).__init__()
         if arch_style == "inner product":
-            self.gene2query = nn.Linear(d_model, d_model)
+            self.gene2query = nn.Linear(
+                d_model if not use_depth else d_model + 1, d_model
+            )
             self.norm = nn.LayerNorm(d_model)
             self.query_activation = query_activation()
             self.pred_var_zero = nn.Linear(
                 d_model, d_model * (3 if zinb else 1), bias=False
             )
         elif arch_style == "concat query":
-            self.gene2query = nn.Linear(d_model, d_model)
+            self.gene2query = nn.Linear(
+                d_model if not use_depth else d_model + 1, d_model
+            )
             self.query_activation = query_activation()
             self.fc1 = nn.Linear(d_model * (1 + tot_labels), d_model // 2)
             self.hidden_activation = hidden_activation()
             self.fc2 = nn.Linear(d_model // 2, (3 if zinb else 1))
         elif arch_style == "sum query":
-            self.gene2query = nn.Linear(d_model, d_model)
+            self.gene2query = nn.Linear(
+                d_model if not use_depth else d_model + 1, d_model
+            )
             self.query_activation = query_activation()
             self.fc1 = nn.Linear(d_model, 64)
             self.hidden_activation = hidden_activation()
@@ -144,12 +152,23 @@ class MVCDecoder(nn.Module):
         self,
         cell_emb: Tensor,
         gene_embs: Tensor,
+        req_depth: Optional[Tensor] = None,
     ) -> Union[Tensor, Dict[str, Tensor]]:
         """
         Args:
             cell_emb: Tensor, shape (batch, embsize=d_model)
             gene_embs: Tensor, shape (batch, seq_len, embsize=d_model)
         """
+        if req_depth is not None:
+            gene_embs = torch.cat(
+                [
+                    gene_embs,
+                    req_depth.unsqueeze(1)
+                    .unsqueeze(-1)
+                    .expand(-1, gene_embs.shape[1], -1),
+                ],
+                dim=-1,
+            )
         if self.arch_style == "inner product":
             query_vecs = self.query_activation(self.norm(self.gene2query(gene_embs)))
             if self.zinb:
@@ -239,3 +258,122 @@ class ClsDecoder(nn.Module):
         """
         x = self.decoder(x)
         return self.out_layer(x)
+
+
+class VAEDecoder(nn.Module):
+    def __init__(
+        self,
+        d_model: int,
+        layers: list[int] = [64, 64],
+        activation: Callable = nn.ReLU,
+        dropout: float = 0.1,
+    ):
+        """
+        VAEDecoder for variational autoencoding of cell embeddings.
+
+        Args:
+            d_model (int): Input dimension (original embedding size)
+            layers (list[int]): List of hidden layer sizes for encoder and decoder
+            activation (Callable): Activation function to use
+            dropout (float): Dropout rate
+        """
+        super(VAEDecoder, self).__init__()
+
+        # Encoder layers
+        encoder_layers = [d_model] + layers
+        self.encoder = nn.Sequential()
+        for i, (in_size, out_size) in enumerate(
+            zip(encoder_layers[:-2], encoder_layers[1:-1])
+        ):
+            self.encoder.append(nn.Linear(in_size, out_size))
+            self.encoder.append(nn.LayerNorm(out_size))
+            self.encoder.append(activation())
+            self.encoder.append(nn.Dropout(dropout))
+
+        # VAE latent parameters
+        self.fc_mu = nn.Linear(encoder_layers[-2], encoder_layers[-1])
+        self.fc_var = nn.Linear(encoder_layers[-2], encoder_layers[-1])
+
+        # Decoder layers
+        decoder_layers = [encoder_layers[-1]] + list(reversed(layers[:-1])) + [d_model]
+        self.decoder = nn.Sequential()
+        for i, (in_size, out_size) in enumerate(
+            zip(
+                decoder_layers[:-1], decoder_layers[1:]
+            )  # Changed to include final layer
+        ):
+            self.decoder.append(nn.Linear(in_size, out_size))
+            if (
+                i < len(decoder_layers) - 2
+            ):  # Don't apply activation/norm to final layer
+                self.decoder.append(nn.LayerNorm(out_size))
+                self.decoder.append(activation())
+                self.decoder.append(nn.Dropout(dropout))
+
+    def reparameterize(self, mu: Tensor, log_var: Tensor) -> Tensor:
+        """
+        Reparameterization trick to sample from N(mu, var) from N(0,1).
+
+        Args:
+            mu (Tensor): Mean of the latent Gaussian
+            log_var (Tensor): Log variance of the latent Gaussian
+
+        Returns:
+            Tensor: Sampled latent vector
+        """
+        std = torch.exp(0.5 * log_var)
+        eps = torch.randn_like(std)
+        return mu + eps * std
+
+    def kl_divergence(self, mu: Tensor, log_var: Tensor) -> Tensor:
+        """
+        Compute KL divergence between N(mu, var) and N(0, 1).
+
+        Args:
+            mu (Tensor): Mean of the latent Gaussian
+            log_var (Tensor): Log variance of the latent Gaussian
+
+        Returns:
+            Tensor: KL divergence loss
+        """
+        # KL(N(mu, var) || N(0, 1)) = -0.5 * sum(1 + log(var) - mu^2 - var)
+        kl_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp(), dim=1)
+        return kl_loss.mean()
+
+    def forward(
+        self, x: Tensor, return_latent: bool = False
+    ) -> Union[Tensor, Tuple[Tensor, Tensor, Tensor, Tensor]]:
+        """
+        Forward pass through VAE.
+
+        Args:
+            x (Tensor): Input tensor of shape [batch_size, d_model]
+            return_latent (bool): Whether to return the latent vectors
+
+        Returns:
+            If return_latent:
+                Tuple[Tensor, Tensor, Tensor, Tensor]: (reconstructed_x, mu, log_var, kl_loss) where:
+                    - reconstructed_x has shape [batch_size, d_model]
+                    - mu has shape [batch_size, latent_dim]
+                    - log_var has shape [batch_size, latent_dim]
+                    - kl_loss is a scalar tensor
+            Else:
+                Tensor: reconstructed_x of shape [batch_size, d_model]
+        """
+        # Encode
+        encoded = self.encoder(x)
+
+        # Get latent parameters
+        mu = self.fc_mu(encoded)
+        log_var = self.fc_var(encoded)
+
+        # Sample latent vector
+        z = self.reparameterize(mu, log_var)
+
+        # Decode
+        decoded = self.decoder(z)
+
+        if return_latent:
+            kl_loss = self.kl_divergence(mu, log_var)
+            return decoded, mu, log_var, kl_loss
+        return decoded
