@@ -183,12 +183,13 @@ class Embedder:
         else:
             pass
         pred_adata.obs.index = adata.obs.index
+
         try:
             adata.obsm["X_scprint_umap"] = pred_adata.obsm["X_umap"]
         except:
             print("too few cells to embed into a umap")
         try:
-            adata.obsm["scprint_leiden"] = pred_adata.obsm["scprint_leiden"]
+            adata.obs["scprint_leiden"] = pred_adata.obs["scprint_leiden"]
         except:
             print("too few cells to compute a clustering")
         adata.obsm["scprint_emb"] = pred_adata.obsm["scprint_emb"]
@@ -370,11 +371,12 @@ def default_benchmark(
     adata.obs["organism_ontology_term_id"] = "NCBITaxon:9606"
     adata = preprocessor(adata.copy())
     embedder = Embedder(
-        pred_embedding=["cell_type_ontology_term_id"] if do_class else [],
-        doclass=(default_dataset not in ["pancreas", "lung"]) and do_class,
+        pred_embedding=["cell_type_ontology_term_id"],
+        doclass=do_class,
         max_len=4000,
         keep_all_cls_pred=False,
         output_expression="none",
+        how="random expr",
     )
     embed_adata, metrics = embedder(model, adata.copy())
 

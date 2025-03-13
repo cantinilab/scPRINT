@@ -146,6 +146,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.lr_reduce_patience = 2
         self.lr_reduce_factor = 0.6
         self.test_every = 20
+        self.randsamp = True
         self.lr_reduce_monitor = "val_loss"
         self.name = ""
         self.set_step = None
@@ -198,7 +199,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             )
         self.labels_hierarchy = labels_hierarchy
         self.hparams["labels_hierarchy"] = labels_hierarchy
-        self.hparams["classes"] = classes
+        self.hparams["classes"] = self.classes
         self.hparams["label_decoders"] = label_decoders
         self.hparams["gene_pos_enc"] = gene_pos_enc
         self.hparams["genes"] = genes
@@ -477,12 +478,21 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 "state_dict"
             ]["gene_encoder.embedding.weight"]
             del checkpoints["state_dict"]["gene_encoder.embedding.weight"]
-
         if "classes" in checkpoints["hyper_parameters"]:
             if self.label_counts != checkpoints["hyper_parameters"]["classes"]:
                 print("changing the number of classes, could lead to issues")
-                self.label_counts = checkpoints["hyper_parameters"]["classes"]
-                self.classes = list(checkpoints["hyper_parameters"]["classes"].keys())
+                if "label_counts" not in checkpoints["hyper_parameters"]:
+                    self.label_counts = checkpoints["hyper_parameters"]["classes"]
+                    self.classes = list(
+                        checkpoints["hyper_parameters"]["classes"].keys()
+                    )
+                else:
+                    self.classes = checkpoints["hyper_parameters"]["classes"]
+                    self.label_counts = checkpoints["hyper_parameters"]["label_counts"]
+                    if self.classes == self.label_counts:
+                        raise ValueError(
+                            "classes and label_counts are the same, this is not allowed, please use another checkpoint"
+                        )
             self.label_decoders = checkpoints["hyper_parameters"]["label_decoders"]
             self.labels_hierarchy = checkpoints["hyper_parameters"]["labels_hierarchy"]
             for k, v in self.labels_hierarchy.items():
@@ -1024,12 +1034,12 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             if do_denoise:
                 if knn_cells is not None:
                     knn_cells = utils.downsample_profile(
-                        knn_cells, dropout=0.5, randsamp=True
+                        knn_cells, dropout=0.5, randsamp=self.randsamp
                     )
                     expr = expression
                 else:
                     expr = utils.downsample_profile(
-                        expression, dropout=0.5, randsamp=True
+                        expression, dropout=0.5, randsamp=self.randsamp
                     )
             else:
                 expr = expression
@@ -1074,10 +1084,15 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # TASK 3. denoising
         if do_denoise:
             for i in noise:
-                expr = utils.downsample_profile(expression, dropout=i, randsamp=True)
+                if i == 1.0:
+                    expr = torch.zeros_like(expression)
+                else:
+                    expr = utils.downsample_profile(
+                        expression, dropout=i, randsamp=self.randsamp
+                    )
                 if knn_cells is not None:
                     # knn_cells = utils.downsample_profile(
-                    #    knn_cells, dropout=i, randsamp=True
+                    #    knn_cells, dropout=i, randsamp=self.randsamp
                     # )
                     pass
                 output = self.forward(

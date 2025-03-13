@@ -24,6 +24,7 @@ class TrainingMode(Callback):
         class_scale: float = 1,
         mask_ratio: List[float | str] = [],  # 0.3
         test_every: int = 5,
+        randsamp: bool = True,
         warmup_duration: int = 500,
         fused_adam: bool = False,
         adv_class_scale: float = 0.1,
@@ -83,6 +84,7 @@ class TrainingMode(Callback):
             dropout (float): Dropout rate for the model. Defaults to 0.1.
             set_step (int, optional): Set the global step for the model. Defaults to None.
             vae_kl_scale (float): Scaling factor for the VAE KL loss. Defaults to 0.3.
+            randsamp (bool): Whether to use random sampling for the noise amount at each training step. Defaults to True.
         """
         super().__init__()
         self.do_denoise = do_denoise
@@ -121,6 +123,7 @@ class TrainingMode(Callback):
         self.var_context_length = var_context_length
         self.dropout = dropout
         self.set_step = set_step
+        self.randsamp = randsamp
 
     def __repr__(self):
         return (
@@ -159,7 +162,8 @@ class TrainingMode(Callback):
             f"zinb_and_mse={self.zinb_and_mse}, "
             f"var_context_length={self.var_context_length}, "
             f"dropout={self.dropout}, "
-            f"set_step={self.set_step})"
+            f"set_step={self.set_step}, "
+            f"randsamp={self.randsamp})"
         )
 
     def setup(self, trainer, model, stage=None):
@@ -200,4 +204,5 @@ class TrainingMode(Callback):
         model.var_context_length = self.var_context_length
         model.dropout = self.dropout
         model.set_step = self.set_step
+        model.randsamp = self.randsamp
         # model.configure_optimizers()

@@ -104,7 +104,10 @@ class GeneEncoder(nn.Module):
     def __del__(self):
         """Cleanup method to ensure proper handling of memory-mapped file."""
         if hasattr(self, "embeddings") and self.embeddings is not None:
-            self.embeddings._mmap.close()
+            try:
+                self.embeddings._mmap.close()
+            except:
+                pass
 
 
 class PositionalEncoding(nn.Module):
