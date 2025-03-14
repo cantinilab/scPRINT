@@ -1,6 +1,6 @@
 [project]
 name = "scprint"
-version = "2.2.1"
+version = "2.2.2"
 description = "scPRINT is a Large Cell Model for Gene Network Inference, Denoising and more from scRNAseq data"
 authors = [
     {name = "jeremie kalfon", email = "jkobject@gmail.com"}
@@ -21,7 +21,7 @@ dependencies = [
     "pandas>=2.0.0",
     "leidenalg>=0.10.0",
     "scikit-misc>=0.5.0",
-    "scDataLoader>=1.9.1",
+    "scDataLoader>=1.9.2",
     "GRnnData>=1.1.5",
     "BenGRN>=1.3.0",
     "owlready2>=0.36",
@@ -69,7 +69,7 @@ dev = [
     "mkdocs-jupyter>=0.2.0",
     "mkdocstrings-python>=0.10.0",
     "datasets>=3.0.1",
-    "gseapy>=1.0.0",
+    "gseapy==1.1.2",
     "datamapplot>=0.4.2",
     "celltypist>=0.1.1",
     "louvain>=0.8.2",

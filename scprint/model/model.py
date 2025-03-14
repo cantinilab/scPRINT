@@ -1709,19 +1709,20 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 else [torch.cat([self.expr_pred[0], output["mean"]])]
             )
         if self.embs is not None:
-            if self.embs.shape[0] > max_size_in_mem and self.pred_log_adata:
-                print("logging")
-                self.log_adata(name="predict_part_" + str(self.counter))
-                self.counter += 1
+            if self.embs.shape[0] > max_size_in_mem:
+                if self.pred_log_adata:
+                    print("logging")
+                    self.log_adata(name="predict_part_" + str(self.counter))
+                    self.counter += 1
+                else:
+                    print(
+                        "WARNING, reached max size in memory, deleting the adata, \
+                        need to set pred_log_adata to True to log the adata"
+                    )
                 self.pos = None
                 self.expr_pred = None
                 self.pred = None
                 self.embs = None
-            elif not self.pred_log_adata:
-                print(
-                    "WARNING, reached max size in memory, deleting the adata, \
-                    need to set pred_log_adata to True to log the adata"
-                )
 
     def on_predict_epoch_end(self):
         """@see pl.LightningModule will"""
