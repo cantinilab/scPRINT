@@ -199,7 +199,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             )
         self.labels_hierarchy = labels_hierarchy
         self.hparams["labels_hierarchy"] = labels_hierarchy
-        self.hparams["classes"] = self.classes
+        self.hparams["classes"] = classes
         self.hparams["label_decoders"] = label_decoders
         self.hparams["gene_pos_enc"] = gene_pos_enc
         self.hparams["genes"] = genes
@@ -526,11 +526,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                         ],
                         valid_genes=self.genes,
                     )
-            os.environ["MY_SLURM_RESTART_COUNT"] = str(
-                int(os.getenv("SLURM_RESTART_COUNT", 0))
-                + 1
-                + int(os.getenv("MY_SLURM_RESTART_COUNT", 0))
-            )
         except RuntimeError as e:
             if "scPrint is not attached to a `Trainer`." in str(e):
                 print("FYI: scPrint is not attached to a `Trainer`.")

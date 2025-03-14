@@ -385,7 +385,6 @@ def default_benchmark(
         batch_key="tech" if default_dataset == "pancreas" else "batch",
         label_key="celltype" if default_dataset == "pancreas" else "cell_type",
         embedding_obsm_keys=["scprint_emb"],
-        n_jobs=6,
     )
     bm.benchmark()
     metrics.update(

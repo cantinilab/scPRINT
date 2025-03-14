@@ -11,7 +11,7 @@ trainer:
   log_every_n_steps: 100
   limit_train_batches: 20000
   gradient_clip_algorithm: norm
-  limit_val_batches: 4000
+  limit_val_batches: 2000
   limit_test_batches: 1 # we don't perform tests this way
   reload_dataloaders_every_n_epochs: 5
   max_epochs: 21
@@ -21,7 +21,7 @@ trainer:
       init_args:
         project: ${project}
         save_dir: /pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/lustre/fswork/projects/rech/xeg/uat95fg/ #/pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/data/log/
-        offline: True
+        offline: False
   callbacks:
     #- class_path: lightning.pytorch.callbacks.StochasticWeightAveraging
     #  init_args:
@@ -74,8 +74,8 @@ data:
   weight_scaler: 200
   do_gene_pos: ./data/main/biomart_pos.parquet
   add_zero_genes: 0
-  train_oversampling_per_epoch: 0.15
   validation_split: 0.05
+  n_samples_per_epoch: 1_400_000
   test_split: 0.02
   batch_size: 64
   num_workers: 20

@@ -1,10 +1,15 @@
 trainer:
   strategy: ddp_find_unused_parameters_true
+  limit_train_batches: 20_000
+  limit_val_batches: 2000
+  accumulate_grad_batches: 1
 model:
   nhead: 8
-  # num_heads_kv: 2
+  num_heads_kv: 4
   nlayers: 16 #used to be 12
   layers_cls: [512]
   d_model: 512
+  dropout: 0.1
 data:
-  batch_size: 16
+  batch_size: 8 #16
+

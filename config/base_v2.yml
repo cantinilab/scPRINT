@@ -7,14 +7,13 @@ log_freq: 200
 log_graph: True
 trainer:
   precision: 16-mixed
-  strategy: ddp_find_unused_parameters_true
+  #  strategy: ddp_find_unused_parameters_true
   gradient_clip_val: 10
   log_every_n_steps: 100
   limit_train_batches: 20000
   gradient_clip_algorithm: norm
   limit_val_batches: 2000
   limit_test_batches: 1 # we don't perform tests this way
-  reload_dataloaders_every_n_epochs: 5
   accumulate_grad_batches: 1
   logger:
     - class_path: lightning.pytorch.loggers.WandbLogger
@@ -85,7 +84,7 @@ data:
   weight_scaler: 200
   do_gene_pos: ./data/main/biomart_pos.parquet
   add_zero_genes: 0
-  train_oversampling_per_epoch: 0.15
+  n_samples_per_epoch: 1_400_000 # {data.batch_size*trainer.limit_train_batches}
   validation_split: 0.05
   test_split: 0.02
   batch_size: 64
