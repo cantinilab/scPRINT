@@ -36,6 +36,7 @@ class Denoiser:
         downsample: Optional[float] = None,
         dtype: torch.dtype = torch.float16,
         genelist: Optional[List[str]] = None,
+        save_every: int = 100_000,
     ):
         """
         Denoiser class for denoising scRNA-seq data using a scPRINT model
@@ -52,6 +53,8 @@ class Denoiser:
             downsample (Optional[float], optional): Fraction of data to downsample. Defaults to None.
             devices (List[int], optional): List of device IDs to use. Defaults to [0].
             dtype (torch.dtype, optional): Data type for computations. Defaults to torch.float16.
+            genelist (Optional[List[str]], optional): List of gene names to use. Defaults to None.
+            save_every (int, optional): The number of cells to save at a time. Defaults to 100_000.
         """
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -64,6 +67,7 @@ class Denoiser:
         self.precision = precision
         self.dtype = dtype
         self.genelist = genelist
+        self.save_every = save_every
 
     def __call__(self, model: torch.nn.Module, adata: AnnData):
         """
@@ -135,6 +139,7 @@ class Denoiser:
                     depth,
                     predict_mode="denoise",
                     depth_mult=self.predict_depth_mult,
+                    max_size_in_mem=self.save_every,
                 )
         torch.cuda.empty_cache()
         model.log_adata(name="predict_part_" + str(model.counter))

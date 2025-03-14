@@ -47,6 +47,7 @@ class Embedder:
         output_expression: str = "none",
         genelist: List[str] = [],
         get_gene_emb: bool = False,
+        save_every: int = 100_000,
     ):
         """
         Embedder a class to embed and annotate cells using a model
@@ -64,6 +65,7 @@ class Embedder:
             keep_all_cls_pred (bool, optional): Whether to keep all class predictions. Defaults to False.
             dtype (torch.dtype, optional): Data type for computations. Defaults to torch.float16.
             output_expression (str, optional): The method to output expression data. Options are "none", "all", "sample". Defaults to "none".
+            save_every (int, optional): The number of cells to save at a time. Defaults to 100_000.
         """
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -80,6 +82,7 @@ class Embedder:
         self.output_expression = output_expression
         self.genelist = genelist
         self.get_gene_emb = get_gene_emb
+        self.save_every = save_every
 
     def __call__(self, model: torch.nn.Module, adata: AnnData, cache=False):
         """
@@ -145,6 +148,7 @@ class Embedder:
                     predict_mode="none",
                     pred_embedding=self.pred_embedding,
                     get_gene_emb=self.get_gene_emb,
+                    max_size_in_mem=self.save_every,
                 )
                 torch.cuda.empty_cache()
         model.log_adata(name="predict_part_" + str(model.counter))
