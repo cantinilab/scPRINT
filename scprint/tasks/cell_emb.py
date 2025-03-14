@@ -187,12 +187,13 @@ class Embedder:
         else:
             pass
         pred_adata.obs.index = adata.obs.index
+
         try:
             adata.obsm["X_scprint_umap"] = pred_adata.obsm["X_umap"]
         except:
             print("too few cells to embed into a umap")
         try:
-            adata.obsm["scprint_leiden"] = pred_adata.obsm["leiden"]
+            adata.obs["scprint_leiden"] = pred_adata.obs["scprint_leiden"]
         except:
             print("too few cells to compute a clustering")
         adata.obsm["scprint_emb"] = pred_adata.obsm["scprint_emb"]
@@ -245,12 +246,12 @@ class Embedder:
                         if true in cur_labels_hierarchy:
                             res.append(pred in cur_labels_hierarchy[true])
                             continue
+                        elif true != "unknown":
+                            res.append(False)
                         elif true not in class_topred:
                             raise ValueError(
                                 f"true label {true} not in available classes"
                             )
-                        elif true != "unknown":
-                            res.append(False)
                     elif true not in class_topred:
                         raise ValueError(f"true label {true} not in available classes")
                     elif true != "unknown":
@@ -374,11 +375,12 @@ def default_benchmark(
     adata.obs["organism_ontology_term_id"] = "NCBITaxon:9606"
     adata = preprocessor(adata.copy())
     embedder = Embedder(
-        pred_embedding=["cell_type_ontology_term_id"] if do_class else [],
-        doclass=(default_dataset not in ["pancreas", "lung"]) and do_class,
+        pred_embedding=["cell_type_ontology_term_id"],
+        doclass=do_class,
         max_len=4000,
         keep_all_cls_pred=False,
         output_expression="none",
+        how="random expr",
     )
     embed_adata, metrics = embedder(model, adata.copy())
 
@@ -386,11 +388,12 @@ def default_benchmark(
         embed_adata,
         batch_key="tech" if default_dataset == "pancreas" else "batch",
         label_key="celltype" if default_dataset == "pancreas" else "cell_type",
-        embedding_obsm_keys=["scprint"],
-        n_jobs=6,
+        embedding_obsm_keys=["scprint_emb"],
     )
     bm.benchmark()
-    metrics.update({"scib": bm.get_results(min_max_scale=False).T.to_dict()["scprint"]})
+    metrics.update(
+        {"scib": bm.get_results(min_max_scale=False).T.to_dict()["scprint_emb"]}
+    )
     metrics["classif"] = compute_classification(
         embed_adata, model.classes, model.label_decoders, model.labels_hierarchy
     )
