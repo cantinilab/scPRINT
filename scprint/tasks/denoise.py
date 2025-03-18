@@ -37,6 +37,7 @@ class Denoiser:
         dtype: torch.dtype = torch.float16,
         genelist: Optional[List[str]] = None,
         save_every: int = 100_000,
+        knn_model: bool = False,
     ):
         """
         Denoiser class for denoising scRNA-seq data using a scPRINT model
@@ -55,6 +56,7 @@ class Denoiser:
             dtype (torch.dtype, optional): Data type for computations. Defaults to torch.float16.
             genelist (Optional[List[str]], optional): List of gene names to use. Defaults to None.
             save_every (int, optional): The number of cells to save at a time. Defaults to 100_000.
+            knn_model (bool, optional): Whether to use a KNN model. Defaults to False.
         """
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -68,6 +70,7 @@ class Denoiser:
         self.dtype = dtype
         self.genelist = genelist
         self.save_every = save_every
+        self.knn_model = knn_model
 
     def __call__(self, model: torch.nn.Module, adata: AnnData):
         """
@@ -91,11 +94,15 @@ class Denoiser:
                 low=0, high=adata.shape[0], size=self.max_cells
             )
             adataset = SimpleAnnDataset(
-                adata[random_indices], obs_to_output=["organism_ontology_term_id"]
+                adata[random_indices],
+                obs_to_output=["organism_ontology_term_id"],
+                get_knn_cells=self.knn_model,
             )
         else:
             adataset = SimpleAnnDataset(
-                adata, obs_to_output=["organism_ontology_term_id"]
+                adata,
+                obs_to_output=["organism_ontology_term_id"],
+                get_knn_cells=self.knn_model,
             )
         if self.how == "most var":
             sc.pp.highly_variable_genes(
@@ -137,6 +144,7 @@ class Denoiser:
                     gene_pos,
                     expression,
                     depth,
+                    knn_cells=batch["knn_cells"].to(device) if self.knn_model else None,
                     predict_mode="denoise",
                     depth_mult=self.predict_depth_mult,
                     max_size_in_mem=self.save_every,
@@ -243,6 +251,7 @@ def default_benchmark(
     default_dataset: str = FILE_DIR
     + "/../../data/gNNpgpo6gATjuxTE7CCp.h5ad",  # r4iCehg3Tw5IbCLiCIbl
     max_len: int = 5000,
+    knn_model: bool = False,
 ):
     """
     default_benchmark function used to run the default denoising benchmark of scPRINT
@@ -256,14 +265,19 @@ def default_benchmark(
         dict: A dictionary containing the benchmark metrics.
     """
     adata = sc.read_h5ad(default_dataset)
+    if knn_model:
+        if "X_pca" not in adata.obsm:
+            sc.pp.pca(adata, n_comps=50)
+        sc.pp.neighbors(adata, use_rep="X_pca")
     denoise = Denoiser(
-        batch_size=40,
+        batch_size=40 if not knn_model else 20,
         max_len=max_len,
         max_cells=10_000,
         doplot=False,
         num_workers=8,
         predict_depth_mult=10,
         downsample=0.7,
+        knn_model=knn_model,
     )
     return denoise(model, adata)[0]
 

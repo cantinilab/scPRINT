@@ -48,7 +48,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         gene_pos_enc: Optional[list] = None,
         normalization: str = "sum",
         attn_bias: str = "none",
-        expr_encoder_layers: int = 2,
+        expr_encoder_layers: int = 3,
         transformer: str = "flash",  # "performer", "flash", "normal", "crisscross"
         expr_emb_style: str = "continuous",  # "binned_pos", "cont_pos", "metacell", "full_pos"
         domain_spec_batchnorm: str = "None",
@@ -278,7 +278,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.expr_encoder = encoders.CategoryValueEncoder(n_input_bins, d_model)
         elif expr_emb_style == "metacell":
             self.expr_encoder = encoders.GNN(
-                1, d_model, expr_encoder_layers, dropout, "deepset"
+                1, 16, d_model, expr_encoder_layers, dropout, "deepset"
             )
 
         # Positional Encoding
@@ -1483,7 +1483,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # Run the test only on global rank 0
         name = self.name + "_step" + str(self.global_step)
         try:
-            metrics = utils.test(self, name, filedir=str(FILEDIR), do_class=self.do_cls)
+            metrics = utils.test(
+                self,
+                name,
+                filedir=str(FILEDIR),
+                do_class=self.do_cls,
+                knn_model=self.expr_emb_style == "metacell",
+            )
             print(metrics)
             print("done test")
             if self.set_step is not None:

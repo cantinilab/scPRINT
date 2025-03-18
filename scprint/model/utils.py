@@ -616,7 +616,11 @@ class Attention:
 
 
 def test(
-    model: torch.nn.Module, name: str, filedir: str, do_class: bool = True
+    model: torch.nn.Module,
+    name: str,
+    filedir: str,
+    do_class: bool = True,
+    knn_model=False,
 ) -> None:
     """
     Test the given model on the full set of benchmarks and save the results to JSON files.
@@ -630,43 +634,51 @@ def test(
         None
     """
     metrics = {}
-    res = embbed_task.default_benchmark(
-        model, default_dataset="lung", do_class=do_class, coarse=False
-    )
-    f = open("metrics_" + name + ".json", "a")
-    f.write(json.dumps({"embed_lung": res}, indent=4))
-    f.close()
-    metrics.update(
-        {
-            "emb_lung/scib": float(res["scib"]["Total"]),
-            "emb_lung/ct_class": float(
-                res["classif"]["cell_type_ontology_term_id"]["accuracy"]
-                if do_class
-                else 0
-            ),
-        }
-    )
-    print(metrics)
-    res = embbed_task.default_benchmark(
-        model, default_dataset="pancreas", do_class=do_class, coarse=False
-    )
-    f = open("metrics_" + name + ".json", "a")
-    f.write(json.dumps({"embed_panc": res}, indent=4))
-    f.close()
-    metrics.update(
-        {
-            "emb_panc/scib": float(res["scib"]["Total"]),
-            "emb_panc/ct_class": float(
-                res["classif"]["cell_type_ontology_term_id"]["accuracy"]
-                if do_class
-                else 0
-            ),
-        }
-    )
-    print(metrics)
-    gc.collect()
+        res = embbed_task.default_benchmark(
+            model,
+            default_dataset="lung",
+            do_class=do_class,
+            coarse=False,
+            knn_model=knn_model,
+        )
+        f = open("metrics_" + name + ".json", "a")
+        f.write(json.dumps({"embed_lung": res}, indent=4))
+        f.close()
+        metrics.update(
+            {
+                "emb_lung/scib": float(res["scib"]["Total"]),
+                "emb_lung/ct_class": float(
+                    res["classif"]["cell_type_ontology_term_id"]["accuracy"]
+                    if do_class
+                    else 0
+                ),
+            }
+        )
+        print(metrics)
+        res = embbed_task.default_benchmark(
+            model,
+            default_dataset="pancreas",
+            do_class=do_class,
+            coarse=False,
+            knn_model=knn_model,
+        )
+        f = open("metrics_" + name + ".json", "a")
+        f.write(json.dumps({"embed_panc": res}, indent=4))
+        f.close()
+        metrics.update(
+            {
+                "emb_panc/scib": float(res["scib"]["Total"]),
+                "emb_panc/ct_class": float(
+                    res["classif"]["cell_type_ontology_term_id"]["accuracy"]
+                    if do_class
+                    else 0
+                ),
+            }
+        )
+        print(metrics)
+        gc.collect()
     res = denoise_task.default_benchmark(
-        model, filedir + "/../../data/gNNpgpo6gATjuxTE7CCp.h5ad"
+        model, filedir + "/../../data/gNNpgpo6gATjuxTE7CCp.h5ad", knn_model=knn_model
     )
     metrics.update(
         {
@@ -681,7 +693,7 @@ def test(
     f.write(json.dumps({"denoise": res}, indent=4))
     f.close()
     res = grn_task.default_benchmark(
-        model, "gwps", batch_size=32 if model.d_model <= 512 else 8
+        model, "gwps", batch_size=32 if model.d_model <= 512 else 8, knn_model=knn_model
     )
     f = open("metrics_" + name + ".json", "a")
     f.write(json.dumps({"grn_gwps": res}, default=lambda o: str(o), indent=4))
@@ -699,7 +711,7 @@ def test(
     print(metrics)
     gc.collect()
     res = grn_task.default_benchmark(
-        model, "sroy", batch_size=32 if model.d_model <= 512 else 8
+        model, "sroy", batch_size=32 if model.d_model <= 512 else 8, knn_model=knn_model
     )
     f = open("metrics_" + name + ".json", "a")
     f.write(json.dumps({"grn_sroy": res}, default=lambda o: str(o), indent=4))
@@ -799,6 +811,7 @@ def test(
             "kidney interstitial fibroblast",
             "endothelial cell",
         ],
+        knn_model=knn_model,
     )
     f = open("metrics_" + name + ".json", "a")
     f.write(json.dumps({"grn_omni": res}, default=lambda o: str(o), indent=4))
