@@ -158,7 +158,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.predict_depth_mult = 3
         self.predict_mode = "none"
         self.keep_all_cls_pred = False
-        self.cell_separation = True
 
         self.depth_atinput = depth_atinput
         self.tf_masker = WeightedMasker(genes, inv_weight=0.05)
@@ -1447,17 +1446,19 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             if self.pred is not None
             else None
         )
-        self.pos = self.all_gather(self.pos).view(-1, self.pos.shape[-1])
-        self.expr_pred[0] = self.all_gather(self.expr_pred[0]).view(
-            -1, self.expr_pred[0].shape[-1]
-        )
-        if len(self.expr_pred) > 1:
-            self.expr_pred[1] = self.all_gather(self.expr_pred[1]).view(
-                -1, self.expr_pred[1].shape[-1]
-            )
-            self.expr_pred[2] = self.all_gather(self.expr_pred[2]).view(
-                -1, self.expr_pred[2].shape[-1]
-            )
+        del self.pos
+        del self.expr_pred
+        # self.pos = self.all_gather(self.pos).view(-1, self.pos.shape[-1])
+        # self.expr_pred[0] = self.all_gather(self.expr_pred[0]).view(
+        #     -1, self.expr_pred[0].shape[-1]
+        # )
+        # if len(self.expr_pred) > 1:
+        #     self.expr_pred[1] = self.all_gather(self.expr_pred[1]).view(
+        #         -1, self.expr_pred[1].shape[-1]
+        #     )
+        # self.expr_pred[2] = self.all_gather(self.expr_pred[2]).view(
+        #     -1, self.expr_pred[2].shape[-1]
+        # )
 
         if self.trainer.state.stage != "sanity_check":
             if self.trainer.is_global_zero:

@@ -3,15 +3,9 @@ scprint_training:
   noise: [0.7, 1.0]
 trainer:
   reload_dataloaders_every_n_epochs: 20
-  accumulate_grad_batches: 4
-  logger:
-    - class_path: lightning.pytorch.loggers.WandbLogger
-      init_args:
-        project: ${project}
-        save_dir: /pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/data/log/
-        offline: True
 data:
   collection_name: scPRINT-V2 (good quality)
-  num_workers: 16
   get_knn_cells: True
-  batch_size: 16
+  metacell_mode: 0
+model:
+  expr_emb_style: metacell
