@@ -1446,8 +1446,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             if self.pred is not None
             else None
         )
-        del self.pos
-        del self.expr_pred
+        self.pos = None
+        self.expr_pred = None
         # self.pos = self.all_gather(self.pos).view(-1, self.pos.shape[-1])
         # self.expr_pred[0] = self.all_gather(self.expr_pred[0]).view(
         #     -1, self.expr_pred[0].shape[-1]
