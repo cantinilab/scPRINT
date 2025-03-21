@@ -118,7 +118,7 @@ class Denoiser:
             max_len=self.max_len,
             how="some" if self.how == "most var" else self.how,
             genelist=self.genelist if self.how != "random expr" else [],
-            downsample_expr=self.downsample_expr,
+            downsample=self.downsample_expr,
             save_output=f"collator_output_{num}.txt"
             if self.downsample_expr is not None
             else None,
