@@ -48,6 +48,7 @@ class Embedder:
         genelist: List[str] = [],
         get_gene_emb: bool = False,
         save_every: int = 100_000,
+        knn_model: bool = False,
     ):
         """
         Embedder a class to embed and annotate cells using a model
@@ -66,6 +67,7 @@ class Embedder:
             dtype (torch.dtype, optional): Data type for computations. Defaults to torch.float16.
             output_expression (str, optional): The method to output expression data. Options are "none", "all", "sample". Defaults to "none".
             save_every (int, optional): The number of cells to save at a time. Defaults to 100_000.
+            knn_model (bool, optional): Whether to use a KNN model. Defaults to False.
         """
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -83,6 +85,7 @@ class Embedder:
         self.genelist = genelist
         self.get_gene_emb = get_gene_emb
         self.save_every = save_every
+        self.knn_model = knn_model
 
     def __call__(self, model: torch.nn.Module, adata: AnnData, cache=False):
         """
@@ -111,7 +114,11 @@ class Embedder:
                 adata, flavor="seurat_v3", n_top_genes=self.max_len
             )
             self.genelist = adata.var.index[adata.var.highly_variable]
-        adataset = SimpleAnnDataset(adata, obs_to_output=["organism_ontology_term_id"])
+        adataset = SimpleAnnDataset(
+            adata,
+            obs_to_output=["organism_ontology_term_id"],
+            get_knn_cells=self.knn_model,
+        )
         col = Collator(
             organisms=model.organisms,
             valid_genes=model.genes,
@@ -145,6 +152,7 @@ class Embedder:
                     gene_pos,
                     expression,
                     depth,
+                    knn_cells=batch["knn_cells"].to(device) if self.knn_model else None,
                     predict_mode="none",
                     pred_embedding=self.pred_embedding,
                     get_gene_emb=self.get_gene_emb,
@@ -329,6 +337,7 @@ def default_benchmark(
     default_dataset: str = "pancreas",
     do_class: bool = True,
     coarse: bool = False,
+    knn_model: bool = False,
 ) -> dict:
     """
     Run the default benchmark for embedding and annotation using the scPRINT model.
@@ -338,7 +347,7 @@ def default_benchmark(
         default_dataset (str, optional): The default dataset to use for benchmarking. Options are "pancreas", "lung", or a path to a dataset. Defaults to "pancreas".
         do_class (bool, optional): Whether to perform classification. Defaults to True.
         coarse (bool, optional): Whether to use coarse cell type annotations. Defaults to False.
-
+        knn_model (bool, optional): Whether to use a KNN model. Defaults to False.
     Returns:
         dict: A dictionary containing the benchmark metrics.
     """
@@ -370,10 +379,12 @@ def default_benchmark(
         is_symbol=True,
         force_preprocess=True,
         skip_validate=True,
-        do_postp=False,
+        do_postp=knn_model,
     )
     adata.obs["organism_ontology_term_id"] = "NCBITaxon:9606"
     adata = preprocessor(adata.copy())
+    if knn_model:
+        sc.pp.neighbors(adata, use_rep="X_pca")
     embedder = Embedder(
         pred_embedding=["cell_type_ontology_term_id"],
         doclass=do_class,
@@ -381,6 +392,7 @@ def default_benchmark(
         keep_all_cls_pred=False,
         output_expression="none",
         how="random expr",
+        knn_model=knn_model,
     )
     embed_adata, metrics = embedder(model, adata.copy())
 

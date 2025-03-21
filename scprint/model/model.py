@@ -48,7 +48,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         gene_pos_enc: Optional[list] = None,
         normalization: str = "sum",
         attn_bias: str = "none",
-        expr_encoder_layers: int = 2,
+        expr_encoder_layers: int = 3,
         transformer: str = "flash",  # "performer", "flash", "normal", "crisscross"
         expr_emb_style: str = "continuous",  # "binned_pos", "cont_pos", "metacell", "full_pos"
         domain_spec_batchnorm: str = "None",
@@ -158,7 +158,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.predict_depth_mult = 3
         self.predict_mode = "none"
         self.keep_all_cls_pred = False
-        self.cell_separation = True
 
         self.depth_atinput = depth_atinput
         self.tf_masker = WeightedMasker(genes, inv_weight=0.05)
@@ -278,7 +277,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.expr_encoder = encoders.CategoryValueEncoder(n_input_bins, d_model)
         elif expr_emb_style == "metacell":
             self.expr_encoder = encoders.GNN(
-                1, d_model, expr_encoder_layers, dropout, "deepset"
+                1, 16, d_model, expr_encoder_layers, dropout, "deepset"
             )
 
         # Positional Encoding
@@ -1447,17 +1446,19 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             if self.pred is not None
             else None
         )
-        self.pos = self.all_gather(self.pos).view(-1, self.pos.shape[-1])
-        self.expr_pred[0] = self.all_gather(self.expr_pred[0]).view(
-            -1, self.expr_pred[0].shape[-1]
-        )
-        if len(self.expr_pred) > 1:
-            self.expr_pred[1] = self.all_gather(self.expr_pred[1]).view(
-                -1, self.expr_pred[1].shape[-1]
-            )
-            self.expr_pred[2] = self.all_gather(self.expr_pred[2]).view(
-                -1, self.expr_pred[2].shape[-1]
-            )
+        self.pos = None
+        self.expr_pred = None
+        # self.pos = self.all_gather(self.pos).view(-1, self.pos.shape[-1])
+        # self.expr_pred[0] = self.all_gather(self.expr_pred[0]).view(
+        #     -1, self.expr_pred[0].shape[-1]
+        # )
+        # if len(self.expr_pred) > 1:
+        #     self.expr_pred[1] = self.all_gather(self.expr_pred[1]).view(
+        #         -1, self.expr_pred[1].shape[-1]
+        #     )
+        # self.expr_pred[2] = self.all_gather(self.expr_pred[2]).view(
+        #     -1, self.expr_pred[2].shape[-1]
+        # )
 
         if self.trainer.state.stage != "sanity_check":
             if self.trainer.is_global_zero:
@@ -1483,7 +1484,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # Run the test only on global rank 0
         name = self.name + "_step" + str(self.global_step)
         try:
-            metrics = utils.test(self, name, filedir=str(FILEDIR), do_class=self.do_cls)
+            metrics = utils.test(
+                self,
+                name,
+                filedir=str(FILEDIR),
+                do_class=self.do_cls,
+                knn_model=self.expr_emb_style == "metacell",
+            )
             print(metrics)
             print("done test")
             if self.set_step is not None:

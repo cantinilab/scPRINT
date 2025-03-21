@@ -6,6 +6,7 @@
 #SBATCH --requeue
 
 # run script from above
+echo "Running scprint fit $1"
 eval "srun scprint fit $1" --trainer.default_root_dir ./$SLURM_JOB_ID
 if [ $? -eq 0 ]; then
     # Run completed successfully

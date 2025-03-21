@@ -68,7 +68,7 @@ model:
   #  self_reported_ethnicity_ontology_term_id: 10
   #  sex_ontology_term_id: 2
   #  organism_ontology_term_id: 8
-  class_compression: "none"
+  class_compression: vae
 data:
   organisms:
     - NCBITaxon:9606
@@ -80,7 +80,7 @@ data:
   max_len: 3200
   pin_memory: True
   prefetch_factor: 3
-  metacell_mode: 0
+  metacell_mode: 0.3
   weight_scaler: 200
   do_gene_pos: ./data/main/biomart_pos.parquet
   add_zero_genes: 0

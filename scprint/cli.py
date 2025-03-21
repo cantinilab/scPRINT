@@ -15,6 +15,7 @@ from scprint.tasks import Denoiser, Embedder, GNInfer
 from .trainer import TrainingMode
 
 TASKS = [("embed", Embedder), ("gninfer", GNInfer), ("denoise", Denoiser)]
+TIMEOUT = 3600 * 5  # 5 hours in seconds
 
 
 class MyCLI(LightningCLI):
@@ -278,11 +279,11 @@ class MyCLI(LightningCLI):
         ]:
             import os
 
-            os.environ["NCCL_TIMEOUT"] = str(7000)  # 2 hours in seconds
-            os.environ["TORCH_DISTRIBUTED_TIMEOUT"] = str(7000)  # 2 hours in seconds
-            os.environ["PL_TRAINER_STRATEGY_TIMEOUT"] = str(7000)
+            os.environ["NCCL_TIMEOUT"] = str(TIMEOUT)  # 2 hours in seconds
+            os.environ["TORCH_DISTRIBUTED_TIMEOUT"] = str(TIMEOUT)  # 2 hours in seconds
+            os.environ["PL_TRAINER_STRATEGY_TIMEOUT"] = str(TIMEOUT)
 
-            print("setting global pytorch distributed timeout to 10000s")
+            print(f"setting global pytorch distributed timeout to {TIMEOUT}s")
 
     def instantiate_trainer(self, **kwargs) -> Trainer:
         """Override to customize trainer instantiation"""
@@ -297,7 +298,7 @@ class MyCLI(LightningCLI):
 
             # Update the config
             print("updating the config")
-            trainer.strategy._timeout = timedelta(seconds=7000)  # 2hours in second
+            trainer.strategy._timeout = timedelta(seconds=TIMEOUT)  # 2hours in second
             trainer.strategy.setup_distributed()
         # Call parent method to create trainer
         return trainer

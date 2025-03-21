@@ -60,6 +60,7 @@ class GNInfer:
         dtype: torch.dtype = torch.float16,
         locname: str = "",
         add_emb_in_model: bool = False,
+        knn_model: bool = False,
     ):
         """
         GNInfer a class to infer gene regulatory networks from a dataset using a scPRINT model.
@@ -88,7 +89,7 @@ class GNInfer:
             dtype (torch.dtype, optional): Data type for computations. Defaults to torch.float16.
             locname (str, optional): Name for the location. Defaults to an empty string.
             add_emb_in_model (bool, optional): Whether to add cell embeddings in the grn. Defaults to False.
-
+            knn_model (bool, optional): Whether to use a KNN model. Defaults to False.
         """
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -122,6 +123,7 @@ class GNInfer:
         self.max_cells = max_cells
         self.curr_genes = None
         self.drop_unexpressed = drop_unexpressed
+        self.knn_model = knn_model
         self.precision = precision
         self.comp_attn = comp_attn
         self.add_emb_in_model = add_emb_in_model
@@ -215,7 +217,9 @@ class GNInfer:
         if len(subadata) == 0:
             raise ValueError("no cells in the dataset")
         adataset = SimpleAnnDataset(
-            subadata, obs_to_output=["organism_ontology_term_id"]
+            subadata,
+            obs_to_output=["organism_ontology_term_id"],
+            get_knn_cells=self.knn_model,
         )
         col = Collator(
             organisms=model.organisms,
@@ -263,11 +267,12 @@ class GNInfer:
                     gene_pos,
                     expression,
                     depth,
+                    knn_cells=batch["knn_cells"].to(device) if self.knn_model else None,
                     predict_mode=self.forward_mode,
                     get_attention_layer=layer if type(layer) is list else [layer],
                 )
                 torch.cuda.empty_cache()
-                
+
         return subadata
 
     def aggregate(self, attn, genes):
@@ -426,6 +431,7 @@ def default_benchmark(
     maxgenes: int = 5000,
     batch_size: int = 32,
     maxcells: int = 1024,
+    knn_model: bool = False,
 ):
     """
     default_benchmark function to run the default scPRINT GRN benchmark
@@ -439,6 +445,7 @@ def default_benchmark(
         maxgenes (int, optional): Maximum number of genes to consider. Defaults to 5000.
         batch_size (int, optional): Batch size for processing. Defaults to 32.
         maxcells (int, optional): Maximum number of cells to consider. Defaults to 1024.
+        knn_model (bool, optional): Whether to use a KNN model. Defaults to False.
 
     Returns:
         dict: A dictionary containing the benchmark metrics.
@@ -451,7 +458,7 @@ def default_benchmark(
             is_symbol=True,
             force_preprocess=True,
             skip_validate=True,
-            do_postp=False,
+            do_postp=knn_model,
             min_valid_genes_id=5000,
             min_dataset_size=64,
         )
@@ -474,6 +481,8 @@ def default_benchmark(
             print(da + "_" + gt)
             preadata = get_sroy_gt(get=da, species=spe, gt=gt)
             adata = preprocessor(preadata.copy())
+            if knn_model:
+                sc.pp.neighbors(adata, use_rep="X_pca")
             grn_inferer = GNInfer(
                 layer=layers,
                 how="most var within",
@@ -486,6 +495,7 @@ def default_benchmark(
                 max_cells=maxcells,
                 doplot=False,
                 batch_size=batch_size,
+                knn_model=knn_model,
             )
             grn = grn_inferer(model, adata)
             grn.varp["all"] = grn.varp["GRN"]
@@ -590,14 +600,16 @@ def default_benchmark(
         preprocessor = Preprocessor(
             force_preprocess=True,
             skip_validate=True,
-            do_postp=False,
+            do_postp=knn_model,
             min_valid_genes_id=maxgenes,
             min_dataset_size=64,
         )
         nadata = preprocessor(adata.copy())
-        adata.var["isTF"] = False
-        adata.var.loc[adata.var.gene_name.isin(grnutils.TF), "isTF"] = True
-        adata.var["isTF"].sum()
+        if knn_model:
+            sc.pp.neighbors(nadata, use_rep="X_pca")
+        nadata.var["isTF"] = False
+        nadata.var.loc[nadata.var.gene_name.isin(grnutils.TF), "isTF"] = True
+        nadata.var["isTF"].sum()
         grn_inferer = GNInfer(
             layer=layers,
             how="most var within",
@@ -610,6 +622,7 @@ def default_benchmark(
             doplot=False,
             num_workers=8,
             batch_size=batch_size,
+            knn_model=knn_model,
         )
         grn = grn_inferer(model, nadata)
         grn.varp["all"] = grn.varp["GRN"]
@@ -671,6 +684,10 @@ def default_benchmark(
         adata = sc.read_h5ad(default_dataset)
         adata.var["isTF"] = False
         adata.var.loc[adata.var.symbol.isin(grnutils.TF), "isTF"] = True
+        if knn_model:
+            if "X_pca" not in adata.obsm:
+                sc.pp.pca(adata, n_comps=50)
+            sc.pp.neighbors(adata, use_rep="X_pca")
         for celltype in cell_types:
             # print(celltype)
             # grn_inferer = GNInfer(
@@ -706,6 +723,7 @@ def default_benchmark(
                 max_cells=maxcells,
                 doplot=False,
                 batch_size=batch_size,
+                knn_model=knn_model,
             )
             grn = grn_inferer(model, adata[adata.X.sum(1) > 500], cell_type=celltype)
             grn.var.index = make_index_unique(grn.var["symbol"].astype(str))

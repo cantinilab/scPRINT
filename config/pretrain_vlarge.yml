@@ -1,17 +1,21 @@
+log_freq: 300
 trainer:
   strategy: ddp_find_unused_parameters_true
   log_every_n_steps: 300
-  gradient_clip_val: 500
-  limit_train_batches: 14000
-  limit_val_batches: 2000
-  reload_dataloaders_every_n_epochs: 1
-  accumulate_grad_batches: 2
+  limit_train_batches: 60000
+  limit_val_batches: 6000
+  reload_dataloaders_every_n_epochs: 20
+  accumulate_grad_batches: 3
 model:
-  nhead: 20
-  lr: 0.00001
+  nhead: 16
+  num_heads_kv: 4
+  lr: 0.0001
   nlayers: 32
-  layers_cls: [512]
-  d_model: 1280
+  d_model: 1024
+  dropout: 0.1
 data:
   batch_size: 3
-  num_workers: 9
+  num_workers: 12
+  max_len: 2400
+scprint_training:
+  mask_ratio: []

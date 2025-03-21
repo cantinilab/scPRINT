@@ -310,10 +310,11 @@ class GNN(nn.Module):
     def __init__(
         self,
         input_dim: int = 1,  # here, 1 or 2
+        merge_dim: int = 16,
         output_dim: int = 256,
         num_layers: int = 3,
         dropout: float = 0.1,
-        gnn_type: str = "gcn",
+        gnn_type: str = "deepset",
         add_connection_feature: bool = False,
     ):
         """
@@ -330,6 +331,8 @@ class GNN(nn.Module):
 
         self.input_dim = input_dim
         self.output_dim = output_dim
+        if num_layers == 1:
+            raise ValueError("num_layers must be greater than 1")
         self.num_layers = num_layers
         self.dropout = dropout
         self.gnn_type = gnn_type
@@ -339,9 +342,9 @@ class GNN(nn.Module):
             # Local MLP (phi) for processing individual nodes
             self.input_nn_layer = MLP(
                 in_channels=input_dim,
-                hidden_channels=output_dim // 2,
-                out_channels=output_dim // 2,
-                num_layers=2,
+                hidden_channels=merge_dim,
+                out_channels=merge_dim,
+                num_layers=num_layers,
                 dropout=dropout,
                 act="relu",
                 norm="layer_norm",
@@ -349,9 +352,9 @@ class GNN(nn.Module):
 
             self.input_self_layer = MLP(
                 in_channels=input_dim,
-                hidden_channels=output_dim // 2,
-                out_channels=output_dim // 2,
-                num_layers=1,
+                hidden_channels=merge_dim,
+                out_channels=merge_dim,
+                num_layers=num_layers - 1,
                 dropout=dropout,
                 act="relu",
                 norm="layer_norm",
@@ -359,10 +362,12 @@ class GNN(nn.Module):
 
             # Global MLP (rho) for processing aggregated features
             self.output_layer = MLP(
-                in_channels=output_dim + 1 if add_connection_feature else output_dim,
+                in_channels=(merge_dim * 2) + 1
+                if add_connection_feature
+                else merge_dim * 2,
                 hidden_channels=output_dim,
                 out_channels=output_dim,
-                num_layers=num_layers,
+                num_layers=num_layers - 1,
                 dropout=dropout,
                 act="relu",
                 norm="layer_norm",
@@ -410,8 +415,8 @@ class GNN(nn.Module):
         x = x.unsqueeze(-1)
         neighbors = neighbors.unsqueeze(-1)
         if self.gnn_type == "deepset":
-            x = self.input_nn_layer(x)
-            neighbors = self.input_self_layer(neighbors)
+            x = self.input_self_layer(x)
+            neighbors = self.input_nn_layer(neighbors)
             x = torch.cat([x, neighbors.sum(dim=-3)], dim=-1)
         else:
             x = self.gnn_layer(x, edge_info)
