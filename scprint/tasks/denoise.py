@@ -28,16 +28,14 @@ class Denoiser:
         batch_size: int = 10,
         num_workers: int = 1,
         max_len: int = 5_000,
-        precision: str = "16-mixed",
         how: str = "most var",
         max_cells: int = 500_000,
         doplot: bool = False,
         predict_depth_mult: int = 4,
-        downsample: Optional[float] = None,
+        downsample_expr: Optional[float] = None,
         dtype: torch.dtype = torch.float16,
         genelist: Optional[List[str]] = None,
         save_every: int = 100_000,
-        knn_model: bool = False,
     ):
         """
         Denoiser class for denoising scRNA-seq data using a scPRINT model
@@ -46,17 +44,23 @@ class Denoiser:
             batch_size (int, optional): Batch size for processing. Defaults to 10.
             num_workers (int, optional): Number of workers for data loading. Defaults to 1.
             max_len (int, optional): Maximum number of genes to consider. Defaults to 5000.
-            precision (str, optional): Precision type for computations. Defaults to "16-mixed".
-            how (str, optional): Method to select genes. Options are "most var". Defaults to "most var".
+            how (str, optional): Method to select genes. Options are "most var", "random expr", "some". Defaults to "most var".
+                - "most var": select the most variable genes
+                - "random expr": select random expressed genes
+                - "some": select a subset of genes defined in genelist
             max_cells (int, optional): Number of cells to use for plotting correlation. Defaults to 10000.
-            doplot (bool, optional): Whether to generate plots. Defaults to False.
+            doplot (bool, optional): Whether to generate plots of the similarity between the denoised and true expression data. Defaults to False.
+                Only works when downsample_expr is not None and max_cells < 100.
             predict_depth_mult (int, optional): Multiplier for prediction depth. Defaults to 4.
-            downsample (Optional[float], optional): Fraction of data to downsample. Defaults to None.
-            devices (List[int], optional): List of device IDs to use. Defaults to [0].
+                This will artificially increase the sequencing depth (or number of counts) to 4 times the original depth.
+            downsample_expr (Optional[float], optional): Fraction of expression data to downsample. Defaults to None.
+                This is usefull to test the ability of the model to denoise the dataset.
+                When this option is on, the class output is a tuple of (metrics, random_indices, pred_adata).
+                Where the metric is the result of the denoising from the downsampled expression to true expression data.
             dtype (torch.dtype, optional): Data type for computations. Defaults to torch.float16.
-            genelist (Optional[List[str]], optional): List of gene names to use. Defaults to None.
+            genelist (List[str], optional): The list of genes to be used for embedding. Defaults to []: In this case, "how" needs to be "most var" or "random expr".
             save_every (int, optional): The number of cells to save at a time. Defaults to 100_000.
-            knn_model (bool, optional): Whether to use a KNN model. Defaults to False.
+                This is important to avoid memory issues.
         """
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -65,12 +69,10 @@ class Denoiser:
         self.doplot = doplot
         self.predict_depth_mult = predict_depth_mult
         self.how = how
-        self.downsample = downsample
-        self.precision = precision
+        self.downsample_expr = downsample_expr
         self.dtype = dtype
         self.genelist = genelist
         self.save_every = save_every
-        self.knn_model = knn_model
 
     def __call__(self, model: torch.nn.Module, adata: AnnData):
         """
@@ -84,7 +86,7 @@ class Denoiser:
             AnnData: The denoised annotated data matrix.
         """
         # Select random number
-        if self.downsample is not None:
+        if self.downsample_expr is not None:
             num = np.random.randint(0, 1000000)
             while os.path.exists(f"collator_output_{num}.txt"):
                 num = np.random.randint(0, 1000000)
@@ -96,13 +98,13 @@ class Denoiser:
             adataset = SimpleAnnDataset(
                 adata[random_indices],
                 obs_to_output=["organism_ontology_term_id"],
-                get_knn_cells=self.knn_model,
+                get_knn_cells=model.expr_emb_style == "metacell",
             )
         else:
             adataset = SimpleAnnDataset(
                 adata,
                 obs_to_output=["organism_ontology_term_id"],
-                get_knn_cells=self.knn_model,
+                get_knn_cells=model.expr_emb_style == "metacell",
             )
         if self.how == "most var":
             sc.pp.highly_variable_genes(
@@ -116,9 +118,9 @@ class Denoiser:
             max_len=self.max_len,
             how="some" if self.how == "most var" else self.how,
             genelist=self.genelist if self.how != "random expr" else [],
-            downsample=self.downsample,
+            downsample_expr=self.downsample_expr,
             save_output=f"collator_output_{num}.txt"
-            if self.downsample is not None
+            if self.downsample_expr is not None
             else None,
         )
         dataloader = DataLoader(
@@ -144,7 +146,9 @@ class Denoiser:
                     gene_pos,
                     expression,
                     depth,
-                    knn_cells=batch["knn_cells"].to(device) if self.knn_model else None,
+                    knn_cells=batch["knn_cells"].to(device)
+                    if model.expr_emb_style == "metacell"
+                    else None,
                     predict_mode="denoise",
                     depth_mult=self.predict_depth_mult,
                     max_size_in_mem=self.save_every,
@@ -174,7 +178,7 @@ class Denoiser:
             pred_adata.append(sc.read_h5ad(file))
         pred_adata = concat(pred_adata)
         metrics = None
-        if self.downsample is not None:
+        if self.downsample_expr is not None:
             noisy = np.loadtxt(f"collator_output_{num}.txt")
             loc = np.loadtxt(f"collator_output_{num}.txt_loc")
             os.remove(f"collator_output_{num}.txt")
@@ -211,31 +215,31 @@ class Denoiser:
                 "reco2full": corr_coef[0, 2],
                 "noisy2full": corr_coef[1, 2],
             }
-            # corr_coef[p_value > 0.05] = 0
-            # if self.doplot:
-            #    plt.figure(figsize=(10, 5))
-            #    plt.imshow(
-            #        corr_coef, cmap="coolwarm", interpolation="none", vmin=-1, vmax=1
-            #    )
-            #    plt.colorbar()
-            #    plt.title("Expression Correlation Coefficient")
-            #    plt.show()
-            # metrics = {
-            #    "reco2noisy": np.mean(
-            #        corr_coef[
-            #            self.max_cells : self.max_cells * 2, : self.max_cells
-            #        ].diagonal()
-            #    ),
-            #    "reco2full": np.mean(
-            #        corr_coef[self.max_cells * 2 :, : self.max_cells].diagonal()
-            #    ),
-            #    "noisy2full": np.mean(
-            #        corr_coef[
-            #            self.max_cells * 2 :,
-            #            self.max_cells : self.max_cells * 2,
-            #        ].diagonal()
-            #    ),
-            # }
+            if self.doplot and self.max_cells < 100:
+                corr_coef[p_value > 0.05] = 0
+                plt.figure(figsize=(10, 5))
+                plt.imshow(
+                    corr_coef, cmap="coolwarm", interpolation="none", vmin=-1, vmax=1
+                )
+                plt.colorbar()
+                plt.title("Expression Correlation Coefficient")
+                plt.show()
+                metrics = {
+                    "reco2noisy": np.mean(
+                        corr_coef[
+                            self.max_cells : self.max_cells * 2, : self.max_cells
+                        ].diagonal()
+                    ),
+                    "reco2full": np.mean(
+                        corr_coef[self.max_cells * 2 :, : self.max_cells].diagonal()
+                    ),
+                    "noisy2full": np.mean(
+                        corr_coef[
+                            self.max_cells * 2 :,
+                            self.max_cells : self.max_cells * 2,
+                        ].diagonal()
+                    ),
+                }
         return metrics, random_indices, pred_adata
 
 
@@ -251,7 +255,6 @@ def default_benchmark(
     default_dataset: str = FILE_DIR
     + "/../../data/gNNpgpo6gATjuxTE7CCp.h5ad",  # r4iCehg3Tw5IbCLiCIbl
     max_len: int = 5000,
-    knn_model: bool = False,
 ):
     """
     default_benchmark function used to run the default denoising benchmark of scPRINT
@@ -265,19 +268,18 @@ def default_benchmark(
         dict: A dictionary containing the benchmark metrics.
     """
     adata = sc.read_h5ad(default_dataset)
-    if knn_model:
+    if model.expr_emb_style == "metacell":
         if "X_pca" not in adata.obsm:
             sc.pp.pca(adata, n_comps=50)
         sc.pp.neighbors(adata, use_rep="X_pca")
     denoise = Denoiser(
-        batch_size=40 if not knn_model else 20,
+        batch_size=40 if model.expr_emb_style != "metacell" else 20,
         max_len=max_len,
         max_cells=10_000,
         doplot=False,
         num_workers=8,
-        predict_depth_mult=10,
-        downsample=0.7,
-        knn_model=knn_model,
+        predict_depth_mult=5,
+        downsample_expr=0.7,
     )
     return denoise(model, adata)[0]
 
@@ -316,7 +318,7 @@ def open_benchmark(model):
         max_cells=10_000,
         doplot=False,
         predict_depth_mult=1.2,
-        downsample=None,
+        downsample_expr=None,
     )
     expr = denoise(model, nadata)
     denoised = ad.AnnData(

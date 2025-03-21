@@ -157,7 +157,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.pred_log_adata = True
         self.predict_depth_mult = 3
         self.predict_mode = "none"
-        self.keep_all_cls_pred = False
+        self.keep_all_labels_pred = False
 
         self.depth_atinput = depth_atinput
         self.tf_masker = WeightedMasker(genes, inv_weight=0.05)
@@ -1466,9 +1466,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 sch = self.lr_schedulers()
                 sch.step(self.trainer.callback_metrics["val_loss"])
                 # run the test function on specific dataset
-                self.log_adata(
-                    gtclass=self.info, name="validation_part_" + str(self.counter)
-                )
+                if self.embs is not None:
+                    self.log_adata(
+                        gtclass=self.info, name="validation_part_" + str(self.counter)
+                    )
                 if (self.current_epoch + 1) % self.test_every == 0:
                     self.on_test_epoch_end()
                 # Synchronize all processes with a timeout
@@ -1489,7 +1490,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 name,
                 filedir=str(FILEDIR),
                 do_class=self.do_cls,
-                knn_model=self.expr_emb_style == "metacell",
             )
             print(metrics)
             print("done test")
@@ -1666,7 +1666,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     [
                         (
                             torch.argmax(output["cls_output_" + clsname], dim=1)
-                            if not self.keep_all_cls_pred
+                            if not self.keep_all_labels_pred
                             else output["cls_output_" + clsname]
                         )
                         for clsname in self.classes
@@ -1694,7 +1694,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                             [
                                 (
                                     torch.argmax(output["cls_output_" + clsname], dim=1)
-                                    if not self.keep_all_cls_pred
+                                    if not self.keep_all_labels_pred
                                     else output["cls_output_" + clsname]
                                 )
                                 for clsname in self.classes
@@ -1797,10 +1797,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if not os.path.exists(mdir):
             os.makedirs(mdir)
         adata, fig = utils.make_adata(
-            pos=self.pos,
-            expr_pred=self.expr_pred,
             genes=self.genes,
             embs=self.embs,
+            pos=self.pos,
+            expr_pred=self.expr_pred,
             classes=self.classes,
             pred=self.pred,
             attention=self.attn.get(),

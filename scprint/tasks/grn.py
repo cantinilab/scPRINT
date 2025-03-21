@@ -35,32 +35,28 @@ FILEDIR = os.path.dirname(os.path.realpath(__file__))
 class GNInfer:
     def __init__(
         self,
-        layer: Optional[List[int]] = None,
         batch_size: int = 64,
         num_workers: int = 8,
-        drop_unexpressed: bool = False,
+        drop_unexpressed: bool = True,
         num_genes: int = 3000,
-        precision: str = "16-mixed",
+        max_cells: int = 0,
         cell_type_col: str = "cell_type",
         how: str = "random expr",  # random expr, most var within, most var across, given
-        max_len: int = 3000,
+        forward_mode: str = "none",
+        genelist: List[str] = [],
+        ### GRN inference parameters
+        layer: Optional[List[int]] = None,
         preprocess: str = "softmax",  # sinkhorn, softmax, none
         head_agg: str = "mean",  # mean, sum, none
         filtration: str = "thresh",  # thresh, top-k, mst, known, none
         k: int = 10,
         apc: bool = False,
         known_grn: Optional[any] = None,
+        comp_attn: bool = True,
         symmetrize: bool = False,
         doplot: bool = True,
-        comp_attn: bool = True,
-        max_cells: int = 0,
-        forward_mode: str = "none",
-        genes: List[str] = [],
         loc: str = "./",
         dtype: torch.dtype = torch.float16,
-        locname: str = "",
-        add_emb_in_model: bool = False,
-        knn_model: bool = False,
     ):
         """
         GNInfer a class to infer gene regulatory networks from a dataset using a scPRINT model.
@@ -69,32 +65,36 @@ class GNInfer:
             layer (Optional[list[int]], optional): List of layers to use for the inference. Defaults to None.
             batch_size (int, optional): Batch size for processing. Defaults to 64.
             num_workers (int, optional): Number of workers for data loading. Defaults to 8.
-            drop_unexpressed (bool, optional): Whether to drop unexpressed genes. Defaults to False.
+            drop_unexpressed (bool, optional): Whether to drop unexpressed genes. Defaults to True.
+                In this context, genes that have no expression in the dataset are dropped.
             num_genes (int, optional): Number of genes to consider. Defaults to 3000.
-            precision (str, optional): Precision type for computations. Defaults to "16-mixed".
             cell_type_col (str, optional): Column name for cell type information. Defaults to "cell_type".
-            how (str, optional): Method to select genes. Options are "random expr", "most var within", "most var across", "given". Defaults to "random expr".
+            how (str, optional): Method to select genes. Options are "most var", "random expr", "some". Defaults to "most var".
+                - "most var across": select the most variable genes across all cell types
+                - "most var within": select the most variable genes within a cell type
+                - "random expr": select random expressed genes
+                - "some": select a subset of genes defined in genelist
+                - "most expr": select the most expressed genes in the cell type
             preprocess (str, optional): Preprocessing method. Options are "softmax", "sinkhorn", "none". Defaults to "softmax".
             head_agg (str, optional): Aggregation method for heads. Options are "mean", "sum", "none". Defaults to "mean".
             filtration (str, optional): Filtration method for the adjacency matrix. Options are "thresh", "top-k", "mst", "known", "none". Defaults to "thresh".
             k (int, optional): Number of top connections to keep if filtration is "top-k". Defaults to 10.
             apc (bool, optional): Whether to apply Average Product Correction. Defaults to False.
+                - This is not recommended for GRN inference.
             known_grn (optional): Known gene regulatory network to use as a reference. Defaults to None.
-            symmetrize (bool, optional): Whether to symmetrize the adjacency matrix. Defaults to False.
+                - We will only keep the genes that are present in the known GRN.
+            symmetrize (bool, optional): Whether to GRN. Defaults to False.
             doplot (bool, optional): Whether to generate plots. Defaults to True.
             max_cells (int, optional): Maximum number of cells to consider. Defaults to 0.
             forward_mode (str, optional): Mode for forward pass. Defaults to "none".
-            genes (list, optional): List of genes to consider. Defaults to an empty list.
+            genelist (list, optional): List of genes to consider. Defaults to an empty list.
             loc (str, optional): Location to save results. Defaults to "./".
             dtype (torch.dtype, optional): Data type for computations. Defaults to torch.float16.
-            locname (str, optional): Name for the location. Defaults to an empty string.
-            add_emb_in_model (bool, optional): Whether to add cell embeddings in the grn. Defaults to False.
-            knn_model (bool, optional): Whether to use a KNN model. Defaults to False.
         """
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.layer = layer
-        self.locname = locname
+        self.loc = loc
         self.how = how
         assert (
             self.how
@@ -102,31 +102,27 @@ class GNInfer:
                 "most var within",
                 "most var across",
                 "random expr",
-                "given",
+                "some",
                 "most expr",
             ]
-        ), "how must be one of 'most var within', 'most var across', 'random expr', 'given', 'most expr'"
+        ), "how must be one of 'most var within', 'most var across', 'random expr', 'some', 'most expr'"
         self.num_genes = num_genes
         self.preprocess = preprocess
         self.cell_type_col = cell_type_col
         self.filtration = filtration
         self.doplot = doplot
-        self.genes = genes
+        self.genelist = genelist
         self.apc = apc
         self.dtype = dtype
         self.forward_mode = forward_mode
         self.k = k
-        self.max_len = max_len
         self.symmetrize = symmetrize
         self.known_grn = known_grn
         self.head_agg = head_agg
         self.max_cells = max_cells
         self.curr_genes = None
         self.drop_unexpressed = drop_unexpressed
-        self.knn_model = knn_model
-        self.precision = precision
         self.comp_attn = comp_attn
-        self.add_emb_in_model = add_emb_in_model
         if self.filtration != "none" and self.head_agg == "none":
             raise ValueError("filtration must be 'none' when head_agg is 'none'")
 
@@ -159,6 +155,7 @@ class GNInfer:
             return self.save(
                 self.filter(adjacencies)[self.n_cell_embs :, self.n_cell_embs :],
                 subadata,
+                loc=self.loc,
             )
 
     def predict(self, model, adata, layer, cell_type=None):
@@ -173,7 +170,8 @@ class GNInfer:
                 subadata, flavor="seurat_v3", n_top_genes=self.num_genes
             )
             self.curr_genes = (
-                subadata.var.index[subadata.var.highly_variable].tolist() + self.genes
+                subadata.var.index[subadata.var.highly_variable].tolist()
+                + self.genelist
             )
             print(
                 "number of expressed genes in this cell type: "
@@ -188,14 +186,14 @@ class GNInfer:
             )
             diff_expr_genes = adata.uns["rank_genes_groups"]["names"][cell_type]
             diff_expr_genes = [gene for gene in diff_expr_genes if gene in model.genes]
-            self.curr_genes = diff_expr_genes[: self.num_genes] + self.genes
+            self.curr_genes = diff_expr_genes[: self.num_genes] + self.genelist
             self.curr_genes.sort()
         elif self.how == "random expr":
             self.curr_genes = model.genes
             # raise ValueError("cannot do it yet")
             pass
-        elif self.how == "given" and len(self.genes) > 0:
-            self.curr_genes = self.genes
+        elif self.how == "some" and len(self.genelist) > 0:
+            self.curr_genes = self.genelist
         elif self.how == "most expr":
             self.curr_genes = adata.var.index[
                 adata.X.sum(0).A1.argsort()[::-1]
@@ -219,12 +217,12 @@ class GNInfer:
         adataset = SimpleAnnDataset(
             subadata,
             obs_to_output=["organism_ontology_term_id"],
-            get_knn_cells=self.knn_model,
+            get_knn_cells=model.expr_emb_style == "metacell",
         )
         col = Collator(
             organisms=model.organisms,
             valid_genes=model.genes,
-            max_len=self.max_len if self.how == "random expr" else 0,
+            max_len=self.num_genes if self.how == "random expr" else 0,
             how="some" if self.how != "random expr" else "random expr",
             genelist=self.curr_genes if self.how != "random expr" else [],
         )
@@ -267,7 +265,9 @@ class GNInfer:
                     gene_pos,
                     expression,
                     depth,
-                    knn_cells=batch["knn_cells"].to(device) if self.knn_model else None,
+                    knn_cells=batch["knn_cells"].to(device)
+                    if model.expr_emb_style == "metacell"
+                    else None,
                     predict_mode=self.forward_mode,
                     get_attention_layer=layer if type(layer) is list else [layer],
                 )
@@ -431,7 +431,6 @@ def default_benchmark(
     maxgenes: int = 5000,
     batch_size: int = 32,
     maxcells: int = 1024,
-    knn_model: bool = False,
 ):
     """
     default_benchmark function to run the default scPRINT GRN benchmark
@@ -445,7 +444,6 @@ def default_benchmark(
         maxgenes (int, optional): Maximum number of genes to consider. Defaults to 5000.
         batch_size (int, optional): Batch size for processing. Defaults to 32.
         maxcells (int, optional): Maximum number of cells to consider. Defaults to 1024.
-        knn_model (bool, optional): Whether to use a KNN model. Defaults to False.
 
     Returns:
         dict: A dictionary containing the benchmark metrics.
@@ -458,7 +456,7 @@ def default_benchmark(
             is_symbol=True,
             force_preprocess=True,
             skip_validate=True,
-            do_postp=knn_model,
+            do_postp=model.expr_emb_style == "metacell",
             min_valid_genes_id=5000,
             min_dataset_size=64,
         )
@@ -481,7 +479,7 @@ def default_benchmark(
             print(da + "_" + gt)
             preadata = get_sroy_gt(get=da, species=spe, gt=gt)
             adata = preprocessor(preadata.copy())
-            if knn_model:
+            if model.expr_emb_style == "metacell":
                 sc.pp.neighbors(adata, use_rep="X_pca")
             grn_inferer = GNInfer(
                 layer=layers,
@@ -489,13 +487,11 @@ def default_benchmark(
                 preprocess="softmax",
                 head_agg="none",
                 filtration="none",
-                forward_mode="none",
                 num_genes=maxgenes,
                 num_workers=8,
                 max_cells=maxcells,
                 doplot=False,
                 batch_size=batch_size,
-                knn_model=knn_model,
             )
             grn = grn_inferer(model, adata)
             grn.varp["all"] = grn.varp["GRN"]
@@ -600,12 +596,12 @@ def default_benchmark(
         preprocessor = Preprocessor(
             force_preprocess=True,
             skip_validate=True,
-            do_postp=knn_model,
+            do_postp=model.expr_emb_style == "metacell",
             min_valid_genes_id=maxgenes,
             min_dataset_size=64,
         )
         nadata = preprocessor(adata.copy())
-        if knn_model:
+        if model.expr_emb_style == "metacell":
             sc.pp.neighbors(nadata, use_rep="X_pca")
         nadata.var["isTF"] = False
         nadata.var.loc[nadata.var.gene_name.isin(grnutils.TF), "isTF"] = True
@@ -616,13 +612,11 @@ def default_benchmark(
             preprocess="softmax",
             head_agg="none",
             filtration="none",
-            forward_mode="none",
             num_genes=maxgenes,
             max_cells=maxcells,
             doplot=False,
             num_workers=8,
             batch_size=batch_size,
-            knn_model=knn_model,
         )
         grn = grn_inferer(model, nadata)
         grn.varp["all"] = grn.varp["GRN"]
@@ -684,7 +678,7 @@ def default_benchmark(
         adata = sc.read_h5ad(default_dataset)
         adata.var["isTF"] = False
         adata.var.loc[adata.var.symbol.isin(grnutils.TF), "isTF"] = True
-        if knn_model:
+        if model.expr_emb_style == "metacell":
             if "X_pca" not in adata.obsm:
                 sc.pp.pca(adata, n_comps=50)
             sc.pp.neighbors(adata, use_rep="X_pca")
@@ -696,7 +690,6 @@ def default_benchmark(
             #    preprocess="softmax",
             #    head_agg="max",
             #    filtration="none",
-            #    forward_mode="none",
             #    num_workers=8,
             #    num_genes=2200,
             #    max_cells=maxcells,
@@ -717,13 +710,11 @@ def default_benchmark(
                 preprocess="softmax",
                 head_agg="none",
                 filtration="none",
-                forward_mode="none",
                 num_workers=8,
                 num_genes=maxgenes,
                 max_cells=maxcells,
                 doplot=False,
                 batch_size=batch_size,
-                knn_model=knn_model,
             )
             grn = grn_inferer(model, adata[adata.X.sum(1) > 500], cell_type=celltype)
             grn.var.index = make_index_unique(grn.var["symbol"].astype(str))

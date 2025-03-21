@@ -13,7 +13,7 @@ import torch
 from anndata import AnnData
 from matplotlib import pyplot as plt
 from scdataloader.utils import translate
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, coo_array
 from torch import Tensor
 from torch.distributions import Gamma, Poisson
 
@@ -28,11 +28,11 @@ FILEDIR = os.path.dirname(os.path.realpath(__file__))
 
 
 def make_adata(
-    pos: Tensor,
-    expr_pred: Tensor,
-    genes: List[str],
+    genes: list[str],
     embs: Tensor,
-    classes: List[str],
+    pos: Tensor = None,
+    expr_pred: Tensor = None,
+    classes: list[str] = None,
     pred: Tensor = None,
     attention: Optional[Tensor] = None,
     label_decoders: Optional[Dict] = None,
@@ -84,40 +84,51 @@ def make_adata(
             obs = np.hstack([obs, nobs])
 
     size = len(genes)
-    n_cells = pos.shape[0]
-    pos = pos.cpu().numpy()
-    # Create empty array with same shape as expr_pred[0]
-    mu_array = np.zeros((n_cells, size))
-    # Fill array with values from expr_pred[0]
-    for idx in range(n_cells):
-        mu_array[idx, pos[idx]] = expr_pred[0][idx].cpu().numpy()
-    layers = {
-        "scprint_mu": csr_matrix(mu_array),
-        #  "used_scprint": csr_matrix(pos),
-    }
-    if len(expr_pred) > 1:
-        theta_array = np.zeros((n_cells, size))
+    n_cells = embs.shape[0]
+    if pos is not None:
+        mu_array = np.zeros((n_cells, size))
+        pos = pos.cpu().numpy()
+        # Create empty array with same shape as expr_pred[0]
         # Fill array with values from expr_pred[0]
         for idx in range(n_cells):
-            theta_array[idx, pos[idx]] = expr_pred[1][idx].cpu().numpy()
-        layers["scprint_theta"] = csr_matrix(theta_array)
+            mu_array[idx, pos[idx]] = expr_pred[0][idx].cpu().numpy()
+        layers = {
+            "scprint_mu": csr_matrix(mu_array),
+            #  "used_scprint": csr_matrix(pos),
+        }
+        if len(expr_pred) > 1:
+            theta_array = np.zeros((n_cells, size))
+            # Fill array with values from expr_pred[0]
+            for idx in range(n_cells):
+                theta_array[idx, pos[idx]] = expr_pred[1][idx].cpu().numpy()
+            layers["scprint_theta"] = csr_matrix(theta_array)
 
-        pi_array = np.zeros((n_cells, size))
-        # Fill array with values from expr_pred[0]
-        for idx in range(n_cells):
-            pi_array[idx, pos[idx]] = expr_pred[2][idx].cpu().numpy()
-        layers["scprint_pi"] = csr_matrix(pi_array)
+            pi_array = np.zeros((n_cells, size))
+            # Fill array with values from expr_pred[0]
+            for idx in range(n_cells):
+                pi_array[idx, pos[idx]] = expr_pred[2][idx].cpu().numpy()
+            layers["scprint_pi"] = csr_matrix(pi_array)
 
-    adata = AnnData(
-        X=csr_matrix(mu_array.shape),
-        layers=layers,
-        obs=pd.DataFrame(
-            obs,
-            columns=colname,
+        adata = AnnData(
+            X=csr_matrix(mu_array.shape),
+            layers=layers,
+            obs=pd.DataFrame(
+                obs,
+                columns=colname,
+            )
+            if pred is not None
+            else None,
         )
-        if pred is not None
-        else None,
-    )
+    else:
+        adata = AnnData(
+            X=coo_array((n_cells, size)),
+            obs=pd.DataFrame(
+                obs,
+                columns=colname,
+            )
+            if pred is not None
+            else None,
+        )
     adata.obsm["scprint_emb"] = embs.cpu().numpy()
     adata.var_names = genes
     accuracy = {}
@@ -620,7 +631,6 @@ def test(
     name: str,
     filedir: str,
     do_class: bool = True,
-    knn_model=False,
     maxcells_grn: int = 4_000,
 ) -> None:
     """
@@ -640,7 +650,6 @@ def test(
         default_dataset="lung",
         do_class=do_class,
         coarse=False,
-        knn_model=knn_model,
     )
     f = open("metrics_" + name + ".json", "a")
     f.write(json.dumps({"embed_lung": res}, indent=4))
@@ -666,7 +675,6 @@ def test(
         default_dataset="pancreas",
         do_class=do_class,
         coarse=False,
-        knn_model=knn_model,
     )
     f = open("metrics_" + name + ".json", "a")
     f.write(json.dumps({"embed_panc": res}, indent=4))
@@ -689,7 +697,7 @@ def test(
     print(metrics)
     gc.collect()
     res = denoise_task.default_benchmark(
-        model, filedir + "/../../data/gNNpgpo6gATjuxTE7CCp.h5ad", knn_model=knn_model
+        model, filedir + "/../../data/gNNpgpo6gATjuxTE7CCp.h5ad"
     )
     metrics.update(
         {
@@ -707,7 +715,6 @@ def test(
         model,
         "gwps",
         batch_size=32 if model.d_model <= 512 else 8,
-        knn_model=knn_model,
         maxcells=maxcells_grn,
     )
     f = open("metrics_" + name + ".json", "a")
@@ -729,7 +736,6 @@ def test(
     #    model,
     #    "sroy",
     #    batch_size=32 if model.d_model <= 512 else 8,
-    #    knn_model=knn_model,
     #    maxcells=maxcells_grn,
     # )
     # f = open("metrics_" + name + ".json", "a")
@@ -830,7 +836,6 @@ def test(
             "kidney interstitial fibroblast",
             "endothelial cell",
         ],
-        knn_model=knn_model,
         maxcells=maxcells_grn,
         maxgenes=4000,
     )
