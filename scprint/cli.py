@@ -64,8 +64,6 @@ class MyCLI(LightningCLI):
 
         parser.add_argument("--set_float32_matmul_precision", type=bool, default=False)
         parser.add_argument("--wandblog", type=str, default="")
-        parser.add_argument("--log_freq", type=int, default=500)
-        parser.add_argument("--log_graph", type=bool, default=False)
         parser.add_argument("--project", type=str)
 
     def _add_subcommands(self, parser, **kwargs) -> None:

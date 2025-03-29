@@ -158,6 +158,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.predict_depth_mult = 3
         self.predict_mode = "none"
         self.keep_all_labels_pred = False
+        self.mask_zeros = False
 
         self.depth_atinput = depth_atinput
         self.tf_masker = WeightedMasker(genes, inv_weight=0.05)
@@ -277,7 +278,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.expr_encoder = encoders.CategoryValueEncoder(n_input_bins, d_model)
         elif expr_emb_style == "metacell":
             self.expr_encoder = encoders.GNN(
-                1, 16, d_model, expr_encoder_layers, dropout, "deepset"
+                1, 32, d_model, expr_encoder_layers, dropout, "deepset"
             )
 
         # Positional Encoding
@@ -480,18 +481,20 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if "classes" in checkpoints["hyper_parameters"]:
             if self.label_counts != checkpoints["hyper_parameters"]["classes"]:
                 print("changing the number of classes, could lead to issues")
-                if "label_counts" not in checkpoints["hyper_parameters"]:
-                    self.label_counts = checkpoints["hyper_parameters"]["classes"]
-                    self.classes = list(
-                        checkpoints["hyper_parameters"]["classes"].keys()
-                    )
-                else:
+                if "label_counts" in checkpoints["hyper_parameters"] and set(
+                    checkpoints["hyper_parameters"]["label_counts"].keys()
+                ) == set(checkpoints["hyper_parameters"]["classes"]):
                     self.classes = checkpoints["hyper_parameters"]["classes"]
                     self.label_counts = checkpoints["hyper_parameters"]["label_counts"]
                     if self.classes == self.label_counts:
                         raise ValueError(
                             "classes and label_counts are the same, this is not allowed, please use another checkpoint"
                         )
+                else:
+                    self.label_counts = checkpoints["hyper_parameters"]["classes"]
+                    self.classes = list(
+                        checkpoints["hyper_parameters"]["classes"].keys()
+                    )
             self.label_decoders = checkpoints["hyper_parameters"]["label_decoders"]
             self.labels_hierarchy = checkpoints["hyper_parameters"]["labels_hierarchy"]
             for k, v in self.labels_hierarchy.items():
@@ -703,6 +706,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         do_sample: bool = False,
         do_mvc: bool = False,
         do_class: bool = False,
+        zero_mask: Optional[Tensor] = False,
         get_attention_layer: list = [],
     ):
         """
@@ -778,14 +782,31 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             cell_encoding = encoding[:, : self.cell_embs_count, :]
             encoding = encoding[:, self.cell_embs_count :, :]
         if type(self.transformer) is FlashTransformer:
+            if self.mask_zeros:
+                mask_zeros = torch.cat(
+                    [
+                        torch.ones(
+                            expression.shape[0],
+                            self.cell_embs_count,
+                            dtype=torch.bool,
+                            device=expression.device,
+                        ),
+                        expression != 0,
+                    ],
+                    dim=1,
+                )
+
             transformer_output = self.transformer(
                 encoding,
                 return_qkv=get_attention_layer,
                 bias=bias if self.attn_bias != "none" else None,
                 bias_layer=list(range(self.nlayers - 1)),
+                mask_zeros=mask_zeros if self.mask_zeros else None,
             )
-        else:
+        elif type(self.transformer) is Performer:
             transformer_output = self.transformer(encoding)
+        else:
+            raise ValueError(f"Unknown transformer: {type(self.transformer)}")
         if len(get_attention_layer) > 0:
             transformer_output, qkvs = transformer_output
         if self.cell_transformer:
@@ -901,6 +922,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         Returns:
             _type_: _description_
         """
+
         total_loss, losses = self._full_training(
             batch=batch,
             do_denoise=self.do_denoise,
@@ -917,9 +939,12 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             run_full_forward=self.run_full_forward,
             mask_ratio=self.mask_ratio,
         )
-
-        self.log("train_loss", total_loss, prog_bar=True, sync_dist=True)
-        self.log_dict(losses, prog_bar=True, sync_dist=True)
+        try:
+            self.log("train_loss", total_loss, prog_bar=True, sync_dist=True)
+            self.log_dict(losses, prog_bar=True, sync_dist=True)
+        except Exception as e:
+            print(e)
+            print(losses)
         return total_loss
 
     def _full_training(
@@ -975,7 +1000,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         total_count = batch["depth"]
         clss = batch.get("class", None)
         batch_idx = batch.get("dataset", None)
-
         metacell_token = batch.get("is_meta", None)
         if metacell_token is None:
             if self.use_metacell_token:
@@ -986,7 +1010,22 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         knn_cells = batch.get("knn_cells", None)
         if knn_cells is not None:
             knn_cells = knn_cells[:, :, :context_length]
-
+        if self.mask_zeros and knn_cells is None:
+            keep = expression.sum(0) != 0
+            # we can work on smaller datasets
+            if keep.sum() != keep.shape[0]:
+                expression = expression[:, keep]
+                gene_pos = gene_pos[:, keep]
+        if self.transformer.attn_type == "hyper":
+            # seq len must be a multiple of 128
+            num = self.cell_embs_count if not self.cell_transformer else 0
+            if (expression.shape[1] + num) % 128 != 0:
+                expression = expression[:, : ((expression.shape[1]) // 128 * 128) - num]
+                gene_pos = gene_pos[:, : ((gene_pos.shape[1]) // 128 * 128) - num]
+                if knn_cells is not None:
+                    knn_cells = knn_cells[
+                        :, :, : ((knn_cells.shape[2]) // 128 * 128) - num
+                    ]
         total_loss = 0
         losses = {}
         cell_embs = []
@@ -1464,7 +1503,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             if self.trainer.is_global_zero:
                 print("logging anndata")
                 sch = self.lr_schedulers()
-                sch.step(self.trainer.callback_metrics["val_loss"])
+                if sch is not None:
+                    sch.step(self.trainer.callback_metrics["val_loss"])
                 # run the test function on specific dataset
                 if self.embs is not None:
                     self.log_adata(
@@ -1571,6 +1611,21 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.pred_embedding (list, optional): the classes to predict. Defaults to [].
 
         """
+        if self.mask_zeros and knn_cells is None:
+            keep = expression.sum(0) != 0
+            if keep.sum() != keep.shape[0]:
+                expression = expression[:, keep]
+                gene_pos = gene_pos[:, keep]
+        if self.transformer.attn_type == "hyper":
+            # seq len must be a multiple of 128
+            num = self.cell_embs_count if not self.cell_transformer else 0
+            if (expression.shape[1] + num) % 128 != 0:
+                expression = expression[:, : ((expression.shape[1]) // 128 * 128) - num]
+                gene_pos = gene_pos[:, : ((gene_pos.shape[1]) // 128 * 128) - num]
+                if knn_cells is not None:
+                    knn_cells = knn_cells[
+                        :, :, : ((knn_cells.shape[2]) // 128 * 128) - num
+                    ]
         if predict_mode == "none":
             output = self.forward(
                 gene_pos,

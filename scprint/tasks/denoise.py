@@ -183,6 +183,13 @@ class Denoiser:
             loc = np.loadtxt(f"collator_output_{num}.txt_loc")
             os.remove(f"collator_output_{num}.txt")
             os.remove(f"collator_output_{num}.txt_loc")
+            if model.transformer.attn_type == "hyper":
+                # seq len must be a multiple of 128
+                num = model.cell_embs_count if not model.cell_transformer else 0
+                if (noisy.shape[1] + num) % 128 != 0:
+                    noisy = noisy[:, : ((noisy.shape[1]) // 128 * 128) - num]
+                    loc = loc[:, : ((loc.shape[1]) // 128 * 128) - num]
+
             # Sort loc indices per row and apply same sorting to noisy expression matrix
             sorted_indices = np.array([np.argsort(row) for row in loc])
             # Create row indices array for advanced indexing
@@ -191,7 +198,6 @@ class Denoiser:
             del loc
             noisy = noisy[row_indices, sorted_indices]
             del sorted_indices, row_indices
-
             reco = pred_adata.layers["scprint_mu"].data.reshape(pred_adata.shape[0], -1)
             adata = (
                 adata[random_indices, adata.var.index.isin(pred_adata.var.index)]

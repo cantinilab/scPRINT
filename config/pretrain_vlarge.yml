@@ -10,7 +10,7 @@ model:
   nhead: 16
   num_heads_kv: 4
   lr: 0.0001
-  nlayers: 32
+  nlayers: 30
   d_model: 1024
   dropout: 0.1
 data:

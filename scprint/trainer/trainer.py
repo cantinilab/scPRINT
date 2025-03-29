@@ -42,6 +42,7 @@ class TrainingMode(Callback):
         var_context_length: bool = False,
         name="",
         set_step: Optional[int] = None,
+        mask_zeros: bool = False,
     ):
         """
         TrainingMode a callback to set the training specific info to the model.
@@ -85,6 +86,7 @@ class TrainingMode(Callback):
             set_step (int, optional): Set the global step for the model. Defaults to None.
             vae_kl_scale (float): Scaling factor for the VAE KL loss. Defaults to 0.3.
             randsamp (bool): Whether to use random sampling for the noise amount at each training step. Defaults to True.
+            mask_zeros (bool): Whether to mask zeros in the expression matrix. Defaults to False.
         """
         super().__init__()
         self.do_denoise = do_denoise
@@ -124,6 +126,7 @@ class TrainingMode(Callback):
         self.dropout = dropout
         self.set_step = set_step
         self.randsamp = randsamp
+        self.mask_zeros = mask_zeros
 
     def __repr__(self):
         return (
@@ -163,7 +166,8 @@ class TrainingMode(Callback):
             f"var_context_length={self.var_context_length}, "
             f"dropout={self.dropout}, "
             f"set_step={self.set_step}, "
-            f"randsamp={self.randsamp})"
+            f"randsamp={self.randsamp}, "
+            f"mask_zeros={self.mask_zeros})"
         )
 
     def setup(self, trainer, model, stage=None):
@@ -205,4 +209,5 @@ class TrainingMode(Callback):
         model.dropout = self.dropout
         model.set_step = self.set_step
         model.randsamp = self.randsamp
+        model.mask_zeros = self.mask_zeros
         # model.configure_optimizers()
