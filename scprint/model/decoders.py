@@ -244,6 +244,7 @@ class ClsDecoder(nn.Module):
         # module list
         layers = [d_model] + layers
         self.decoder = nn.Sequential()
+        self.n_cls = n_cls
         for i, l in enumerate(layers[1:]):
             self.decoder.append(nn.Linear(layers[i], l))
             self.decoder.append(nn.LayerNorm(l))

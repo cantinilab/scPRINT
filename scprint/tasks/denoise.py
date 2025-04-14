@@ -86,10 +86,6 @@ class Denoiser:
             AnnData: The denoised annotated data matrix.
         """
         # Select random number
-        if self.downsample_expr is not None:
-            num = np.random.randint(0, 1000000)
-            while os.path.exists(f"collator_output_{num}.txt"):
-                num = np.random.randint(0, 1000000)
         random_indices = None
         if self.max_cells < adata.shape[0]:
             random_indices = np.random.randint(
@@ -111,6 +107,10 @@ class Denoiser:
                 adata, flavor="seurat_v3", n_top_genes=self.max_len, span=0.99
             )
             self.genelist = adata.var.index[adata.var.highly_variable]
+        else:
+            self.genelist = adata.var.index
+        self.genelist = [i for i in model.genes if i in self.genelist]
+        print(f"working on {len(self.genelist)} accepted genes")
 
         col = Collator(
             organisms=model.organisms,
@@ -118,10 +118,6 @@ class Denoiser:
             max_len=self.max_len,
             how="some" if self.how == "most var" else self.how,
             genelist=self.genelist if self.how != "random expr" else [],
-            downsample=self.downsample_expr,
-            save_output=f"collator_output_{num}.txt"
-            if self.downsample_expr is not None
-            else None,
         )
         dataloader = DataLoader(
             adataset,
@@ -135,6 +131,7 @@ class Denoiser:
         model.on_predict_epoch_start()
         model.eval()
         device = model.device.type
+        stored_noisy = None
         with torch.no_grad(), torch.autocast(device_type=device, dtype=self.dtype):
             for batch in tqdm(dataloader):
                 gene_pos, expression, depth = (
@@ -142,6 +139,17 @@ class Denoiser:
                     batch["x"].to(device),
                     batch["depth"].to(device),
                 )
+                if self.downsample_expr is not None:
+                    expression = utils.downsample_profile(
+                        expression, self.downsample_expr
+                    )
+                if stored_noisy is None:
+                    stored_noisy = expression.cpu().numpy()
+                else:
+                    stored_noisy = np.concatenate(
+                        [stored_noisy, expression.cpu().numpy()], axis=0
+                    )
+
                 model._predict(
                     gene_pos,
                     expression,
@@ -179,25 +187,14 @@ class Denoiser:
         pred_adata = concat(pred_adata)
         metrics = None
         if self.downsample_expr is not None:
-            noisy = np.loadtxt(f"collator_output_{num}.txt")
-            loc = np.loadtxt(f"collator_output_{num}.txt_loc")
-            os.remove(f"collator_output_{num}.txt")
-            os.remove(f"collator_output_{num}.txt_loc")
+            pred_adata.layers["scprint_mu"]
             if model.transformer.attn_type == "hyper":
                 # seq len must be a multiple of 128
                 num = model.cell_embs_count if not model.cell_transformer else 0
-                if (noisy.shape[1] + num) % 128 != 0:
-                    noisy = noisy[:, : ((noisy.shape[1]) // 128 * 128) - num]
-                    loc = loc[:, : ((loc.shape[1]) // 128 * 128) - num]
-
-            # Sort loc indices per row and apply same sorting to noisy expression matrix
-            sorted_indices = np.array([np.argsort(row) for row in loc])
-            # Create row indices array for advanced indexing
-            row_indices = np.arange(len(loc))[:, np.newaxis]
-            # Sort loc and noisy using the row-wise indices
-            del loc
-            noisy = noisy[row_indices, sorted_indices]
-            del sorted_indices, row_indices
+                if (stored_noisy.shape[1] + num) % 128 != 0:
+                    stored_noisy = stored_noisy[
+                        :, : ((stored_noisy.shape[1]) // 128 * 128) - num
+                    ]
             reco = pred_adata.layers["scprint_mu"].data.reshape(pred_adata.shape[0], -1)
             adata = (
                 adata[random_indices, adata.var.index.isin(pred_adata.var.index)]
@@ -214,7 +211,7 @@ class Denoiser:
             ].toarray()
 
             corr_coef, p_value = spearmanr(
-                np.vstack([reco[true != 0], noisy[true != 0], true[true != 0]]).T
+                np.vstack([reco[true != 0], stored_noisy[true != 0], true[true != 0]]).T
             )
             metrics = {
                 "reco2noisy": corr_coef[0, 1],
@@ -230,22 +227,6 @@ class Denoiser:
                 plt.colorbar()
                 plt.title("Expression Correlation Coefficient")
                 plt.show()
-                metrics = {
-                    "reco2noisy": np.mean(
-                        corr_coef[
-                            self.max_cells : self.max_cells * 2, : self.max_cells
-                        ].diagonal()
-                    ),
-                    "reco2full": np.mean(
-                        corr_coef[self.max_cells * 2 :, : self.max_cells].diagonal()
-                    ),
-                    "noisy2full": np.mean(
-                        corr_coef[
-                            self.max_cells * 2 :,
-                            self.max_cells : self.max_cells * 2,
-                        ].diagonal()
-                    ),
-                }
         return metrics, random_indices, pred_adata
 
 
