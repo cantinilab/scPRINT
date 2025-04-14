@@ -1,14 +1,12 @@
 project: scprint_ablation
 seed_everything: 50
 set_float32_matmul_precision: True
-wandblog: all
+# wandblog: all
 ckpt_path: null
-log_freq: 200
-log_graph: True
 trainer:
   precision: 16-mixed
   gradient_clip_val: 40
-  log_every_n_steps: 100
+  log_every_n_steps: 300
   limit_train_batches: 20000
   gradient_clip_algorithm: norm
   limit_val_batches: 2000
@@ -50,7 +48,6 @@ model:
   checkpointing: False
   cell_specific_blocks: False
   fused_dropout_add_ln: False
-  prenorm: True
   fused_mlp: False
   fused_bias_fc: False
   depth_atinput: False
@@ -83,16 +80,16 @@ data:
     - cell_type_ontology_term_id
     - tissue_ontology_term_id
     - disease_ontology_term_id
-    - age_group
+    # - age_group
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id
   clss_to_weight:
     - clust_cell_type
-    - tissue_ontology_term_id
+    # - tissue_ontology_term_id
     - disease_ontology_term_id
-    - age_group
+    # - age_group
     - assay_ontology_term_id
-    - self_reported_ethnicity_ontology_term_id
+    # - self_reported_ethnicity_ontology_term_id
     - sex_ontology_term_id
     - organism_ontology_term_id
     - cell_culture
@@ -101,7 +98,7 @@ data:
     - cell_type_ontology_term_id
     - tissue_ontology_term_id
     - disease_ontology_term_id
-    - age_group
+    # - age_group
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id
     - sex_ontology_term_id

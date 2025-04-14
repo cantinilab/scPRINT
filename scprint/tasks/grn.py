@@ -241,6 +241,13 @@ class GNInfer:
 
         # reparametrize the attn process
         model.attn.comp_attn = self.comp_attn
+        if model.transformer.attn_type == "hyper":
+            self.curr_genes = [i for i in model.genes if i in self.curr_genes]
+            num = model.cell_embs_count if not model.cell_transformer else 0
+            if (len(self.curr_genes) + num) % 128 != 0:
+                self.curr_genes = self.curr_genes[
+                    : (len(self.curr_genes) // 128 * 128) - num
+                ]
         if self.how != "random expr":
             if self.num_genes > 10_000 and not self.comp_attn:
                 raise ValueError("need less genes for a non-shared-qk version")

@@ -3,8 +3,6 @@ seed_everything: 42
 ckpt_path: null
 set_float32_matmul_precision: True
 wandblog: all
-log_freq: 200
-log_graph: True
 trainer:
   precision: 16-mixed
   #  strategy: ddp_find_unused_parameters_true
@@ -50,7 +48,6 @@ model:
   checkpointing: True
   cell_specific_blocks: True
   fused_dropout_add_ln: False
-  prenorm: True
   depth_atinput: False
   fused_mlp: False
   fused_bias_fc: False
@@ -93,14 +90,14 @@ data:
     - cell_type_ontology_term_id
     - tissue_ontology_term_id
     - disease_ontology_term_id
-    - age_group
+    # - age_group
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id
   clss_to_weight:
     - clust_cell_type
-    - tissue_ontology_term_id
+    #- tissue_ontology_term_id
     - disease_ontology_term_id
-    - age_group
+    #- age_group
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id
     - sex_ontology_term_id
@@ -111,7 +108,7 @@ data:
     - cell_type_ontology_term_id
     - tissue_ontology_term_id
     - disease_ontology_term_id
-    - age_group
+    # - age_group
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id
     - sex_ontology_term_id

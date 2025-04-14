@@ -310,9 +310,9 @@ class GNN(nn.Module):
     def __init__(
         self,
         input_dim: int = 1,  # here, 1 or 2
-        merge_dim: int = 16,
+        merge_dim: int = 32,
         output_dim: int = 256,
-        num_layers: int = 3,
+        num_layers: int = 2,
         dropout: float = 0.1,
         gnn_type: str = "deepset",
         add_connection_feature: bool = False,
@@ -352,9 +352,9 @@ class GNN(nn.Module):
 
             self.input_self_layer = MLP(
                 in_channels=input_dim,
-                hidden_channels=merge_dim,
+                hidden_channels=merge_dim + 2,
                 out_channels=merge_dim,
-                num_layers=num_layers - 1,
+                num_layers=num_layers,
                 dropout=dropout,
                 act="relu",
                 norm="layer_norm",
@@ -367,7 +367,7 @@ class GNN(nn.Module):
                 else merge_dim * 2,
                 hidden_channels=output_dim,
                 out_channels=output_dim,
-                num_layers=num_layers - 1,
+                num_layers=num_layers,
                 dropout=dropout,
                 act="relu",
                 norm="layer_norm",
@@ -415,9 +415,9 @@ class GNN(nn.Module):
         x = x.unsqueeze(-1)
         neighbors = neighbors.unsqueeze(-1)
         if self.gnn_type == "deepset":
+            neighbors = self.input_nn_layer(neighbors).sum(dim=-3)
             x = self.input_self_layer(x)
-            neighbors = self.input_nn_layer(neighbors)
-            x = torch.cat([x, neighbors.sum(dim=-3)], dim=-1)
+            x = torch.cat([x, neighbors], dim=-1)
         else:
             x = self.gnn_layer(x, edge_info)
             neighbors = self.gnn_layer(neighbors, edge_info)
@@ -425,6 +425,7 @@ class GNN(nn.Module):
                 x = layer(x, edge_info)
                 x = F.relu(x)
                 x = F.dropout(x, p=self.dropout, training=self.training)
+            # TODO: to finish
 
         x = self.output_layer(x)
         if mask is not None:

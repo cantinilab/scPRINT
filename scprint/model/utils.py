@@ -85,8 +85,9 @@ def make_adata(
 
     size = len(genes)
     n_cells = embs.shape[0]
+    layers = None
     if pos is not None:
-        mu_array = np.zeros((n_cells, size))
+        mu_array = np.zeros((n_cells, size), dtype=np.float32)
         pos = pos.cpu().numpy()
         # Create empty array with same shape as expr_pred[0]
         # Fill array with values from expr_pred[0]
@@ -97,38 +98,29 @@ def make_adata(
             #  "used_scprint": csr_matrix(pos),
         }
         if len(expr_pred) > 1:
-            theta_array = np.zeros((n_cells, size))
+            theta_array = np.zeros((n_cells, size), dtype=np.float32)
             # Fill array with values from expr_pred[0]
             for idx in range(n_cells):
                 theta_array[idx, pos[idx]] = expr_pred[1][idx].cpu().numpy()
             layers["scprint_theta"] = csr_matrix(theta_array)
 
-            pi_array = np.zeros((n_cells, size))
+            pi_array = np.zeros((n_cells, size), dtype=np.float32)
             # Fill array with values from expr_pred[0]
             for idx in range(n_cells):
                 pi_array[idx, pos[idx]] = expr_pred[2][idx].cpu().numpy()
             layers["scprint_pi"] = csr_matrix(pi_array)
 
-        adata = AnnData(
-            X=csr_matrix(mu_array.shape),
-            layers=layers,
-            obs=pd.DataFrame(
-                obs,
-                columns=colname,
-            )
-            if pred is not None
-            else None,
+    adata = AnnData(
+        X=csr_matrix((n_cells, size)),
+        layers=layers,
+        obs=pd.DataFrame(
+            obs,
+            columns=colname,
         )
-    else:
-        adata = AnnData(
-            X=coo_array((n_cells, size)),
-            obs=pd.DataFrame(
-                obs,
-                columns=colname,
-            )
-            if pred is not None
-            else None,
-        )
+        if pred is not None
+        else None,
+    )
+
     adata.obsm["scprint_emb"] = embs.cpu().numpy()
     adata.var_names = genes
     accuracy = {}

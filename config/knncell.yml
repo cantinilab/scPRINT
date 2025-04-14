@@ -9,3 +9,5 @@ data:
   metacell_mode: 0
 model:
   expr_emb_style: metacell
+  expr_encoder_layers: 2
+  

@@ -19,11 +19,11 @@ class MySaveConfig(SaveConfigCallback):
             if self.config.get("wandblog", "") != "":
                 trainer.logger.watch(
                     pl_module,
-                    log=self.config.get("wandblog", "all"),
-                    log_freq=self.config.get("wandblog_freq", 500),
-                    log_graph=self.config.get("wandblog_graph", False),
+                    # log=self.config.get("wandblog", "all"),
+                    log_freq=self.config.get("wandblog_freq", 1000),
+                    log_graph=False,
                 )
-                # trainer.logger.log_hyperparams({'datamodule':trainer.datamodule})
+                trainer.logger.log_hyperparams({"datamodule": trainer.datamodule})
             if trainer.is_global_zero:
                 print(trainer.datamodule)
                 print(trainer.callbacks)
