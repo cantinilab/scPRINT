@@ -372,7 +372,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.cls_decoders[clss] = decoders.ClsDecoder(
                 d_model, n_cls, layers=layers_cls, dropout=dropout
             )
-            if clss == "assay_ontology_term_id" and do_adv_cls:
+            if clss == "assay_ontology_term_id" and self.do_adv_cls:
                 self.adv_cls_decoder = decoders.ClsDecoder(
                     d_model, n_cls, layers=layers_cls, dropout=dropout
                 )
@@ -650,7 +650,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                         )
                     }
                 )
-                if clsname == "cell_type_ontology_term_id" and do_adv_cls:
+                if clsname == "cell_type_ontology_term_id" and self.do_adv_cls:
                     output.update(
                         {
                             "adv_cls_output": self.adv_cls_decoder(
