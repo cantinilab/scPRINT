@@ -650,14 +650,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                         )
                     }
                 )
-                if clsname == "cell_type_ontology_term_id" and self.do_adv_cls:
-                    output.update(
-                        {
-                            "adv_cls_output": self.adv_cls_decoder(
-                                output["cell_embs"][:, loc, :]
-                            )
-                        }
-                    )
         if do_mvc:
             output.update(
                 self.mvc_decoder(
@@ -1278,23 +1270,46 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     else None,
                 )
 
-                loss_cls += loss.hierarchical_classification(
-                    pred=output["cls_output_" + clsname],
-                    cl=clss[:, j],
-                    labels_hierarchy=self.mat_labels_hierarchy[clsname]
-                    if clsname in self.mat_labels_hierarchy.keys()
-                    else None,
-                )
+                # Adversarial part for 'assay_ontology_term_id'
                 if do_adv_cls and clsname == "assay_ontology_term_id":
-                    loss_adv_cls = loss.hierarchical_classification(
-                        pred=output["adv_cls_output"],
-                        cl=clss[:, j],
+                    pos = self.classes.index("cell_type_ontology_term_id")
+                    loc = (
+                        pos  # Assuming 'j' correctly corresponds to 'assay_ontology_term_id' index
+                        + (2 if self.depth_atinput else 1)
+                        + (1 if self.use_metacell_token else 0)
+                    )
+                    # Apply gradient reversal to the input embedding
+                    adv_input_emb = loss.grad_reverse(
+                        output["cell_embs"][:, loc, :].clone(), lambd=1.0
+                    )
+                    # Get predictions from the adversarial decoder
+                    adv_pred = self.adv_cls_decoder(adv_input_emb)
+
+                    # Compute the adversarial loss
+                    current_adv_loss = loss.hierarchical_classification(
+                        pred=adv_pred,
+                        cl=clss[
+                            :, j
+                        ],  # Use the true label for the adversarial target class
                         labels_hierarchy=self.mat_labels_hierarchy[clsname]
                         if clsname in self.mat_labels_hierarchy.keys()
                         else None,
                     )
-                    total_loss -= self.adv_class_scale * loss_adv_cls
-                    losses.update({"adv_cls": loss_adv_cls})
+                    # Add the adversarial loss to the total loss (gradient reversal handles the maximization objective for the generator)
+                    total_loss += self.adv_class_scale * current_adv_loss
+                    losses.update({"adv_cls": current_adv_loss})
+
+                # This was the old (likely incorrect) way for reference, now handled above
+                # if do_adv_cls and clsname == "assay_ontology_term_id":
+                #     loss_adv_cls = loss.hierarchical_classification(
+                #         pred=output["adv_cls_output"],
+                #         cl=clss[:, j],
+                #         labels_hierarchy=self.mat_labels_hierarchy[clsname]
+                #         if clsname in self.mat_labels_hierarchy.keys()
+                #         else None,
+                #     )
+                #     total_loss -= self.adv_class_scale * loss_adv_cls # Incorrect subtraction
+                #     losses.update({"adv_cls": loss_adv_cls})
             total_loss += self.class_scale * loss_cls
             if loss_cls != 0:
                 losses.update({"cls": loss_cls})
@@ -1319,7 +1334,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             #            else None,
             #        )
             #
-            #    total_loss -= self.adv_class_scale * loss_adv_cls
+            #    total_loss += self.adv_class_scale * loss_adv_cls
             #    losses.update({"adv_cls": loss_adv_cls})
         # TASK 2ter. cell KO effect prediction
         # (just use a novel class, cell state and predict if cell death or not from it)
