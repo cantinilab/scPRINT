@@ -39,21 +39,19 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
     def __init__(
         self,
         genes: list,
-        organisms: list = ["NCBITaxon:9606"],
         d_model: int = 256,
         nhead: int = 4,
         nlayers: int = 8,
         precpt_gene_emb: Optional[str] = None,
         finetune_gene_emb: bool = False,
+        freeze_embeddings: bool = True,
         gene_pos_enc: Optional[list] = None,
         normalization: str = "sum",
         attn_bias: str = "none",
         expr_encoder_layers: int = 3,
         transformer: str = "flash",  # "performer", "flash", "normal", "crisscross"
         expr_emb_style: str = "continuous",  # "binned_pos", "cont_pos", "metacell", "full_pos"
-        domain_spec_batchnorm: str = "None",
         n_input_bins: int = 0,
-        num_batch_labels: int = 0,
         mvc_decoder: str = "None",
         pred_embedding: list[str] = [],
         label_counts: Dict[str, int] = {},
@@ -63,11 +61,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         label_decoders: Optional[Dict[str, Dict[int, str]]] = None,
         class_compression: str = "none",  # "none", "fsq", "vae"
         compress_class_dim: Optional[Dict[str, int]] = None,
-        cell_emb_style: str = "cls",
         cell_specific_blocks: bool = False,
         depth_atinput: bool = True,
-        freeze_embeddings: bool = True,
         zinb: bool = True,
+        do_adv_cls: bool = False,
         dropout: float = 0.1,
         use_metacell_token: bool = False,
         lr: float = 0.0001,
@@ -91,7 +88,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             labels_hierarchy (Dict[str, Dict[int, list[int]]], optional): Class hierarchy for classes with hierarchical classes. Defaults to {}.
             dropout (float, optional): Dropout value. Defaults to 0.2.
             transformer (str, optional): Transformer type to use. One of "linear", "flash", "flashsparse", "scprint". Defaults to "fast".
-            domain_spec_batchnorm (str, optional): Whether to apply domain-specific batch normalization. Defaults to "None".
             expr_emb_style (str, optional): Style of input embedding. One of "continuous", "binned_pos", "cont_pos", "metacell", "full_pos". Defaults to "continuous".
                 "metacell" uses a DeepSet multi gene encoder across the KNN cells
                 "full_pos" uses a positional encoding for each gene
@@ -99,7 +95,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 "continuous" uses a continuous embedding for each gene with an MLP
             mvc_decoder (str, optional): Style of MVC decoder. One of "None", "inner product", "concat query", "sum query". Defaults to "None".
             pred_embedding (list[str], optional): List of classes to use for plotting embeddings. Defaults to [].
-            cell_emb_style (str, optional): Style of cell embedding. One of "cls", "avg-pool", "w-pool". Defaults to "cls".
             freeze_embeddings (bool, optional): Whether to freeze the embeddings during training. Defaults to True.
             label_decoders (Optional[Dict[str, Dict[int, str]]], optional): Label decoders to use for plotting the UMAP during validations. Defaults to None.
             zinb (bool, optional): Whether to use Zero-Inflated Negative Binomial distribution. Defaults to True.
@@ -128,10 +123,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.mvc_scale = 1.0
         self.vae_kl_scale = 0.3
         self.class_embd_diss_scale = 0.3
-        self.do_adv_cls = False
-        self.adv_class_scale = 0.1
+        self.do_adv_cls = do_adv_cls
+        self.adv_class_scale = 1.0
         self.do_cls = False
-        self.do_adv_batch = False
         self.run_full_forward = True
         self.class_scale = 1
         self.zinb_and_mse = False
@@ -165,22 +159,16 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # should be stored somehow
         self.d_model = d_model
         self.normalization = normalization
-        self.organisms = organisms
         self.attn_bias = attn_bias
         self.nlayers = nlayers
         self.gene_pos_enc = gene_pos_enc
         self.use_metacell_token = use_metacell_token
         self.mvc_decoder = mvc_decoder
-        self.domain_spec_batchnorm = domain_spec_batchnorm
         # need to store
         self.n_input_bins = n_input_bins
         self.transformer = transformer
         self.label_counts = classes
         self.classes = list(classes.keys())
-
-        if cell_emb_style not in ["cls", "avg-pool", "w-pool"]:
-            raise ValueError(f"Unknown cell_emb_style: {cell_emb_style}")
-        self.cell_emb_style = cell_emb_style
 
         self.label_decoders = label_decoders
         self.pred_embedding = pred_embedding
@@ -203,7 +191,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.hparams["label_decoders"] = label_decoders
         self.hparams["gene_pos_enc"] = gene_pos_enc
         self.hparams["genes"] = genes
-        self.hparams["num_batch_labels"] = num_batch_labels
         self.attn = utils.Attention(
             len(genes),
             additional_tokens=(
@@ -234,7 +221,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 print(
                     "Warning: only a subset of the genes available in the embeddings file."
                 )
-                print("number of genes: ", len(embeddings))
+            print("number of genes: ", len(embeddings))
             sembeddings = torch.nn.AdaptiveAvgPool1d(d_model)(
                 torch.tensor(embeddings.values, dtype=torch.float32)
             )
@@ -246,27 +233,24 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 weights=sembeddings,
                 freeze=freeze_embeddings,
             )
-
-            if finetune_gene_emb:
-                if not freeze_embeddings:
-                    raise ValueError(
-                        "finetune_gene_emb is True but freeze_embeddings is False"
-                    )
-                # Create adapter layers after the frozen base encoder
-                self.gene_encoder = torch.nn.Sequential(
-                    gene_encoder,
-                    torch.nn.Linear(d_model, d_model),
-                    torch.nn.ReLU(),
-                    torch.nn.Linear(d_model, d_model),
-                )
-            else:
-                self.gene_encoder = gene_encoder
         else:
-            if finetune_gene_emb:
+            gene_encoder = encoders.GeneEncoder(
+                len(self.vocab), d_model, freeze=freeze_embeddings
+            )
+        if finetune_gene_emb:
+            if not freeze_embeddings:
                 raise ValueError(
-                    "finetune_gene_emb is True but precpt_gene_emb is None"
+                    "finetune_gene_emb is True but freeze_embeddings is False"
                 )
-            self.gene_encoder = encoders.GeneEncoder(len(self.vocab), d_model)
+            # Create adapter layers after the frozen base encoder
+            self.gene_encoder = torch.nn.Sequential(
+                gene_encoder,
+                torch.nn.Linear(d_model, d_model),
+                torch.nn.ReLU(),
+                torch.nn.Linear(d_model, d_model),
+            )
+        else:
+            self.gene_encoder = gene_encoder
 
         # Value Encoder, NOTE: the scaling style is also handled in _encode method
         if expr_emb_style in ["continuous", "full_pos"]:
@@ -278,7 +262,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.expr_encoder = encoders.CategoryValueEncoder(n_input_bins, d_model)
         elif expr_emb_style == "metacell":
             self.expr_encoder = encoders.GNN(
-                1, 32, d_model, expr_encoder_layers, dropout, "deepset"
+                1, d_model // 2, d_model, expr_encoder_layers, dropout, "deepset"
             )
 
         # Positional Encoding
@@ -312,7 +296,17 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if self.use_metacell_token:
             self.metacell_encoder = encoders.CategoryValueEncoder(2, d_model)
         # compute tensor for mat_labels_hierarchy
-        for i in ["strict_loading", "optim", "weight_decay", "d_hid", "edge_dim"]:
+        for i in [
+            "strict_loading",
+            "optim",
+            "weight_decay",
+            "d_hid",
+            "edge_dim",
+            "organisms",
+            "domain_spec_batchnorm",
+            "cell_emb_style",
+            "num_batch_labels",
+        ]:
             if i in attention_kwargs:
                 attention_kwargs.pop(i)
         # Transformer
@@ -377,16 +371,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.cls_decoders[clss] = decoders.ClsDecoder(
                 d_model, n_cls, layers=layers_cls, dropout=dropout
             )
-
-        # Batch effect correction via adversarial training on batch classes
-        if num_batch_labels > 0:
-            self.grad_reverse_discriminator_loss = loss.AdversarialDiscriminatorLoss(
-                d_model,
-                n_cls=num_batch_labels,
-            )
-        else:
-            self.grad_reverse_discriminator_loss = None
-
+            if clss == "assay_ontology_term_id" and do_adv_cls:
+                self.adv_cls_decoder = decoders.ClsDecoder(
+                    d_model, n_cls, layers=layers_cls, dropout=dropout
+                )
         # expression decoder from batch embbedding
         if mvc_decoder != "None":
             self.mvc_decoder = decoders.MVCDecoder(
@@ -432,30 +420,17 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.class_encoder = encoders.CategoryValueEncoder(size, self.d_model)
             self.cell_embs_count = size
             print("changing size, could lead to issues")
-        size = checkpoints["state_dict"][
+        if (
             "grad_reverse_discriminator_loss.out_layer.bias"
-        ].shape[0]
-        # we won't use it but still need to take care of it. for now will still add it to the model
-        if self.grad_reverse_discriminator_loss is not None:
-            if size != self.grad_reverse_discriminator_loss.out_layer.bias.shape[0]:
-                self.grad_reverse_discriminator_loss = (
-                    loss.AdversarialDiscriminatorLoss(
-                        self.d_model,
-                        n_cls=size,
-                    )
-                )
-                print(
-                    "the discriminator for batch effect correction has been resized\
-                    and re-initiliazed. It will start from scratch during this training if "
-                )
-        else:
-            if (
-                "grad_reverse_discriminator_loss.out_layer.bias"
-                in checkpoints["state_dict"]
-            ):
-                for k in list(checkpoints["state_dict"].keys()):
-                    if "grad_reverse_discriminator_loss" in k:
-                        del checkpoints["state_dict"][k]
+            in checkpoints["state_dict"]
+        ):
+            for k in list(checkpoints["state_dict"].keys()):
+                if "grad_reverse_discriminator_loss" in k:
+                    del checkpoints["state_dict"][k]
+            print(
+                "the discriminator for batch effect correction has been removed. "
+                "dropping the legacy key."
+            )
 
         # if len(checkpoints["state_dict"]["pos_encoder.pe"].shape) == 3:
         #    self.pos_encoder.pe = checkpoints["state_dict"]["pos_encoder.pe"].squeeze(1)
@@ -674,6 +649,14 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                         )
                     }
                 )
+                if clsname == "cell_type_ontology_term_id" and do_adv_cls:
+                    output.update(
+                        {
+                            "adv_cls_output": self.adv_cls_decoder(
+                                output["cell_embs"][:, loc, :]
+                            )
+                        }
+                    )
         if do_mvc:
             output.update(
                 self.mvc_decoder(
@@ -706,7 +689,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         do_sample: bool = False,
         do_mvc: bool = False,
         do_class: bool = False,
-        zero_mask: Optional[Tensor] = False,
         get_attention_layer: list = [],
     ):
         """
@@ -731,6 +713,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 If True, the gene embeddings are included in the output. Defaults to False.
             do_sample (bool, optional): A flag indicating whether to sample the expression levels.
                 If True, the expression levels are sampled during the forward pass. Defaults to False.
+            do_mvc (bool, optional): A flag indicating whether to perform multi-view coding.
+                If True, the multi-view coding is performed during the forward pass. Defaults to False.
+            do_class (bool, optional): A flag indicating whether to perform classification.
+                If True, the classification is performed during the forward pass. Defaults to False.
             get_attention_layer (list, optional): A list indicating which attention layers to return.
                 If not empty, the specified attention layers are included in the output. Defaults to [].
 
@@ -922,7 +908,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         Returns:
             _type_: _description_
         """
-
         total_loss, losses = self._full_training(
             batch=batch,
             do_denoise=self.do_denoise,
@@ -933,7 +918,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             do_ecs=self.do_ecs,
             do_mvc=self.do_mvc,
             do_adv_cls=self.do_adv_cls,
-            do_adv_batch=self.do_adv_batch,
             do_cls=self.do_cls,
             do_generate=self.do_generate,
             run_full_forward=self.run_full_forward,
@@ -958,7 +942,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         do_ecs: bool = False,
         do_mvc: bool = False,
         do_adv_cls: bool = False,
-        do_adv_batch: bool = False,
         do_cls: bool = False,
         do_generate: bool = False,
         run_full_forward: bool = True,
@@ -1053,7 +1036,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 batch_idx,
                 do_ecs,
                 do_adv_cls & do_cls,
-                do_adv_batch & do_cls,
             )
             cell_embs.append(output["cell_emb"].clone())
             full_cell_embs = output["cell_embs"].clone()
@@ -1103,7 +1085,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 batch_idx,
                 do_ecs,
                 do_adv_cls & do_cls,
-                do_adv_batch & do_cls,
                 do_mse=self.zinb_and_mse,
             )
             # we only want to do them once
@@ -1146,7 +1127,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     batch_idx,
                     do_ecs,
                     do_adv_cls & do_cls,
-                    do_adv_batch & do_cls,
                     do_mse=self.zinb_and_mse,
                 )
                 do_mvc = False
@@ -1180,7 +1160,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 batch_idx,
                 ("cell_emb" in output) and do_ecs,
                 do_adv_cls & do_cls,
-                do_adv_batch & do_cls,
                 do_mse=self.zinb_and_mse,
             )
             losses.update({"gen_" + k: v for k, v in l.items()})
@@ -1217,7 +1196,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         batch_idx,
         do_ecs=False,
         do_adv_cls=False,
-        do_adv_batch=False,
         do_mse=0,
     ):
         """
@@ -1291,57 +1269,57 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 if "cls_output_" + clsname not in output:
                     continue
                 # setting the classes from index to one hot
-                loss_cls += loss.classification(
-                    clsname,
+                loss_cls += loss.hierarchical_classification(
                     pred=output["cls_output_" + clsname],
                     cl=clss[:, j],
-                    maxsize=self.label_counts[clsname],
-                    labels_hierarchy=self.mat_labels_hierarchy,
+                    labels_hierarchy=self.mat_labels_hierarchy[clsname]
+                    if clsname in self.mat_labels_hierarchy.keys()
+                    else None,
                 )
+
+                loss_cls += loss.hierarchical_classification(
+                    pred=output["cls_output_" + clsname],
+                    cl=clss[:, j],
+                    labels_hierarchy=self.mat_labels_hierarchy[clsname]
+                    if clsname in self.mat_labels_hierarchy.keys()
+                    else None,
+                )
+                if do_adv_cls and clsname == "assay_ontology_term_id":
+                    loss_adv_cls = loss.hierarchical_classification(
+                        pred=output["adv_cls_output"],
+                        cl=clss[:, j],
+                        labels_hierarchy=self.mat_labels_hierarchy[clsname]
+                        if clsname in self.mat_labels_hierarchy.keys()
+                        else None,
+                    )
+                    total_loss -= self.adv_class_scale * loss_adv_cls
+                    losses.update({"adv_cls": loss_adv_cls})
             total_loss += self.class_scale * loss_cls
             if loss_cls != 0:
                 losses.update({"cls": loss_cls})
             # TASK 2bis. adversarial label prediction
-            if do_adv_cls:
-                embs = output["cell_embs"][
-                    :,
-                    (2 if self.depth_atinput else 1)
-                    + (1 if self.use_metacell_token else 0) :,
-                    :,
-                ].clone()
-                for j, adv_cls in enumerate(self.classes):
-                    ind = torch.arange(len(self.classes))
-                    mean_embs = torch.mean(embs[:, ind != j, :], dim=1)
-                    mean_embs = grad_reverse(mean_embs, lambd=1.0)
-                    adv_pred = self.cls_decoders[adv_cls](mean_embs)
-                    loss_adv_cls += loss.classification(
-                        adv_cls,
-                        pred=adv_pred,
-                        cl=clss[:, j],
-                        maxsize=self.label_counts[adv_cls],
-                        labels_hierarchy=self.mat_labels_hierarchy,
-                    )
-
-                total_loss += self.adv_class_scale * loss_adv_cls
-                losses.update({"adv_cls": loss_adv_cls})
-
-        if (
-            do_adv_batch
-            and self.grad_reverse_discriminator_loss is not None
-            and batch_idx is not None
-            and "cell_embs" in output
-        ):
-            # here we want all the cell embeddings since nothing should contain batch effect except the first one cell embedding
-            pos = (1 if self.use_metacell_token else 0) + (
-                1 if self.depth_atinput else 0
-            )
-            mean_emb = torch.mean(
-                output["cell_embs"][:, pos + 1 :, :].clone(),
-                dim=1,
-            )
-            loss_adv = self.grad_reverse_discriminator_loss(mean_emb, batch_idx)
-            total_loss += loss_adv * self.class_scale / 16
-            losses.update({"adv_batch": loss_adv})
+            # if do_adv_cls:
+            #    embs = output["cell_embs"][
+            #        :,
+            #        (2 if self.depth_atinput else 1)
+            #        + (1 if self.use_metacell_token else 0) :,
+            #        :,
+            #    ].clone()
+            #    for j, adv_cls in enumerate(self.classes):
+            #        ind = torch.arange(len(self.classes))
+            #        mean_embs = torch.mean(embs[:, ind != j, :], dim=1)
+            #        mean_embs = grad_reverse(mean_embs, lambd=1.0)
+            #        adv_pred = self.cls_decoders[adv_cls](mean_embs)
+            #        loss_adv_cls += loss.hierarchical_classification(
+            #            pred=adv_pred,
+            #            cl=clss[:, j],
+            #            labels_hierarchy=self.mat_labels_hierarchy[adv_cls]
+            #            if adv_cls in self.mat_labels_hierarchy.keys()
+            #            else None,
+            #        )
+            #
+            #    total_loss -= self.adv_class_scale * loss_adv_cls
+            #    losses.update({"adv_cls": loss_adv_cls})
         # TASK 2ter. cell KO effect prediction
         # (just use a novel class, cell state and predict if cell death or not from it)
         # add large timepoint and set the KO gene to a KO embedding instead of expression embedding
@@ -1436,7 +1414,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             do_ecs=self.do_ecs,
             do_mvc=self.do_mvc,
             do_adv_cls=self.do_adv_cls,
-            do_adv_batch=self.do_adv_batch,
             do_cls=self.do_cls,
             do_generate=self.do_generate,
             run_full_forward=self.run_full_forward,

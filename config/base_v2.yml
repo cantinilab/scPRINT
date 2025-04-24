@@ -10,7 +10,7 @@ trainer:
   log_every_n_steps: 100
   limit_train_batches: 20000
   gradient_clip_algorithm: norm
-  limit_val_batches: 2000
+  limit_val_batches: 30000
   limit_test_batches: 1 # we don't perform tests this way
   accumulate_grad_batches: 1
   logger:
@@ -30,7 +30,7 @@ trainer:
         save_last: True
 scprint_training:
   run_full_forward: True
-  noise: [0.9]
+  noise: [0.7]
   do_ecs: True
   do_cce: True
   mask_ratio: ["TF"]
@@ -65,7 +65,7 @@ model:
   #  self_reported_ethnicity_ontology_term_id: 10
   #  sex_ontology_term_id: 2
   #  organism_ontology_term_id: 8
-  class_compression: vae
+  # class_compression: vae
 data:
   organisms:
     - NCBITaxon:9606
@@ -77,7 +77,7 @@ data:
   max_len: 3200
   pin_memory: True
   prefetch_factor: 3
-  metacell_mode: 0.3
+  metacell_mode: 0.2
   weight_scaler: 200
   do_gene_pos: ./data/main/biomart_pos.parquet
   add_zero_genes: 0
@@ -90,7 +90,7 @@ data:
     - cell_type_ontology_term_id
     - tissue_ontology_term_id
     - disease_ontology_term_id
-    # - age_group
+    - age_group
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id
   clss_to_weight:
@@ -108,7 +108,8 @@ data:
     - cell_type_ontology_term_id
     - tissue_ontology_term_id
     - disease_ontology_term_id
-    # - age_group
+    - age_group
+    #- cell_culture
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id
     - sex_ontology_term_id

@@ -18,7 +18,6 @@ class TrainingMode(Callback):
         vae_kl_scale: float = 0.3,
         do_mvc: bool = False,
         mvc_scale: float = 1.0,
-        do_adv_cls: bool = False,
         do_next_tp: bool = False,
         do_generate: bool = True,
         class_scale: float = 1,
@@ -27,7 +26,7 @@ class TrainingMode(Callback):
         randsamp: bool = True,
         warmup_duration: int = 500,
         fused_adam: bool = False,
-        adv_class_scale: float = 0.1,
+        adv_class_scale: float = 1.0,
         lr_reduce_patience: int = 2,
         lr_reduce_factor: float = 0.6,
         lr_reduce_monitor: str = "val_loss",
@@ -99,7 +98,6 @@ class TrainingMode(Callback):
         self.ecs_scale = ecs_scale
         self.do_mvc = do_mvc
         self.vae_kl_scale = vae_kl_scale
-        self.do_adv_cls = do_adv_cls
         self.do_next_tp = do_next_tp
         self.do_generate = do_generate
         self.class_scale = class_scale
@@ -144,7 +142,6 @@ class TrainingMode(Callback):
             f"optim={self.optim},"
             f"weight_decay={self.weight_decay},"
             f"vae_kl_scale={self.vae_kl_scale},"
-            f"do_adv_cls={self.do_adv_cls}, "
             f"adv_class_scale={self.adv_class_scale}, "
             f"do_next_tp={self.do_next_tp}, "
             f"do_generate={self.do_generate}, "
@@ -181,7 +178,6 @@ class TrainingMode(Callback):
         model.ecs_threshold = self.ecs_threshold
         model.ecs_scale = self.ecs_scale
         model.do_mvc = self.do_mvc
-        model.do_adv_cls = self.do_adv_cls
         model.do_next_tp = self.do_next_tp
         model.class_scale = self.class_scale
         model.vae_kl_scale = self.vae_kl_scale
