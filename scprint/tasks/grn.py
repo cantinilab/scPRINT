@@ -86,6 +86,7 @@ class GNInfer:
             symmetrize (bool, optional): Whether to GRN. Defaults to False.
             doplot (bool, optional): Whether to generate plots. Defaults to True.
             max_cells (int, optional): Maximum number of cells to consider. Defaults to 0.
+                if less than total number of cells, only the top `max_cells` cells with the most counts will be considered.
             forward_mode (str, optional): Mode for forward pass. Defaults to "none".
             genelist (list, optional): List of genes to consider. Defaults to an empty list.
             loc (str, optional): Location to save results. Defaults to "./".
@@ -96,16 +97,15 @@ class GNInfer:
         self.layer = layer
         self.loc = loc
         self.how = how
-        assert (
-            self.how
-            in [
-                "most var within",
-                "most var across",
-                "random expr",
-                "some",
-                "most expr",
-            ]
-        ), "how must be one of 'most var within', 'most var across', 'random expr', 'some', 'most expr'"
+        assert self.how in [
+            "most var within",
+            "most var across",
+            "random expr",
+            "some",
+            "most expr",
+        ], (
+            "how must be one of 'most var within', 'most var across', 'random expr', 'some', 'most expr'"
+        )
         self.num_genes = num_genes
         self.preprocess = preprocess
         self.cell_type_col = cell_type_col
@@ -286,6 +286,12 @@ class GNInfer:
         if self.head_agg == "mean_full" or not self.comp_attn:
             self.curr_genes = [i for i in genes if i in self.curr_genes]
             return attn.detach().cpu().numpy()
+        if self.how == "random expr" and self.drop_unexpressed:
+            keep = np.array(
+                [1] * self.n_cell_embs + [i in self.curr_genes for i in genes],
+                dtype=bool,
+            )
+            attn = attn[:, keep, :, :, :]
         badloc = torch.isnan(attn.sum((0, 2, 3, 4)))
         attn = attn[:, ~badloc, :, :, :]
         badloc = badloc.detach().cpu().numpy()

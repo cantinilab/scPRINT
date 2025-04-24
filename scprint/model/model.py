@@ -67,6 +67,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         do_adv_cls: bool = False,
         dropout: float = 0.1,
         use_metacell_token: bool = False,
+        cell_transformer_layers: int = 6,
         lr: float = 0.0001,
         nb_features: Optional[int] = None,
         feature_redraw_interval: Optional[int] = None,
@@ -98,6 +99,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             freeze_embeddings (bool, optional): Whether to freeze the embeddings during training. Defaults to True.
             label_decoders (Optional[Dict[str, Dict[int, str]]], optional): Label decoders to use for plotting the UMAP during validations. Defaults to None.
             zinb (bool, optional): Whether to use Zero-Inflated Negative Binomial distribution. Defaults to True.
+            cell_transformer_layers (int, optional): Number of layers in the cell transformer. Defaults to 6.
             use_metacell_token (bool, optional): Whether to use a metacell token. Defaults to False.
             **attention_kwargs (dict): Additional keyword arguments for the model. see @flashformer.py
 
@@ -251,7 +253,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             )
         else:
             self.gene_encoder = gene_encoder
-
         # Value Encoder, NOTE: the scaling style is also handled in _encode method
         if expr_emb_style in ["continuous", "full_pos"]:
             self.expr_encoder = encoders.ContinuousValueEncoder(
@@ -345,7 +346,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.cell_transformer = FlashTransformer(
                 d_model=d_model,
                 nhead=nhead,
-                nlayers=6,
+                nlayers=cell_transformer_layers,
                 dropout=dropout,
                 cross_attn=True,
                 attn_type=transformer,
