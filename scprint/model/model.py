@@ -54,7 +54,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         n_input_bins: int = 0,
         mvc_decoder: str = "None",
         pred_embedding: list[str] = [],
-        label_counts: Dict[str, int] = {},
+        label_counts:    Dict[str, int] = {},
+        organisms: list[str] = [],
         layers_cls: list[int] = [],
         classes: Dict[str, int] = {},
         labels_hierarchy: Dict[str, Dict[int, list[int]]] = {},
@@ -86,6 +87,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             expr_encoder_layers (int, optional): Number of layers in the expression encoder. Defaults to 2.
             layers_cls (list[int], optional): List specifying the number of layers in the classifier. Defaults to [].
             classes (Dict[str, int], optional): Classes to predict with the number of classes for each. Defaults to {}.
+            organisms (list[str], optional): List of organisms to use for plotting embeddings. Defaults to [].
             labels_hierarchy (Dict[str, Dict[int, list[int]]], optional): Class hierarchy for classes with hierarchical classes. Defaults to {}.
             dropout (float, optional): Dropout value. Defaults to 0.2.
             transformer (str, optional): Transformer type to use. One of "linear", "flash", "flashsparse", "scprint". Defaults to "fast".
@@ -98,7 +100,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             pred_embedding (list[str], optional): List of classes to use for plotting embeddings. Defaults to [].
             freeze_embeddings (bool, optional): Whether to freeze the embeddings during training. Defaults to True.
             label_decoders (Optional[Dict[str, Dict[int, str]]], optional): Label decoders to use for plotting the UMAP during validations. Defaults to None.
-            zinb (bool, optional): Whether to use Zero-Inflated Negative Binomial distribution. Defaults to True.
+            zinb (bool, optional): Whet her to use Zero-Inflated Negative Binomial distribution. Defaults to True.
             cell_transformer_layers (int, optional): Number of layers in the cell transformer. Defaults to 6.
             use_metacell_token (bool, optional): Whether to use a metacell token. Defaults to False.
             **attention_kwargs (dict): Additional keyword arguments for the model. see @flashformer.py
@@ -162,6 +164,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.d_model = d_model
         self.normalization = normalization
         self.attn_bias = attn_bias
+        self.organisms = organisms
         self.nlayers = nlayers
         self.gene_pos_enc = gene_pos_enc
         self.use_metacell_token = use_metacell_token
