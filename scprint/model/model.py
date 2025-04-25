@@ -42,6 +42,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         d_model: int = 256,
         nhead: int = 4,
         nlayers: int = 8,
+        organisms: list[str] = [],
         precpt_gene_emb: Optional[str] = None,
         finetune_gene_emb: bool = False,
         freeze_embeddings: bool = True,
@@ -97,6 +98,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             mvc_decoder (str, optional): Style of MVC decoder. One of "None", "inner product", "concat query", "sum query". Defaults to "None".
             pred_embedding (list[str], optional): List of classes to use for plotting embeddings. Defaults to [].
             freeze_embeddings (bool, optional): Whether to freeze the embeddings during training. Defaults to True.
+            organisms (list[str], optional): List of organisms to use for plotting embeddings. Defaults to [].
             label_decoders (Optional[Dict[str, Dict[int, str]]], optional): Label decoders to use for plotting the UMAP during validations. Defaults to None.
             zinb (bool, optional): Whether to use Zero-Inflated Negative Binomial distribution. Defaults to True.
             cell_transformer_layers (int, optional): Number of layers in the cell transformer. Defaults to 6.
@@ -155,6 +157,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.predict_mode = "none"
         self.keep_all_labels_pred = False
         self.mask_zeros = False
+        self.automatic_optimization = False
 
         self.depth_atinput = depth_atinput
         self.tf_masker = WeightedMasker(genes, inv_weight=0.05)
@@ -166,6 +169,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.gene_pos_enc = gene_pos_enc
         self.use_metacell_token = use_metacell_token
         self.mvc_decoder = mvc_decoder
+        self.organisms = organisms
         # need to store
         self.n_input_bins = n_input_bins
         self.transformer = transformer
@@ -808,9 +812,25 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         """@see pl.LightningModule"""
         # https://pytorch.org/docs/stable/generated/torch.optim.Adam.html#torch.optim.Adam
         # not working because of poor weight decay implem
+        generator_params = []
+        discriminator_params = []
+        for name, param in self.named_parameters():
+            if "adv_cls_decoder" in name:
+                discriminator_params.append(param)
+            else:
+                generator_params.append(param)
         if self.optim == "adam":
-            optimizer = optim.Adam(
-                self.parameters(),
+            optimizer_g = optim.Adam(
+                generator_params,
+                lr=self.hparams.lr,
+                betas=(0.9, 0.999),
+                eps=1e-08,
+                weight_decay=self.weight_decay,
+                amsgrad=False,
+                fused=self.fused_adam,
+            )
+            optimizer_d = optim.Adam(
+                discriminator_params,
                 lr=self.hparams.lr,
                 betas=(0.9, 0.999),
                 eps=1e-08,
@@ -819,8 +839,17 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 fused=self.fused_adam,
             )
         elif self.optim == "adamW":
-            optimizer = optim.AdamW(
-                self.parameters(),
+            optimizer_g = optim.AdamW(
+                generator_params,
+                lr=self.hparams.lr,
+                betas=(0.9, 0.999),
+                eps=1e-08,
+                weight_decay=self.weight_decay,
+                amsgrad=False,
+                fused=self.fused_adam,
+            )
+            optimizer_d = optim.AdamW(
+                discriminator_params,
                 lr=self.hparams.lr,
                 betas=(0.9, 0.999),
                 eps=1e-08,
@@ -849,36 +878,52 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             # optimizer = GaLoreAdamW(param_groups, lr=self.hparams.lr)
         else:
             raise ValueError(f"Unknown optimizer: {self.optim}")
-        if self.lr_reduce_monitor is None:
-            print("no lr reduce factor")
-            return [optimizer]
-        lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer,
-            mode="min",
-            patience=self.lr_reduce_patience,
-            factor=self.lr_reduce_factor,
-            verbose=True,
-        )
-        lr_dict = {
-            "scheduler": lr_scheduler,
-            # The unit of the scheduler's step size, could also be 'step'.
-            # 'epoch' updates the scheduler on epoch end whereas 'step'
-            # updates it after a optimizer update.
-            "interval": "epoch",
-            # How many epochs/steps should pass between calls to
-            # `scheduler.step()`. 1 corresponds to updating the learning
-            # rate after every epoch/step.
-            "frequency": 1,
-            # Metric to to monitor for schedulers like `ReduceLROnPlateau`
-            "monitor": self.lr_reduce_monitor,
-        }
+        optimizers = [optimizer_g, optimizer_d]
+
+        # --- Handle Schedulers (Manual Management Required) ---
+        # ReduceLROnPlateau needs manual stepping based on validation metrics
+        # The setup below provides the scheduler, but stepping needs to be added
+        # e.g., in validation_epoch_end or training_epoch_end
+        schedulers = []
+        if self.lr_reduce_monitor is not None:
+            lr_scheduler_g = optim.lr_scheduler.ReduceLROnPlateau(
+                optimizer_g,
+                mode="min",
+                patience=self.lr_reduce_patience,
+                factor=self.lr_reduce_factor,
+                verbose=True,
+            )
+            lr_scheduler_d = optim.lr_scheduler.ReduceLROnPlateau(
+                optimizer_d,  # Separate scheduler for discriminator
+                mode="min",  # Might monitor discriminator loss or main loss
+                patience=self.lr_reduce_patience,
+                factor=self.lr_reduce_factor,
+                verbose=True,
+            )
+            schedulers = [
+                {
+                    "scheduler": lr_scheduler_g,
+                    "monitor": self.lr_reduce_monitor,
+                    "name": "lr_g",
+                },
+                {
+                    "scheduler": lr_scheduler_d,
+                    "monitor": self.lr_reduce_monitor,
+                    "name": "lr_d",
+                },  # Monitor appropriate metric
+            ]
+            # Note: The automatic frequency/interval logic of Lightning won't apply here.
+            # You MUST manually call scheduler.step(metrics[monitor]) later.
+
+        # Store lrfinder steps if needed (manual warmup also required)
         self.lrfinder_steps = 0
         for val in self.trainer.callbacks:
             if type(val) is _LRCallback:
                 self.lrfinder_steps = val.num_training
             if type(val) is LearningRateFinder:
                 self.lrfinder_steps = val._num_training_steps
-        return [optimizer], [lr_dict]
+
+        return optimizers, schedulers  # Return schedulers if defined
 
     def on_fit_start(self):
         """@see pl.LightningModule"""
@@ -901,7 +946,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         Returns:
             _type_: _description_
         """
-        total_loss, losses = self._full_training(
+        optimizer_g, optimizer_d = self.optimizers()
+
+        total_loss, adv_d, adv_g, losses = self._full_training(
             batch=batch,
             do_denoise=self.do_denoise,
             noise=self.noise,
@@ -916,6 +963,21 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             run_full_forward=self.run_full_forward,
             mask_ratio=self.mask_ratio,
         )
+        optimizer_g.zero_grad()
+        total_loss -= self.adv_class_scale * adv_g
+        if torch.isfinite(total_loss):
+            self.manual_backward(total_loss)
+            optimizer_g.step()
+        else:
+            print("total_loss is not finite!!!")
+
+        final_disc_loss = adv_d
+        optimizer_d.zero_grad()
+        if torch.isfinite(final_disc_loss):
+            self.manual_backward(final_disc_loss)
+            optimizer_d.step()
+        else:
+            print("adv_d is not finite!!!")
         try:
             self.log("train_loss", total_loss, prog_bar=True, sync_dist=True)
             self.log_dict(losses, prog_bar=True, sync_dist=True)
@@ -964,6 +1026,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         Returns:
             loss, losses: the total loss as float and the individual losses as dict
         """
+        optimizer_g, optimizer_d = self.optimizers()
+        optimizer_g.zero_grad()
+        optimizer_d.zero_grad()
+
         if type(mask_ratio) is not list:
             mask_ratio = [mask_ratio]
         # dynamically change the context length every 5 steps
@@ -1005,6 +1071,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         total_loss = 0
         losses = {}
         cell_embs = []
+        adv_dt = torch.tensor(0.0, device=expression.device)
+        adv_gt = torch.tensor(0.0, device=expression.device)
         if run_full_forward:
             output = self.forward(
                 gene_pos,
@@ -1022,7 +1090,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 output.pop("zero_logits")
             if "mean" in output:
                 output.pop("mean")
-            l, tot = self._compute_loss(
+            l, tot, adv_g, adv_d = self._compute_loss(
                 output,
                 expression,
                 clss,
@@ -1036,6 +1104,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             losses.update({"full_forward_" + k: v for k, v in l.items()})
             do_mvc = False
             do_cls = False
+            adv_dt += adv_d
+            adv_gt += adv_g
 
         for i in mask_ratio:
             # do noise and mask
@@ -1071,7 +1141,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 do_class=do_cls,
                 metacell_token=metacell_token,
             )
-            l, tot = self._compute_loss(
+            l, tot, adv_g, adv_d = self._compute_loss(
                 output,
                 expr,
                 clss,
@@ -1083,6 +1153,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             # we only want to do them once
             do_mvc = False
             do_cls = False
+            adv_dt += adv_d
+            adv_gt += adv_g
 
             cell_embs.append(output["cell_emb"].clone())
             total_loss += tot
@@ -1113,7 +1185,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     do_class=do_cls,
                     metacell_token=metacell_token,
                 )
-                l, tot = self._compute_loss(
+                l, tot, adv_g, adv_d = self._compute_loss(
                     output,
                     expression,
                     clss,
@@ -1124,7 +1196,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 )
                 do_mvc = False
                 do_cls = False
-
+                adv_dt += adv_d
+                adv_gt += adv_g
                 cell_embs.append(output["cell_emb"].clone())
                 total_loss += tot
                 losses.update(
@@ -1146,7 +1219,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             )
             if "cell_emb" in output:
                 cell_embs.append(output["cell_emb"].clone())
-            l, tloss = self._compute_loss(
+            l, tloss, adv = self._compute_loss(
                 output,
                 expression,
                 clss,
@@ -1179,7 +1252,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # TASK 8. KO profile prediction
         # if we have that information
         # TASK 9. PDgrapher-drug-like perturbation prediction (L1000?)
-        return total_loss, losses
+        return total_loss, adv_dt, adv_gt, losses
 
     def _compute_loss(
         self,
@@ -1188,7 +1261,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         clss,
         batch_idx,
         do_ecs=False,
-        do_adv_cls=False,
+        do_adv_cls=False,  # Flag to calculate the component
         do_mse=0,
     ):
         """
@@ -1215,7 +1288,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         """
         total_loss = 0
         losses = {}
-        # TASK 1. reconstruct masked expression
+        adv_cls_g = None  # Initialize adversarial component
+
+        # TASK 1. reconstruct masked expression (Part of Generator Loss)
         if "zero_logits" in output:
             loss_expr = loss.zinb(
                 theta=output["disp"],
@@ -1244,20 +1319,22 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 target=expression,
             )
         else:
-            loss_expr = 0
+            loss_expr = torch.tensor(
+                0.0, device=expression.device
+            )  # Ensure it's a tensor
         total_loss += loss_expr
         losses.update({"expr": loss_expr})
 
-        # TASK 2. predict classes
+        # TASK 2. predict classes (Main Classifiers - Part of Generator Loss)
         if len(self.classes) > 0 and "cell_embs" in output:
             ## Calculate pairwise cosine similarity for the embeddings
             # Calculate pairwise cosine similarity more efficiently
             loss_emb_indep = loss.within_sample(output["cell_embs"])
             losses.update({"emb_independence": loss_emb_indep})
             total_loss += self.class_embd_diss_scale * loss_emb_indep
-            ## compute class loss
+
+            # Main Classification Loss (Part of Generator Loss)
             loss_cls = 0
-            loss_adv_cls = 0
             for j, clsname in enumerate(self.classes):
                 if "cls_output_" + clsname not in output:
                     continue
@@ -1270,23 +1347,34 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     else None,
                 )
 
-                # Adversarial part for 'assay_ontology_term_id'
+                # Calculate Adversarial Loss Component Separately if flag is set
                 if do_adv_cls and clsname == "assay_ontology_term_id":
-                    pos = self.classes.index("cell_type_ontology_term_id")
+                    # Find the embedding used by the adversarial network
+                    # IMPORTANT: Use the *correct* embedding that adv_cls_decoder expects
+                    # Let's assume it still takes the embedding for 'assay_ontology_term_id' itself
+                    # If it takes a different embedding (like cell_type), update 'pos'
+                    try:
+                        pos = self.classes.index("assay_ontology_term_id")
+                    except ValueError:
+                        raise ValueError(
+                            "Adversarial target 'assay_ontology_term_id' not found in self.classes"
+                        )
+
                     loc = (
                         pos  # Assuming 'j' correctly corresponds to 'assay_ontology_term_id' index
                         + (2 if self.depth_atinput else 1)
                         + (1 if self.use_metacell_token else 0)
                     )
-                    # Apply gradient reversal to the input embedding
-                    adv_input_emb = loss.grad_reverse(
-                        output["cell_embs"][:, loc, :].clone(), lambd=1.0
-                    )
-                    # Get predictions from the adversarial decoder
-                    adv_pred = self.adv_cls_decoder(adv_input_emb)
+                    # --- Key change: Detach the input for the discriminator calculation ---
+                    # The discriminator learns from this detached input.
+                    # The generator's adversarial loss uses the attached input later.
+                    adv_input_emb_detached = output["cell_embs"][:, loc, :].detach()
+                    adv_input_emb_attached = output["cell_embs"][:, loc, :]
 
-                    # Compute the adversarial loss
-                    current_adv_loss = loss.hierarchical_classification(
+                    adv_pred = self.adv_cls_decoder(adv_input_emb_detached)
+                    adv_pred_attached = self.adv_cls_decoder(adv_input_emb_attached)
+
+                    adv_cls_d = loss.hierarchical_classification(
                         pred=adv_pred,
                         cl=clss[
                             :, j
@@ -1295,21 +1383,19 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                         if clsname in self.mat_labels_hierarchy.keys()
                         else None,
                     )
-                    # Add the adversarial loss to the total loss (gradient reversal handles the maximization objective for the generator)
-                    total_loss += self.adv_class_scale * current_adv_loss
-                    losses.update({"adv_cls": current_adv_loss})
+                    adv_cls_g = loss.hierarchical_classification(
+                        pred=adv_pred_attached,
+                        cl=clss[
+                            :, j
+                        ],  # Use the true label for the adversarial target class
+                        labels_hierarchy=self.mat_labels_hierarchy[clsname]
+                        if clsname in self.mat_labels_hierarchy.keys()
+                        else None,
+                    )
+                    # Log per mask ratio?
+                    losses.update({"adv_cls_g": adv_cls_g})
+                    # Don't add to total_loss here, returned separately for discriminator step
 
-                # This was the old (likely incorrect) way for reference, now handled above
-                # if do_adv_cls and clsname == "assay_ontology_term_id":
-                #     loss_adv_cls = loss.hierarchical_classification(
-                #         pred=output["adv_cls_output"],
-                #         cl=clss[:, j],
-                #         labels_hierarchy=self.mat_labels_hierarchy[clsname]
-                #         if clsname in self.mat_labels_hierarchy.keys()
-                #         else None,
-                #     )
-                #     total_loss -= self.adv_class_scale * loss_adv_cls # Incorrect subtraction
-                #     losses.update({"adv_cls": loss_adv_cls})
             total_loss += self.class_scale * loss_cls
             if loss_cls != 0:
                 losses.update({"cls": loss_cls})
@@ -1365,12 +1451,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # Add VAE KL loss if present
         if "vae_kl_loss" in output:
             vae_kl_loss = output["vae_kl_loss"]
-            total_loss += (
-                self.vae_kl_scale * vae_kl_loss
-            )  # Scale factor of 0.1 for KL loss
+            total_loss += self.vae_kl_scale * vae_kl_loss
             losses.update({"vae_kl": vae_kl_loss})
 
-        return losses, total_loss
+        # Return generator loss components and the separate adversarial component
+        return losses, total_loss, adv_cls_g, adv_cls_d
 
     def optimizer_step(self, epoch, batch_idx, optimizer, optimizer_closure):
         """@see pl.LightningModule"""
@@ -1471,6 +1556,29 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
     def on_validation_epoch_end(self):
         """@see pl.LightningModule"""
+        if self.trainer.state.stage != "sanity_check":
+            # --- Manual Scheduler Step ---
+            if self.automatic_optimization is False and self.lr_schedulers():
+                sch_g, sch_d = self.lr_schedulers()  # Assumes two schedulers configured
+                # Ensure the metric is available
+                monitored_metric = self.trainer.callback_metrics.get(sch_g.monitor)
+                if monitored_metric is not None:
+                    sch_g.step(monitored_metric)
+                    # Decide which metric sch_d monitors (could be same or different)
+                    monitored_metric_d = self.trainer.callback_metrics.get(
+                        sch_d.monitor
+                    )
+                    if monitored_metric_d is not None:
+                        sch_d.step(monitored_metric_d)
+                    else:
+                        print(
+                            f"Warning: Monitor metric '{sch_d.monitor}' not found for discriminator scheduler."
+                        )
+
+                else:
+                    print(
+                        f"Warning: Monitor metric '{sch_g.monitor}' not found for generator scheduler."
+                    )
         self.embs = self.all_gather(self.embs).view(-1, self.embs.shape[-1])
         self.info = self.all_gather(self.info).view(-1, self.info.shape[-1])
         self.pred = (
