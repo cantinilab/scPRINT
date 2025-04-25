@@ -31,7 +31,6 @@ class TrainingMode(Callback):
         lr_reduce_factor: float = 0.6,
         lr_reduce_monitor: str = "val_loss",
         do_cls: bool = True,
-        do_adv_batch: bool = False,
         run_full_forward: bool = False,
         lr: float = 0.0001,
         dropout: float = 0.1,
@@ -71,7 +70,6 @@ class TrainingMode(Callback):
             lr_reduce_factor (float): Factor by which the learning rate will be reduced. Defaults to 0.6.
             lr_reduce_monitor (str): Quantity to be monitored for learning rate reduction. Defaults to "val_loss".
             do_cls (bool): Whether to perform classification during training. Defaults to True.
-            do_adv_batch (bool): Whether to apply adversarial batch training. Defaults to False.
             run_full_forward (bool): Whether to run a second forward pass without masking or denoising for the bottleneck learning / MVC case. Defaults to False.
             lr (float): Initial learning rate. Defaults to 0.001.
             optim (str): Optimizer to use during training. Defaults to "adamW".
@@ -114,7 +112,6 @@ class TrainingMode(Callback):
         self.optim = optim
         self.weight_decay = weight_decay
         self.do_cls = do_cls
-        self.do_adv_batch = do_adv_batch
         self.run_full_forward = run_full_forward
         self.name = name
         self.test_every = test_every
@@ -154,7 +151,6 @@ class TrainingMode(Callback):
             f"lr_reduce_monitor={self.lr_reduce_monitor}, "
             f"mvc_scale={self.mvc_scale}, "
             f"do_cls={self.do_cls}, "
-            f"do_adv_batch={self.do_adv_batch}, "
             f"run_full_forward={self.run_full_forward}), "
             f"name={self.name}, "
             f"test_every={self.test_every}, "
@@ -192,7 +188,6 @@ class TrainingMode(Callback):
         model.lr_reduce_factor = self.lr_reduce_factor
         model.lr_reduce_monitor = self.lr_reduce_monitor
         model.do_cls = self.do_cls
-        model.do_adv_batch = self.do_adv_batch
         model.run_full_forward = self.run_full_forward
         model.lr = self.lr
         model.optim = self.optim

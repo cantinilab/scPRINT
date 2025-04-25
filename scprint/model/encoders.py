@@ -354,7 +354,7 @@ class GNN(nn.Module):
                 in_channels=input_dim,
                 hidden_channels=merge_dim + 2,
                 out_channels=merge_dim,
-                num_layers=num_layers,
+                num_layers=num_layers - 1,
                 dropout=dropout,
                 act="relu",
                 norm="layer_norm",
