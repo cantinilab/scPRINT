@@ -76,17 +76,18 @@ For the moment scPRINT has been tested on MacOS and Linux (Ubuntu 20.04) with Py
 
 If you want to be using flashattention2, know that it only supports triton 2.0 MLIR's version and torch==2.0.0 for now.
 
-### Test scPRINT on google colab!
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1CacoQDAwJn86tq2sBhUoZ6M-xAqsYFDI#scrollTo=Vj73HINSzKHL)
-
-### Use scPRINT in superbio.ai!
+### If you are not a python use yourself, try scPRINT in superbio.ai!
 
 [HERE](https://app.superbio.ai/apps/67333115ed44f27eb717cf84)
 
-### lamin.ai
+### To have a super easy introduction, try scPRINT on a google colab notebook!
 
-To use scPRINT, you will need to use [lamin.ai](https://lamin.ai/). This is needed to load biological informations like genes, cell types, organisms etc...
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1CacoQDAwJn86tq2sBhUoZ6M-xAqsYFDI#scrollTo=Vj73HINSzKHL)
+
+
+### To know: lamin.ai
+
+To use scPRINT, you will need to use [lamin.ai](https://lamin.ai/). This is needed to load biological informations like genes, cell types, organisms.. (but also to manage the pre-training datasets if this is something you want to set up)
 
 ### install
 
