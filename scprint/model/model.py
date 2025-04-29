@@ -54,7 +54,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         n_input_bins: int = 0,
         mvc_decoder: str = "None",
         pred_embedding: list[str] = [],
-        label_counts:    Dict[str, int] = {},
+        label_counts: Dict[str, int] = {},
         organisms: list[str] = [],
         layers_cls: list[int] = [],
         classes: Dict[str, int] = {},
@@ -482,10 +482,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     tens[k2 - self.label_counts[k], v2] = 1
                 self.mat_labels_hierarchy[k] = tens.to(bool)
         if "gene_pos_enc" in checkpoints["hyper_parameters"]:
-            if self.genes != checkpoints["hyper_parameters"]["genes"]:
-                raise ValueError(
-                    "Genes or their ordering have changed in the dataloader compared to last time, the model will likely misbehave!"
-                )
             if self.gene_pos_enc != checkpoints["hyper_parameters"]["gene_pos_enc"]:
                 print(
                     "Gene position encoding has changed in the dataloader compared to last time, be careful!"
@@ -497,16 +493,19 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 for k, v in checkpoints["hyper_parameters"]["label_decoders"].items():
                     mencoders[k] = {va: ke for ke, va in v.items()}
                 self.trainer.datamodule.dataset.mapped_dataset.encoders = mencoders
-                if (
-                    self.trainer.datamodule.kwargs["collate_fn"].organism_name
-                    in mencoders
-                ):
-                    self.trainer.datamodule.kwargs["collate_fn"]._setup(
-                        org_to_id=mencoders[
-                            self.trainer.datamodule.kwargs["collate_fn"].organism_name
-                        ],
-                        valid_genes=self.genes,
+            else:
+                if self.genes != checkpoints["hyper_parameters"]["genes"]:
+                    print(
+                        "Genes or their ordering have changed in the dataloader compared to last time and is not related to encoding...\
+                            the model will likely misbehave!"
                     )
+            if self.trainer.datamodule.kwargs["collate_fn"].organism_name in mencoders:
+                self.trainer.datamodule.kwargs["collate_fn"]._setup(
+                    org_to_id=mencoders[
+                        self.trainer.datamodule.kwargs["collate_fn"].organism_name
+                    ],
+                    valid_genes=checkpoints["hyper_parameters"]["genes"],
+                )
         except RuntimeError as e:
             if "scPrint is not attached to a `Trainer`." in str(e):
                 print("FYI: scPrint is not attached to a `Trainer`.")

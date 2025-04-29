@@ -73,7 +73,7 @@ data:
   test_split: 0.02
   batch_size: 64
   num_workers: 20
-  hierarchical_clss:
+  hierarchical_clss: #['cell_type_ontology_term_id','tissue_ontology_term_id','disease_ontology_term_id','assay_ontology_term_id','self_reported_ethnicity_ontology_term_id']
     - cell_type_ontology_term_id
     - tissue_ontology_term_id
     - disease_ontology_term_id
@@ -92,7 +92,7 @@ data:
     - organism_ontology_term_id
     # - cell_culture
     # - nnz
-  clss_to_predict:
+  clss_to_predict: #['cell_type_ontology_term_id','tissue_ontology_term_id','disease_ontology_term_id','assay_ontology_term_id','self_reported_ethnicity_ontology_term_id','sex_ontology_term_id','organism_ontology_term_id']
     - cell_type_ontology_term_id
     - tissue_ontology_term_id
     - disease_ontology_term_id
