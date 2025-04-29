@@ -484,7 +484,15 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if "gene_pos_enc" in checkpoints["hyper_parameters"]:
             if self.gene_pos_enc != checkpoints["hyper_parameters"]["gene_pos_enc"]:
                 print(
-                    "Gene position encoding has changed in the dataloader compared to last time, be careful!"
+                    "Gene position encoding has changed in the dataloader compared to last time, trying to revert"
+                )
+                self.gene_pos_enc = checkpoints["hyper_parameters"]["gene_pos_enc"]
+                max_len = max(self.gene_pos_enc)
+                token_to_pos = {
+                    token: pos for token, pos in enumerate(self.gene_pos_enc)
+                }
+                self.pos_encoder = encoders.PositionalEncoding(
+                    self.d_model, max_len=max_len, token_to_pos=token_to_pos
                 )
         mencoders = {}
         try:
@@ -495,7 +503,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 self.trainer.datamodule.dataset.mapped_dataset.encoders = mencoders
             else:
                 if self.genes != checkpoints["hyper_parameters"]["genes"]:
-                    print(
+                    raise ValueError(
                         "Genes or their ordering have changed in the dataloader compared to last time and is not related to encoding...\
                             the model will likely misbehave!"
                     )
@@ -505,6 +513,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                         self.trainer.datamodule.kwargs["collate_fn"].organism_name
                     ],
                     valid_genes=checkpoints["hyper_parameters"]["genes"],
+                )
+            elif self.genes != checkpoints["hyper_parameters"]["genes"]:
+                raise ValueError(
+                    "Genes or their ordering have changed in the dataloader compared to last time and is related to encoding...\
+                            the model will likely misbehave!"
                 )
         except RuntimeError as e:
             if "scPrint is not attached to a `Trainer`." in str(e):
