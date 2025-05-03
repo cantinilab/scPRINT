@@ -1,11 +1,10 @@
 project: scprint_v2
 seed_everything: 42
-ckpt_path: null
 set_float32_matmul_precision: True
-wandblog: all
 trainer:
   precision: 16-mixed
   strategy: ddp_find_unused_parameters_true
+  use_distributed_sampler: False
   gradient_clip_val: 10
   log_every_n_steps: 100
   limit_train_batches: 40000
