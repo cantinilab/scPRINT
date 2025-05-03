@@ -1,8 +1,3 @@
-trainer:
-  strategy: ddp_find_unused_parameters_true
-  limit_train_batches: 20_000
-  limit_val_batches: 2000
-  accumulate_grad_batches: 1
 model:
   nhead: 8
   num_heads_kv: 4
