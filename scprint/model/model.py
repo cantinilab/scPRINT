@@ -411,6 +411,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             )
 
     def on_load_checkpoint(self, checkpoints):
+        # if not the same number of labels (due to diff datasets)
         for name, clss in self.cls_decoders.items():
             size = checkpoints["state_dict"][
                 "cls_decoders." + name + ".out_layer.bias"
@@ -419,11 +420,20 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 self.cls_decoders[name].out_layer = torch.nn.Linear(
                     clss.out_layer.weight.shape[1], size
                 )
-        size = checkpoints["state_dict"]["class_encoder.embedding.weight"].shape[0]
-        if size != self.class_encoder.embedding.weight.shape[0]:
-            self.class_encoder = encoders.CategoryValueEncoder(size, self.d_model)
-            self.cell_embs_count = size
-            print("changing size, could lead to issues")
+
+        # from older model versions
+        self.normalization = checkpoints["hyper_parameters"].get("normalization", "sum")
+        if (
+            checkpoints["state_dict"].get("gene_encoder.0.embedding.weight", None)
+            is not None
+        ):
+            # replace it with the new one gene_encoder.0.embeddings.weight in the state_dict
+            checkpoints["state_dict"]["gene_encoder.0.embeddings.weight"] = checkpoints[
+                "state_dict"
+            ]["gene_encoder.0.embedding.weight"]
+            del checkpoints["state_dict"]["gene_encoder.0.embedding.weight"]
+        # same
+        # when doing batch effect correction and input dataset is not the same
         if (
             "grad_reverse_discriminator_loss.out_layer.bias"
             in checkpoints["state_dict"]
@@ -435,19 +445,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 "the discriminator for batch effect correction has been removed. "
                 "dropping the legacy key."
             )
-
-        # if len(checkpoints["state_dict"]["pos_encoder.pe"].shape) == 3:
-        #    self.pos_encoder.pe = checkpoints["state_dict"]["pos_encoder.pe"].squeeze(1)
-        self.normalization = checkpoints["hyper_parameters"].get("normalization", "sum")
-        if (
-            checkpoints["state_dict"].get("gene_encoder.0.embedding.weight", None)
-            is not None
-        ):
-            # replace it with the new one gene_encoder.0.embeddings.weight in the state_dict
-            checkpoints["state_dict"]["gene_encoder.0.embeddings.weight"] = checkpoints[
-                "state_dict"
-            ]["gene_encoder.0.embedding.weight"]
-            del checkpoints["state_dict"]["gene_encoder.0.embedding.weight"]
+        # same
         if (
             checkpoints["state_dict"].get("gene_encoder.embedding.weight", None)
             is not None
@@ -457,12 +455,14 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 "state_dict"
             ]["gene_encoder.embedding.weight"]
             del checkpoints["state_dict"]["gene_encoder.embedding.weight"]
+
         if "classes" in checkpoints["hyper_parameters"]:
             if self.label_counts != checkpoints["hyper_parameters"]["classes"]:
-                print("changing the number of classes, could lead to issues")
                 if "label_counts" in checkpoints["hyper_parameters"] and set(
                     checkpoints["hyper_parameters"]["label_counts"].keys()
                 ) == set(checkpoints["hyper_parameters"]["classes"]):
+                    if self.classes != checkpoints["hyper_parameters"]["classes"]:
+                        print("classes have changed, be careful")
                     self.classes = checkpoints["hyper_parameters"]["classes"]
                     self.label_counts = checkpoints["hyper_parameters"]["label_counts"]
                     if self.classes == self.label_counts:
@@ -471,9 +471,24 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                         )
                 else:
                     self.label_counts = checkpoints["hyper_parameters"]["classes"]
-                    self.classes = list(
+                    if self.classes != list(
                         checkpoints["hyper_parameters"]["classes"].keys()
-                    )
+                    ):
+                        print("classes have changed, be careful")
+                        self.classes = list(
+                            checkpoints["hyper_parameters"]["classes"].keys()
+                        )
+            # else it is all good as expected
+
+        else:
+            print("no classes in the checkpoint, be careful")
+
+        if (
+            self.label_decoders != checkpoints["hyper_parameters"]["label_decoders"]
+            or self.labels_hierarchy
+            != checkpoints["hyper_parameters"]["labels_hierarchy"]
+        ):
+            print("label decoders have changed, be careful")
             self.label_decoders = checkpoints["hyper_parameters"]["label_decoders"]
             self.labels_hierarchy = checkpoints["hyper_parameters"]["labels_hierarchy"]
             for k, v in self.labels_hierarchy.items():
@@ -481,6 +496,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 for k2, v2 in v.items():
                     tens[k2 - self.label_counts[k], v2] = 1
                 self.mat_labels_hierarchy[k] = tens.to(bool)
+
         if "gene_pos_enc" in checkpoints["hyper_parameters"]:
             if self.gene_pos_enc != checkpoints["hyper_parameters"]["gene_pos_enc"]:
                 print(
@@ -495,33 +511,35 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     self.d_model, max_len=max_len, token_to_pos=token_to_pos
                 )
         mencoders = {}
+        if self.label_decoders != checkpoints["hyper_parameters"]["label_decoders"]:
+            raise ValueError("label decoders have changed")
         try:
             if self.trainer.datamodule.decoders != self.label_decoders:
+                print("label decoders have changed, be careful")
                 # if we don't have the same decoders, we need to update the one on the datamodule side
                 for k, v in checkpoints["hyper_parameters"]["label_decoders"].items():
                     mencoders[k] = {va: ke for ke, va in v.items()}
-                self.trainer.datamodule.dataset.mapped_dataset.encoders = mencoders
-            else:
-                if self.genes != checkpoints["hyper_parameters"]["genes"]:
-                    raise ValueError(
-                        "Genes or their ordering have changed in the dataloader compared to last time and is not related to encoding...\
-                            the model will likely misbehave!"
-                    )
-            if self.trainer.datamodule.kwargs["collate_fn"].organism_name in mencoders:
-                self.trainer.datamodule.kwargs["collate_fn"]._setup(
-                    org_to_id=mencoders[
-                        self.trainer.datamodule.kwargs["collate_fn"].organism_name
-                    ],
-                    valid_genes=checkpoints["hyper_parameters"]["genes"],
-                )
-            elif self.genes != checkpoints["hyper_parameters"]["genes"]:
-                raise ValueError(
-                    "Genes or their ordering have changed in the dataloader compared to last time and is related to encoding...\
-                            the model will likely misbehave!"
-                )
+                self.trainer.datamodule.encoders = mencoders
         except RuntimeError as e:
             if "scPrint is not attached to a `Trainer`." in str(e):
                 print("FYI: scPrint is not attached to a `Trainer`.")
+            else:
+                raise e
+            if self.genes != checkpoints["hyper_parameters"]["genes"]:
+                self.genes = checkpoints["hyper_parameters"]["genes"]
+                try:
+                    self.trainer.datamodule.genes = self.genes
+                except RuntimeError as e:
+                    if "scPrint is not attached to a `Trainer`." not in str(e):
+                        raise e
+            if self.organisms != checkpoints["hyper_parameters"]["organisms"]:
+                self.organisms = checkpoints["hyper_parameters"]["organisms"]
+                try:
+                    self.trainer.datamodule.organisms = self.organisms
+                except RuntimeError as e:
+                    if "scPrint is not attached to a `Trainer`." not in str(e):
+                        raise e
+
         if not is_interactive():
             self.save_hyperparameters()
 
