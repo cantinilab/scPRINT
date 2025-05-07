@@ -32,8 +32,6 @@ class Embedder:
         how: str = "random expr",
         max_len: int = 2000,
         doclass: bool = True,
-        add_zero_genes: int = 0,
-        precision: str = "16-mixed",
         pred_embedding: List[str] = [
             "cell_type_ontology_term_id",
             "disease_ontology_term_id",
@@ -42,11 +40,10 @@ class Embedder:
         ],
         plot_corr_size: int = 64,
         doplot: bool = True,
-        keep_all_cls_pred: bool = False,
+        keep_all_labels_pred: bool = False,
         dtype: torch.dtype = torch.float16,
-        output_expression: str = "none",
+        sample: bool = False,
         genelist: List[str] = [],
-        get_gene_emb: bool = False,
         save_every: int = 100_000,
     ):
         """
@@ -56,32 +53,32 @@ class Embedder:
             batch_size (int, optional): The size of the batches to be used in the DataLoader. Defaults to 64.
             num_workers (int, optional): The number of worker processes to use for data loading. Defaults to 8.
             how (str, optional): The method to be used for selecting valid genes. Defaults to "random expr".
-            max_len (int, optional): The maximum length of the gene sequence. Defaults to 1000.
-            add_zero_genes (int, optional): The number of zero genes to add to the gene sequence. Defaults to 100.
-            precision (str, optional): The precision to be used in the Trainer. Defaults to "16-mixed".
+                - "random expr": random expression
+                - "most var": highly variable genes in the dataset
+                - "some": specific genes (from genelist)
+            max_len (int, optional): The maximum length of the gene sequence given to the model. Defaults to 1000.
             pred_embedding (List[str], optional): The list of labels to be used for plotting embeddings. Defaults to [ "cell_type_ontology_term_id", "disease_ontology_term_id", "self_reported_ethnicity_ontology_term_id", "sex_ontology_term_id", ].
             doclass (bool, optional): Whether to perform classification. Defaults to True.
             doplot (bool, optional): Whether to generate plots. Defaults to True.
-            keep_all_cls_pred (bool, optional): Whether to keep all class predictions. Defaults to False.
+            keep_all_labels_pred (bool, optional): Whether to keep all class predictions. Defaults to False, will only keep the most likely class.
             dtype (torch.dtype, optional): Data type for computations. Defaults to torch.float16.
-            output_expression (str, optional): The method to output expression data. Options are "none", "all", "sample". Defaults to "none".
+            sample (bool, optional): Whether to sample the expression data. Defaults to False.
+            genelist (List[str], optional): The list of genes to be used for embedding. Defaults to []: In this case, "how" needs to be "most var" or "random expr".
             save_every (int, optional): The number of cells to save at a time. Defaults to 100_000.
+                This is important to avoid memory issues.
         """
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.how = how
         self.max_len = max_len
-        self.add_zero_genes = add_zero_genes
         self.pred_embedding = pred_embedding
-        self.keep_all_cls_pred = keep_all_cls_pred
+        self.keep_all_labels_pred = keep_all_labels_pred
         self.plot_corr_size = plot_corr_size
-        self.precision = precision
         self.doplot = doplot
         self.dtype = dtype
         self.doclass = doclass
-        self.output_expression = output_expression
+        self.sample = sample
         self.genelist = genelist
-        self.get_gene_emb = get_gene_emb
         self.save_every = save_every
 
     def __call__(self, model: torch.nn.Module, adata: AnnData, cache=False):
@@ -99,25 +96,29 @@ class Embedder:
         Returns:
             AnnData: The annotated data matrix with embedded cell representations.
             List[str]: List of gene names used in the embedding.
-            np.ndarray: The predicted expression values if output_expression is not "none".
+            np.ndarray: The predicted expression values if sample"none".
             dict: Additional metrics and information from the embedding process.
         """
         # one of "all" "sample" "none"
         model.predict_mode = "none"
-        model.keep_all_cls_pred = self.keep_all_cls_pred
+        model.keep_all_labels_pred = self.keep_all_labels_pred
         # Add at least the organism you are working with
         if self.how == "most var":
             sc.pp.highly_variable_genes(
                 adata, flavor="seurat_v3", n_top_genes=self.max_len
             )
             self.genelist = adata.var.index[adata.var.highly_variable]
-        adataset = SimpleAnnDataset(adata, obs_to_output=["organism_ontology_term_id"])
+        adataset = SimpleAnnDataset(
+            adata,
+            obs_to_output=["organism_ontology_term_id"],
+            get_knn_cells=model.expr_emb_style == "metacell",
+        )
         col = Collator(
             organisms=model.organisms,
             valid_genes=model.genes,
             how=self.how if self.how != "most var" else "some",
             max_len=self.max_len,
-            add_zero_genes=self.add_zero_genes,
+            add_zero_genes=0,
             genelist=self.genelist if self.how in ["most var", "some"] else [],
         )
         dataloader = DataLoader(
@@ -145,9 +146,11 @@ class Embedder:
                     gene_pos,
                     expression,
                     depth,
+                    knn_cells=batch["knn_cells"].to(device)
+                    if model.expr_emb_style == "metacell"
+                    else None,
                     predict_mode="none",
                     pred_embedding=self.pred_embedding,
-                    get_gene_emb=self.get_gene_emb,
                     max_size_in_mem=self.save_every,
                 )
                 torch.cuda.empty_cache()
@@ -174,7 +177,7 @@ class Embedder:
             )
             pred_adata.append(sc.read_h5ad(file))
         pred_adata = concat(pred_adata)
-        if self.output_expression == "sample":
+        if self.sample:
             adata.layers["sampled"] = (
                 utils.zinb_sample(
                     torch.from_numpy(pred_adata.layers["scprint_mu"]),
@@ -187,12 +190,13 @@ class Embedder:
         else:
             pass
         pred_adata.obs.index = adata.obs.index
+
         try:
             adata.obsm["X_scprint_umap"] = pred_adata.obsm["X_umap"]
         except:
             print("too few cells to embed into a umap")
         try:
-            adata.obsm["scprint_leiden"] = pred_adata.obsm["leiden"]
+            adata.obs["scprint_leiden"] = pred_adata.obs["scprint_leiden"]
         except:
             print("too few cells to compute a clustering")
         adata.obsm["scprint_emb"] = pred_adata.obsm["scprint_emb"]
@@ -201,7 +205,7 @@ class Embedder:
 
         pred_adata.obs.index = adata.obs.index
         adata.obs = pd.concat([adata.obs, pred_adata.obs], axis=1)
-        if self.keep_all_cls_pred:
+        if self.keep_all_labels_pred:
             allclspred = model.pred
             columns = []
             for cl in model.classes:
@@ -213,7 +217,7 @@ class Embedder:
             adata.obs = pd.concat(adata.obs, allclspred)
 
         metrics = {}
-        if self.doclass and not self.keep_all_cls_pred:
+        if self.doclass and not self.keep_all_labels_pred:
             for cl in model.classes:
                 res = []
                 if cl not in adata.obs.columns:
@@ -245,12 +249,12 @@ class Embedder:
                         if true in cur_labels_hierarchy:
                             res.append(pred in cur_labels_hierarchy[true])
                             continue
+                        elif true != "unknown":
+                            res.append(False)
                         elif true not in class_topred:
                             raise ValueError(
                                 f"true label {true} not in available classes"
                             )
-                        elif true != "unknown":
-                            res.append(False)
                     elif true not in class_topred:
                         raise ValueError(f"true label {true} not in available classes")
                     elif true != "unknown":
@@ -337,7 +341,6 @@ def default_benchmark(
         default_dataset (str, optional): The default dataset to use for benchmarking. Options are "pancreas", "lung", or a path to a dataset. Defaults to "pancreas".
         do_class (bool, optional): Whether to perform classification. Defaults to True.
         coarse (bool, optional): Whether to use coarse cell type annotations. Defaults to False.
-
     Returns:
         dict: A dictionary containing the benchmark metrics.
     """
@@ -369,16 +372,18 @@ def default_benchmark(
         is_symbol=True,
         force_preprocess=True,
         skip_validate=True,
-        do_postp=False,
+        do_postp=model.expr_emb_style == "metacell",
     )
     adata.obs["organism_ontology_term_id"] = "NCBITaxon:9606"
     adata = preprocessor(adata.copy())
+    if model.expr_emb_style == "metacell":
+        sc.pp.neighbors(adata, use_rep="X_pca")
     embedder = Embedder(
-        pred_embedding=["cell_type_ontology_term_id"] if do_class else [],
-        doclass=(default_dataset not in ["pancreas", "lung"]) and do_class,
+        pred_embedding=["cell_type_ontology_term_id"],
+        doclass=do_class,
         max_len=4000,
-        keep_all_cls_pred=False,
-        output_expression="none",
+        keep_all_labels_pred=False,
+        how="random expr",
     )
     embed_adata, metrics = embedder(model, adata.copy())
 
@@ -386,11 +391,12 @@ def default_benchmark(
         embed_adata,
         batch_key="tech" if default_dataset == "pancreas" else "batch",
         label_key="celltype" if default_dataset == "pancreas" else "cell_type",
-        embedding_obsm_keys=["scprint"],
-        n_jobs=6,
+        embedding_obsm_keys=["scprint_emb"],
     )
     bm.benchmark()
-    metrics.update({"scib": bm.get_results(min_max_scale=False).T.to_dict()["scprint"]})
+    metrics.update(
+        {"scib": bm.get_results(min_max_scale=False).T.to_dict()["scprint_emb"]}
+    )
     metrics["classif"] = compute_classification(
         embed_adata, model.classes, model.label_decoders, model.labels_hierarchy
     )

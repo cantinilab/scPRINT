@@ -17,7 +17,6 @@ dependencies = [
     "matplotlib>=3.5.0",
     "seaborn>=0.11.0",
     "ipykernel>=6.20.0",
-    "torchdata>=0.5.0",
     "biomart>=0.9.0",
     "pandas>=2.0.0",
     "leidenalg>=0.10.0",
@@ -35,6 +34,7 @@ dependencies = [
     "gget>=0.2.0",
     "hdbscan>=0.8.36",
     "fair-esm>=0.5.0",
+    "esm==3.1.2",
     "hydra-core>=1.1.0",
     "pynndescent>=0.5.11",
     "einops>=0.3.0",
@@ -44,15 +44,15 @@ dependencies = [
     "docstring-parser>=0.15",
     "wandb>=0.12.0",
     "tensorly>=0.6.0",
-    "torchvision>=0.13.0",
-    "torchaudio>=0.12.0",
-    "torchtext>=0.13.0",
     "numba>=0.56.0",
     "sparse>=0.15.4",
     "biopython",
     "future>=1.0.0",
     "simpler_flash>=1.0.6",
-    "storage3<=0.11.1"
+    "storage3<=0.11.1",
+    "jupytext>=1.16.0",
+    "torch_geometric>=2.6.0",
+    "torchmetrics>=1.6.0",
 ]
 
 [project.optional-dependencies]
