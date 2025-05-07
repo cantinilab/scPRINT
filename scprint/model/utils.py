@@ -423,7 +423,7 @@ class WeightedMasker:
         self,
         genes: list[str],
         TFs: list[str] = utils.fileToList(FILEDIR + "/../../data/main/TFs.txt"),
-        inv_weight: float = 0.2,
+        inv_weight: float = 0.1,
     ):
         """
         Randomly mask a batch of data.

@@ -1,9 +1,19 @@
 model:
-  nhead: 40
-  num_heads_kv: 10
-  nlayers: 36
+  nhead: 24
+  num_heads_kv: 6
+  nlayers: 33
   layers_cls: [512]
-  d_model: 2560
-  checkpointing: False
+  d_model: 1536
+  checkpointing: True
 data:
   batch_size: 1
+  prefetch_factor: 16
+  num_workers: 16
+  max_len: 2200
+  n_samples_per_epoch: 1000000
+scprint_training:
+  run_full_forward: False
+  noise: [0.7]
+  do_ecs: True
+  do_cce: True
+  mask_ratio: ["TF"]
