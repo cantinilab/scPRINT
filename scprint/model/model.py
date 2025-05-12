@@ -74,6 +74,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         nb_features: Optional[int] = None,
         feature_redraw_interval: Optional[int] = None,
         num_heads_kv: int = 4,
+        d_model_cell: int = 256,
+        nhead_cell: int = 4,
+        nlayers_cell: int = 6,
+        num_heads_kv_cell: int = 4,
         **attention_kwargs,
     ):
         """
@@ -283,7 +287,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # base cell embedding will store other cell specific information
         self.class_encoder = encoders.CategoryValueEncoder(
             len(self.classes) + 1,
-            d_model if not cell_specific_blocks else 128,
+            d_model if not cell_specific_blocks else d_model_cell,
         )
         # self.time_encoder = encoders.ContinuousValueEncoder(d_model, dropout)
         if self.depth_atinput:
@@ -337,7 +341,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 dropout=dropout,
                 nlayers=nlayers,
                 cross_attn=cell_specific_blocks,
-                cross_dim=128,
+                cross_dim=d_model_cell,
                 attn_type=transformer,
                 num_heads_kv=num_heads_kv,
                 **attention_kwargs,
@@ -345,10 +349,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if cell_specific_blocks:
             attention_kwargs.pop("num_heads_kv", None)
             self.cell_transformer = FlashTransformer(
-                d_model=128,
-                nhead=4,
-                num_heads_kv=4,
-                nlayers=cell_transformer_layers,
+                d_model=d_model_cell,
+                nhead=nhead_cell,
+                num_heads_kv=num_heads_kv_cell,
+                nlayers=nlayers_cell,
                 dropout=dropout,
                 cross_attn=True,
                 cross_dim=d_model,
@@ -381,14 +385,14 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # (maybe scale with the number of classes) should be 1 layer...
         for clss, n_cls in classes.items():
             self.cls_decoders[clss] = decoders.ClsDecoder(
-                d_model if not cell_specific_blocks else 128,
+                d_model if not cell_specific_blocks else d_model_cell,
                 n_cls,
                 layers=layers_cls,
                 dropout=dropout,
             )
             if clss == "assay_ontology_term_id" and self.do_adv_cls:
                 self.adv_cls_decoder = decoders.ClsDecoder(
-                    d_model if not cell_specific_blocks else 128,
+                    d_model if not cell_specific_blocks else d_model_cell,
                     n_cls,
                     layers=layers_cls,
                     dropout=dropout,
@@ -837,7 +841,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             cell_embs, transformer_output = transformer_output.split(
                 [
                     len(self.classes) + 1,
-                    transformer_output.shape[1] - len(self.classes) + 1,
+                    transformer_output.shape[1] - (len(self.classes) + 1),
                 ],
                 dim=1,
             )
@@ -889,7 +893,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             cell_embs, transformer_output = transformer_output.split(
                 [
                     len(self.classes) + 1,
-                    transformer_output.shape[1] - len(self.classes) + 1,
+                    transformer_output.shape[1] - (len(self.classes) + 1),
                 ],
                 dim=1,
             )
