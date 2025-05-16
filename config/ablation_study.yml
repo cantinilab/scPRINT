@@ -6,12 +6,12 @@ ckpt_path: null
 trainer:
   precision: 16-mixed
   gradient_clip_val: 40
-  log_every_n_steps: 300
+  log_every_n_steps: 100
   limit_train_batches: 20000
+  limit_val_batches: 10000
   gradient_clip_algorithm: norm
-  limit_val_batches: 2000
   limit_test_batches: 1 # we don't perform tests this way
-  reload_dataloaders_every_n_epochs: 5
+  reload_dataloaders_every_n_epochs: 20
   max_epochs: 21
   accumulate_grad_batches: 1
   logger:
@@ -57,12 +57,9 @@ model:
   pred_embedding:
     - cell_type_ontology_term_id
 data:
-  organisms:
-    - NCBITaxon:9606
-    - NCBITaxon:10090
   gene_position_tolerance: 10_000
-  gene_embeddings: ./data/main/gene_embeddings.parquet # /lustre/fswork/projects/rech/xeg/uat95fg/gene_embeddings.parquet
-  collection_name: scPRINT-V2 full #scPRINT-V2 (good quality)
+  gene_embeddings: ./data/main/gene_embs/ #./data/main/gene_embeddings.parquet # /lustre/fswork/projects/rech/xeg/uat95fg/gene_embeddings.parquet
+  collection_name: scPRINT-V2 (good quality) #scPRINT-V2 (full)
   how: random expr
   max_len: 2200
   pin_memory: True
@@ -76,15 +73,16 @@ data:
   test_split: 0.02
   batch_size: 64
   num_workers: 20
-  hierarchical_clss:
+  hierarchical_clss: #['cell_type_ontology_term_id','tissue_ontology_term_id','disease_ontology_term_id','assay_ontology_term_id','self_reported_ethnicity_ontology_term_id']
     - cell_type_ontology_term_id
     - tissue_ontology_term_id
     - disease_ontology_term_id
-    # - age_group
+    - age_group
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id
   clss_to_weight:
     - clust_cell_type
+    # - cell_type_ontology_term_id
     # - tissue_ontology_term_id
     - disease_ontology_term_id
     # - age_group
@@ -92,14 +90,15 @@ data:
     # - self_reported_ethnicity_ontology_term_id
     - sex_ontology_term_id
     - organism_ontology_term_id
-    - cell_culture
+    # - cell_culture
     # - nnz
-  clss_to_predict:
+  clss_to_predict: #['cell_type_ontology_term_id','tissue_ontology_term_id','disease_ontology_term_id','assay_ontology_term_id','self_reported_ethnicity_ontology_term_id','sex_ontology_term_id','organism_ontology_term_id']
     - cell_type_ontology_term_id
     - tissue_ontology_term_id
     - disease_ontology_term_id
-    # - age_group
+    - age_group
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id
     - sex_ontology_term_id
     - organism_ontology_term_id
+    # - cell_culture

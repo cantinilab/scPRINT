@@ -57,9 +57,8 @@ class MyCLI(LightningCLI):
         parser.link_arguments(
             "data.gene_embeddings", "model.precpt_gene_emb", apply_on="parse"
         )
-        parser.link_arguments("data.organisms", "model.organisms", apply_on="parse")
         parser.link_arguments(
-            "data.num_datasets", "model.num_batch_labels", apply_on="instantiate"
+            "data.organisms", "model.organisms", apply_on="instantiate"
         )
 
         parser.add_argument("--set_float32_matmul_precision", type=bool, default=False)

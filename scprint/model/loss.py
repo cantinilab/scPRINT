@@ -230,29 +230,29 @@ def ecs(cell_emb: Tensor, ecs_threshold: float = 0.5) -> Tensor:
     return torch.mean(1 - (cos_sim - ecs_threshold) ** 2)
 
 
-def classification(
-    clsname: str,
+def hierarchical_classification(
     pred: torch.Tensor,
     cl: torch.Tensor,
-    maxsize: int,
-    labels_hierarchy: Optional[Dict[str, Dict[int, list[int]]]] = {},
+    labels_hierarchy: Optional[torch.Tensor] = None,
 ) -> torch.Tensor:
     """
     Computes the classification loss for a given batch of predictions and ground truth labels.
 
     Args:
-        clsname (str): The name of the label.
-        pred (Tensor): The predicted logits for the batch.
-        cl (Tensor): The ground truth labels for the batch.
-        maxsize (int): The number of possible labels.
-        labels_hierarchy (dict, optional): The hierarchical structure of the labels. Defaults to {}.
+        pred (Tensor): The predicted logits for the batch. Shape: (batch_size, n_labels)
+        cl (Tensor): The ground truth labels for the batch. Shape: (batch_size,)
+        labels_hierarchy (Tensor, optional): The hierarchical structure of the labels. Defaults to None.
+            A binary tensor of shape (number of parents, n_labels)
+            if not given, will act as a regular classification loss
 
     Raises:
-        ValueError: If the clsname is not found in the labels_hierarchy dictionary.
+        ValueError: If the labels_hierarchy is not found while the number of predicted
+        labels is smaller than the number of ground truth labels.
 
     Returns:
         Tensor: The computed binary cross entropy loss for the given batch.
     """
+    maxsize = pred.shape[1]
     newcl = torch.zeros(
         (cl.shape[0], maxsize), device=cl.device
     )  # batchsize * n_labels
@@ -263,41 +263,49 @@ def classification(
 
     weight = torch.ones_like(newcl, device=cl.device)
     weight[cl == -1, :] = 0
-    inv = cl >= maxsize
     # if we have non leaf values, we don't know so we don't compute grad and set weight to 0
     # and add labels that won't be counted but so that we can still use them
-    if inv.any():
-        if clsname in labels_hierarchy.keys():
-            clhier = labels_hierarchy[clsname]
+    if labels_hierarchy is not None and (cl >= maxsize).any():
+        is_parent = cl >= maxsize
+        parent_weight = weight[is_parent]
+        # we set the weight of the elements that are not leaf to 0
+        # i.e. the elements where we will compute the max
+        # in cl, parents are values past the maxsize
+        # (if there is 10 leafs labels, the label 10,14, or 15 is a parent at position
+        # row 0, 4, or 5 in the hierarchy matrix
+        parent_weight[labels_hierarchy[cl[is_parent] - maxsize]] = 0
+        weight[is_parent] = parent_weight
 
-            inv_weight = weight[inv]
-            # we set the weight of the elements that are not leaf to 0
-            # i.e. the elements where we will compute the max
-            inv_weight[clhier[cl[inv] - maxsize]] = 0
-            weight[inv] = inv_weight
+        parent_newcl = newcl[is_parent]
+        parent_newcl[labels_hierarchy[cl[is_parent] - maxsize]] = 1
+        newcl[is_parent] = parent_newcl
 
-            addnewcl = torch.ones(
-                weight.shape[0], device=pred.device
-            )  # no need to set the other to 0 as the weight of the loss is set to 0
-            addweight = torch.zeros(weight.shape[0], device=pred.device)
-            addweight[inv] = 1
-            # computing hierarchical labels and adding them to cl
-            addpred = pred.clone()
-            # we only keep the elements where we need to compute the max,
-            # for the rest we set them to -inf, so that they won't have any impact on the max()
-            inv_addpred = addpred[inv]
-            inv_addpred[inv_weight.to(bool)] = torch.finfo(pred.dtype).min
-            addpred[inv] = inv_addpred
+        # for each parent label / row in labels_hierarchy matrix, the addnewcl is
+        # the max of the newcl values where the parent label is 1
+        newcl_expanded = newcl.unsqueeze(-1).expand(-1, -1, labels_hierarchy.shape[0])
+        addnewcl = torch.max(newcl_expanded * labels_hierarchy.T, dim=1)[0]
 
-            # differentiable max
-            addpred = torch.logsumexp(addpred, dim=-1)
+        # it is the same here as for parental labels, we don't want to compute
+        # gradients when they are 0 meaning not parents of the true leaf label.
+        # for now we weight them the same as the main label (maybe we want less??)
+        addweight = addnewcl.clone() / (labels_hierarchy.sum(1) ** 0.5)
 
-            # we add the new labels to the cl
-            newcl = torch.cat([newcl, addnewcl.unsqueeze(1)], dim=1)
-            pred = torch.cat([pred, addpred.unsqueeze(1)], dim=1)
-            weight = torch.cat([weight, addweight.unsqueeze(1)], dim=1)
-        else:
-            raise ValueError("need to use labels_hierarchy for this usecase")
+        # we apply the same mask to the pred but now we want to compute
+        # logsumexp instead of max since we want to keep the gradients
+        # we also set to -inf since it is a more neutral element for logsumexp
+        pred_expanded = (
+            pred.clone().unsqueeze(-1).expand(-1, -1, labels_hierarchy.shape[0])
+        )
+        pred_expanded = pred_expanded * labels_hierarchy.T
+        pred_expanded[pred_expanded == 0] = torch.finfo(pred.dtype).min
+        addpred = torch.logsumexp(pred_expanded, dim=1)
+
+        # we add the new labels to the cl
+        newcl = torch.cat([newcl, addnewcl], dim=1)
+        weight = torch.cat([weight, addweight], dim=1)
+        pred = torch.cat([pred, addpred], dim=1)
+    elif labels_hierarchy is None and (cl >= maxsize).any():
+        raise ValueError("need to use labels_hierarchy for this usecase")
 
     myloss = torch.nn.functional.binary_cross_entropy_with_logits(
         pred, target=newcl, weight=weight

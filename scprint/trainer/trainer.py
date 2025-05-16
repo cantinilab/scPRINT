@@ -18,7 +18,6 @@ class TrainingMode(Callback):
         vae_kl_scale: float = 0.3,
         do_mvc: bool = False,
         mvc_scale: float = 1.0,
-        do_adv_cls: bool = False,
         do_next_tp: bool = False,
         do_generate: bool = True,
         class_scale: float = 1,
@@ -27,12 +26,11 @@ class TrainingMode(Callback):
         randsamp: bool = True,
         warmup_duration: int = 500,
         fused_adam: bool = False,
-        adv_class_scale: float = 0.1,
+        adv_class_scale: float = 1.0,
         lr_reduce_patience: int = 2,
         lr_reduce_factor: float = 0.6,
         lr_reduce_monitor: str = "val_loss",
         do_cls: bool = True,
-        do_adv_batch: bool = False,
         run_full_forward: bool = False,
         lr: float = 0.0001,
         dropout: float = 0.1,
@@ -72,7 +70,6 @@ class TrainingMode(Callback):
             lr_reduce_factor (float): Factor by which the learning rate will be reduced. Defaults to 0.6.
             lr_reduce_monitor (str): Quantity to be monitored for learning rate reduction. Defaults to "val_loss".
             do_cls (bool): Whether to perform classification during training. Defaults to True.
-            do_adv_batch (bool): Whether to apply adversarial batch training. Defaults to False.
             run_full_forward (bool): Whether to run a second forward pass without masking or denoising for the bottleneck learning / MVC case. Defaults to False.
             lr (float): Initial learning rate. Defaults to 0.001.
             optim (str): Optimizer to use during training. Defaults to "adamW".
@@ -99,7 +96,6 @@ class TrainingMode(Callback):
         self.ecs_scale = ecs_scale
         self.do_mvc = do_mvc
         self.vae_kl_scale = vae_kl_scale
-        self.do_adv_cls = do_adv_cls
         self.do_next_tp = do_next_tp
         self.do_generate = do_generate
         self.class_scale = class_scale
@@ -116,7 +112,6 @@ class TrainingMode(Callback):
         self.optim = optim
         self.weight_decay = weight_decay
         self.do_cls = do_cls
-        self.do_adv_batch = do_adv_batch
         self.run_full_forward = run_full_forward
         self.name = name
         self.test_every = test_every
@@ -144,7 +139,6 @@ class TrainingMode(Callback):
             f"optim={self.optim},"
             f"weight_decay={self.weight_decay},"
             f"vae_kl_scale={self.vae_kl_scale},"
-            f"do_adv_cls={self.do_adv_cls}, "
             f"adv_class_scale={self.adv_class_scale}, "
             f"do_next_tp={self.do_next_tp}, "
             f"do_generate={self.do_generate}, "
@@ -157,7 +151,6 @@ class TrainingMode(Callback):
             f"lr_reduce_monitor={self.lr_reduce_monitor}, "
             f"mvc_scale={self.mvc_scale}, "
             f"do_cls={self.do_cls}, "
-            f"do_adv_batch={self.do_adv_batch}, "
             f"run_full_forward={self.run_full_forward}), "
             f"name={self.name}, "
             f"test_every={self.test_every}, "
@@ -181,7 +174,6 @@ class TrainingMode(Callback):
         model.ecs_threshold = self.ecs_threshold
         model.ecs_scale = self.ecs_scale
         model.do_mvc = self.do_mvc
-        model.do_adv_cls = self.do_adv_cls
         model.do_next_tp = self.do_next_tp
         model.class_scale = self.class_scale
         model.vae_kl_scale = self.vae_kl_scale
@@ -196,7 +188,6 @@ class TrainingMode(Callback):
         model.lr_reduce_factor = self.lr_reduce_factor
         model.lr_reduce_monitor = self.lr_reduce_monitor
         model.do_cls = self.do_cls
-        model.do_adv_batch = self.do_adv_batch
         model.run_full_forward = self.run_full_forward
         model.lr = self.lr
         model.optim = self.optim

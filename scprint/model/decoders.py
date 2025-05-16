@@ -48,7 +48,6 @@ class ExprDecoder(nn.Module):
             zinb (bool, optional): Whether to use a zero inflated negative binomial distribution. Defaults to True.
         """
         super(ExprDecoder, self).__init__()
-        self.nfirst_tokens_to_skip = nfirst_tokens_to_skip
         self.fc = nn.Sequential(
             nn.Linear(d_model if not use_depth else d_model + 1, d_model),
             nn.LayerNorm(d_model),
@@ -66,7 +65,6 @@ class ExprDecoder(nn.Module):
     ) -> Dict[str, Tensor]:
         """x is the output of the transformer, (batch, seq_len, d_model)"""
         # we don't do it on the labels
-        x = x[:, self.nfirst_tokens_to_skip :, :]
         if req_depth is not None:
             x = torch.cat(
                 [x, req_depth.unsqueeze(1).unsqueeze(-1).expand(-1, x.shape[1], -1)],
