@@ -373,15 +373,15 @@ def default_benchmark(
         force_preprocess=True,
         skip_validate=True,
         do_postp=model.expr_emb_style == "metacell",
+        drop_non_primary=False,
     )
-    adata.obs["organism_ontology_term_id"] = "NCBITaxon:9606"
     adata = preprocessor(adata.copy())
     if model.expr_emb_style == "metacell":
         sc.pp.neighbors(adata, use_rep="X_pca")
     embedder = Embedder(
         pred_embedding=["cell_type_ontology_term_id"],
         doclass=do_class,
-        max_len=4000,
+        max_len=4000 if adata.X.sum(1).mean() < 150_000 else 8000,
         keep_all_labels_pred=False,
         how="random expr",
     )
