@@ -9,28 +9,28 @@ class TrainingMode(Callback):
         do_denoise: bool = True,
         noise: List[float] = [0.6],
         do_cce: bool = False,
-        cce_temp: float = 0.2,  # .6
-        cce_scale: float = 0.1,  # .01
+        cce_temp: float = 0.3,  # .6
+        cce_scale: float = 0.2,  # .01
         do_ecs: bool = False,
         ecs_threshold: float = 0.4,
-        class_embd_diss_scale: float = 0.1,
-        ecs_scale: float = 0.1,  # .1
+        class_embd_diss_scale: float = 0.3,
+        ecs_scale: float = 0.2,  # .1
+        vae_kl_scale: float = 0.3,
         do_mvc: bool = False,
         mvc_scale: float = 1.0,
-        do_adv_cls: bool = False,
         do_next_tp: bool = False,
         do_generate: bool = True,
         class_scale: float = 1,
         mask_ratio: List[float | str] = [],  # 0.3
-        test_every: int = 20,
+        test_every: int = 5,
+        randsamp: bool = True,
         warmup_duration: int = 500,
         fused_adam: bool = False,
-        adv_class_scale: float = 0.1,
+        adv_class_scale: float = 1.0,
         lr_reduce_patience: int = 2,
         lr_reduce_factor: float = 0.6,
         lr_reduce_monitor: str = "val_loss",
         do_cls: bool = True,
-        do_adv_batch: bool = False,
         run_full_forward: bool = False,
         lr: float = 0.0001,
         dropout: float = 0.1,
@@ -40,6 +40,7 @@ class TrainingMode(Callback):
         var_context_length: bool = False,
         name="",
         set_step: Optional[int] = None,
+        mask_zeros: bool = False,
     ):
         """
         TrainingMode a callback to set the training specific info to the model.
@@ -69,7 +70,6 @@ class TrainingMode(Callback):
             lr_reduce_factor (float): Factor by which the learning rate will be reduced. Defaults to 0.6.
             lr_reduce_monitor (str): Quantity to be monitored for learning rate reduction. Defaults to "val_loss".
             do_cls (bool): Whether to perform classification during training. Defaults to True.
-            do_adv_batch (bool): Whether to apply adversarial batch training. Defaults to False.
             run_full_forward (bool): Whether to run a second forward pass without masking or denoising for the bottleneck learning / MVC case. Defaults to False.
             lr (float): Initial learning rate. Defaults to 0.001.
             optim (str): Optimizer to use during training. Defaults to "adamW".
@@ -81,6 +81,9 @@ class TrainingMode(Callback):
             var_context_length (bool): Whether to use variable context length. Defaults to False.
             dropout (float): Dropout rate for the model. Defaults to 0.1.
             set_step (int, optional): Set the global step for the model. Defaults to None.
+            vae_kl_scale (float): Scaling factor for the VAE KL loss. Defaults to 0.3.
+            randsamp (bool): Whether to use random sampling for the noise amount at each training step. Defaults to True.
+            mask_zeros (bool): Whether to mask zeros in the expression matrix. Defaults to False.
         """
         super().__init__()
         self.do_denoise = do_denoise
@@ -92,7 +95,7 @@ class TrainingMode(Callback):
         self.ecs_threshold = ecs_threshold
         self.ecs_scale = ecs_scale
         self.do_mvc = do_mvc
-        self.do_adv_cls = do_adv_cls
+        self.vae_kl_scale = vae_kl_scale
         self.do_next_tp = do_next_tp
         self.do_generate = do_generate
         self.class_scale = class_scale
@@ -109,7 +112,6 @@ class TrainingMode(Callback):
         self.optim = optim
         self.weight_decay = weight_decay
         self.do_cls = do_cls
-        self.do_adv_batch = do_adv_batch
         self.run_full_forward = run_full_forward
         self.name = name
         self.test_every = test_every
@@ -118,6 +120,8 @@ class TrainingMode(Callback):
         self.var_context_length = var_context_length
         self.dropout = dropout
         self.set_step = set_step
+        self.randsamp = randsamp
+        self.mask_zeros = mask_zeros
 
     def __repr__(self):
         return (
@@ -134,7 +138,7 @@ class TrainingMode(Callback):
             f"lr={self.lr},"
             f"optim={self.optim},"
             f"weight_decay={self.weight_decay},"
-            f"do_adv_cls={self.do_adv_cls}, "
+            f"vae_kl_scale={self.vae_kl_scale},"
             f"adv_class_scale={self.adv_class_scale}, "
             f"do_next_tp={self.do_next_tp}, "
             f"do_generate={self.do_generate}, "
@@ -147,7 +151,6 @@ class TrainingMode(Callback):
             f"lr_reduce_monitor={self.lr_reduce_monitor}, "
             f"mvc_scale={self.mvc_scale}, "
             f"do_cls={self.do_cls}, "
-            f"do_adv_batch={self.do_adv_batch}, "
             f"run_full_forward={self.run_full_forward}), "
             f"name={self.name}, "
             f"test_every={self.test_every}, "
@@ -155,7 +158,9 @@ class TrainingMode(Callback):
             f"zinb_and_mse={self.zinb_and_mse}, "
             f"var_context_length={self.var_context_length}, "
             f"dropout={self.dropout}, "
-            f"set_step={self.set_step})"
+            f"set_step={self.set_step}, "
+            f"randsamp={self.randsamp}, "
+            f"mask_zeros={self.mask_zeros})"
         )
 
     def setup(self, trainer, model, stage=None):
@@ -169,9 +174,9 @@ class TrainingMode(Callback):
         model.ecs_threshold = self.ecs_threshold
         model.ecs_scale = self.ecs_scale
         model.do_mvc = self.do_mvc
-        model.do_adv_cls = self.do_adv_cls
         model.do_next_tp = self.do_next_tp
         model.class_scale = self.class_scale
+        model.vae_kl_scale = self.vae_kl_scale
         model.mask_ratio = self.mask_ratio
         model.warmup_duration = self.warmup_duration
         model.fused_adam = self.fused_adam
@@ -183,7 +188,6 @@ class TrainingMode(Callback):
         model.lr_reduce_factor = self.lr_reduce_factor
         model.lr_reduce_monitor = self.lr_reduce_monitor
         model.do_cls = self.do_cls
-        model.do_adv_batch = self.do_adv_batch
         model.run_full_forward = self.run_full_forward
         model.lr = self.lr
         model.optim = self.optim
@@ -195,4 +199,6 @@ class TrainingMode(Callback):
         model.var_context_length = self.var_context_length
         model.dropout = self.dropout
         model.set_step = self.set_step
+        model.randsamp = self.randsamp
+        model.mask_zeros = self.mask_zeros
         # model.configure_optimizers()
