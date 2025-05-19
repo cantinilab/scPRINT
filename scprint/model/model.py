@@ -1539,6 +1539,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.mat_labels_hierarchy[k] = v.to(self.device)
 
     def on_validation_epoch_start(self):
+        if self.trainer.is_global_zero:
+            try:
+                self.name = self.trainer._loggers[0].version
+            except:
+                print("not on wandb, could not set name")
         self.embs = None
         self.counter = 0
 
@@ -1578,7 +1583,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
         # TODO: make this faster by only calling val loss
         if self.embs is not None:
-            if self.embs.shape[0] < 100_000:
+            if self.embs.shape[0] < 100_000 / self.trainer.world_size:
                 self.info = torch.cat([self.info, batch["class"]])
                 self._predict(
                     gene_pos,
@@ -1650,17 +1655,26 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         pass
 
     def on_test_epoch_end(self):
+        if self.trainer.is_global_zero:
+            try:
+                self.name = self.trainer._loggers[0].version
+            except:
+                print("not on wandb, could not set name")
         # Run the test only on global rank 0
-        name = self.name + "_step" + str(self.global_step)
+        name = self.name + "_step" + str(self.global_step) + "_test_metrics"
+        import json
+
         try:
-            metrics = utils.test(
+            metrics, tot = utils.test(
                 self,
-                name,
                 filedir=str(FILEDIR),
                 do_class=self.do_cls,
             )
             print(metrics)
             print("done test")
+            f = open("metrics_" + name + ".json", "a")
+            f.write(json.dumps(tot, indent=4))
+            f.close()
             if self.set_step is not None:
                 print("this part only works in some cases and for wandb")
                 self.trainer._loggers[0].log_metrics(metrics, self.set_step)
@@ -1676,6 +1690,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
     def on_predict_epoch_start(self):
         """@see pl.LightningModule"""
+        if self.trainer.is_global_zero:
+            try:
+                self.name = self.trainer._loggers[0].version
+            except:
+                print("not on wandb, could not set name")
         self.embs = None
         self.attn.data = None
         self.attn.attn = None

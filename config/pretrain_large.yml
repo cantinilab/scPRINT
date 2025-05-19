@@ -2,9 +2,11 @@ model:
   nhead: 8
   num_heads_kv: 4
   nlayers: 16 #used to be 12
-  layers_cls: [512]
+  layers_cls: []
   d_model: 512
   dropout: 0.1
 data:
-  batch_size: 8 #16
+  batch_size: 11
+  num_workers: 10
+  n_samples_per_epoch: 500_000
 

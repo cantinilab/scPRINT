@@ -185,6 +185,7 @@ class Denoiser:
                 + ".h5ad"
             )
             pred_adata.append(sc.read_h5ad(file))
+            os.remove(file)
         pred_adata = concat(pred_adata)
         metrics = None
         if self.downsample_expr is not None:
@@ -262,10 +263,16 @@ def default_benchmark(
         )
     else:
         adata = sc.read_h5ad(dataset)
+    if dataset.split("/")[-1] == "gNNpgpo6gATjuxTE7CCp.h5ad":
+        use_layer = "counts"
+        is_symbol = True
+    else:
+        use_layer = None
+        is_symbol = False
     max_len = 4000 if adata.X.sum(1).mean() < 150_000 else 8000
     preprocessor = Preprocessor(
-        use_layer="counts",
-        is_symbol=True,
+        use_layer=use_layer,
+        is_symbol=is_symbol,
         force_preprocess=True,
         skip_validate=True,
         do_postp=model.expr_emb_style == "metacell",

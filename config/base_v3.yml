@@ -66,7 +66,7 @@ model:
   # class_compression: vae
 data:
   gene_position_tolerance: 10_000
-  gene_embeddings: ./data/main/gene_embeddings.parquet
+  gene_embeddings: ./data/main/gene_embs/
   collection_name: scPRINT-V2 (all+tahoe+scbase) #scPRINT-V2 (good quality) # scPRINT-V2 (some)
   how: random expr
   max_len: 2600
@@ -76,7 +76,7 @@ data:
   weight_scaler: 200
   do_gene_pos: False
   add_zero_genes: 0
-  n_samples_per_epoch: 2600000 # {data.batch_size*trainer.limit_train_batches}
+  n_samples_per_epoch: 1300000 # {data.batch_size*trainer.limit_train_batches}
   validation_split: 0.05
   test_split: 0.02
   batch_size: 32
@@ -85,25 +85,25 @@ data:
     - cell_type_ontology_term_id
     - tissue_ontology_term_id
     - disease_ontology_term_id
-    #- age_group
+    - age_group
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id
   clss_to_weight:
     - clust_cell_type
-    #- tissue_ontology_term_id
+    - tissue_ontology_term_id
     - disease_ontology_term_id
-    #- age_group
+    - age_group
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id
     - sex_ontology_term_id
     - organism_ontology_term_id
-    - cell_culture
+    #- cell_culture
     - nnz
   clss_to_predict:
     - cell_type_ontology_term_id
     - tissue_ontology_term_id
     - disease_ontology_term_id
-    #- age_group
+    - age_group
     #- cell_culture
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id

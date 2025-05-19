@@ -1,5 +1,4 @@
 import gc
-import json
 import math
 import os.path
 from collections import Counter
@@ -13,7 +12,7 @@ import torch
 from anndata import AnnData
 from matplotlib import pyplot as plt
 from scdataloader.utils import translate
-from scipy.sparse import csr_matrix, coo_array
+from scipy.sparse import csr_matrix
 from torch import Tensor
 from torch.distributions import Gamma, Poisson
 
@@ -21,7 +20,7 @@ from .. import utils
 from ..tasks import cell_emb as embbed_task
 from ..tasks import denoise as denoise_task
 from ..tasks import grn as grn_task
-
+from ..datasets import EMBEDDING_DATASETS, DENOISE_DATASETS
 # from scprint.tasks import generate
 
 FILEDIR = os.path.dirname(os.path.realpath(__file__))
@@ -59,6 +58,7 @@ def make_adata(
     Returns:
         anndata.AnnData: The created AnnData object.
     """
+    print("logging the anndata")
     colname = ["pred_" + i for i in classes]
     if pred is not None:
         obs = np.array(pred.to(device="cpu", dtype=torch.int32))
@@ -499,7 +499,7 @@ class Attention:
     def __init__(
         self,
         gene_dim: int,
-        comp_attn: bool = False,
+        comp_attn: bool = True,
         apply_softmax: bool = True,
         sum_heads: bool = True,
         additional_tokens: int = 0,
@@ -520,7 +520,7 @@ class Attention:
         self.div: Optional[Tensor] = None
         self.apply_softmax: bool = apply_softmax
         self.sum_heads: bool = sum_heads
-        self.comp_attn: bool = True
+        self.comp_attn: bool = comp_attn
 
     def add(self, *args, **kwargs) -> None:
         if self.comp_attn:
@@ -626,7 +626,6 @@ class Attention:
 
 def test(
     model: torch.nn.Module,
-    name: str,
     filedir: str,
     do_class: bool = True,
     maxcells_grn: int = 4_000,
@@ -643,22 +642,15 @@ def test(
         None
     """
     metrics = {}
-    for dataset, path in {
-        "lung": "https://figshare.com/ndownloader/files/24539942",
-        "pancreas": "https://figshare.com/ndownloader/files/24539828",
-        "kidney": "https://datasets.cellxgene.cziscience.com/01bc7039-961f-4c24-b407-d535a2a7ba2c.h5ad",
-        "gtex": "https://datasets.cellxgene.cziscience.com/661d5ec2-ca57-413c-8374-f49b0054ddba.h5ad",
-        "bone_marrow_5batch": "https://datasets.cellxgene.cziscience.com/b2eca8f3-b461-45fd-8639-890bbbf050aa.h5ad",
-    }.items():
+    tot = {}
+    for dataset, path in EMBEDDING_DATASETS.items():
         res = embbed_task.default_benchmark(
             model,
-            default_dataset=dataset,
+            dataset=path,
             do_class=do_class,
             coarse=False,
         )
-        f = open("metrics_" + name + ".json", "a")
-        f.write(json.dumps({"embed_" + dataset: res}, indent=4))
-        f.close()
+        tot["embed_" + dataset] = res
         metrics.update(
             {
                 "emb_" + dataset + "/scib": float(res["scib"]["Total"]),
@@ -680,17 +672,9 @@ def test(
         )
         print(metrics)
         gc.collect()
-    for dataset, filepath in {
-        "intestine": "https://datasets.cellxgene.cziscience.com/d9a99b4a-3755-47c4-8eb5-09821ffbde17.h5ad",  # R4ZHoQegxXdSFNFY5LGe in my case
-        "retina": "https://datasets.cellxgene.cziscience.com/53bd4177-79c6-40c8-b84d-ff300dcf1b5b.h5ad",  # gNNpgpo6gATjuxTE7CCp in my case
-        "kidney": "https://datasets.cellxgene.cziscience.com/01bc7039-961f-4c24-b407-d535a2a7ba2c.h5ad",
-        "glio_smart_highdepth": "https://datasets.cellxgene.cziscience.com/6ec440b4-542a-4022-ac01-56f812e25593.h5ad",
-        "lung_smart": "https://datasets.cellxgene.cziscience.com/6ebba0e0-a159-406f-8095-451115673a2c.h5ad",
-    }.items():
-        res = denoise_task.default_benchmark(model, filepath)
-        f = open("metrics_" + name + ".json", "a")
-        f.write(json.dumps({"denoise_" + dataset: res}, indent=4))
-        f.close()
+    for dataset, filepath in DENOISE_DATASETS.items():
+        res = denoise_task.default_benchmark(model, dataset=filepath)
+        tot["denoise_" + dataset] = res
         metrics.update(
             {
                 "denoise_" + dataset + "/reco2full_vs_noisy2full": float(
@@ -706,9 +690,7 @@ def test(
         batch_size=32 if model.d_model <= 512 else 8,
         maxcells=maxcells_grn,
     )
-    f = open("metrics_" + name + ".json", "a")
-    f.write(json.dumps({"grn_gwps": res}, default=lambda o: str(o), indent=4))
-    f.close()
+    tot["grn_gwps"] = res
     metrics.update(
         {
             "grn_gwps/auprc_self": float(res["self"]["auprc"]),
@@ -721,93 +703,6 @@ def test(
     )
     print(metrics)
     gc.collect()
-    # res = grn_task.default_benchmark(
-    #    model,
-    #    "sroy",
-    #    batch_size=32 if model.d_model <= 512 else 8,
-    #    maxcells=maxcells_grn,
-    # )
-    # f = open("metrics_" + name + ".json", "a")
-    # f.write(json.dumps({"grn_sroy": res}, default=lambda o: str(o), indent=4))
-    # f.close()
-    # metrics.update(
-    #    {
-    #        "grn_sroy/auprc_self": float(
-    #            np.mean(
-    #                [
-    #                    i["auprc"]
-    #                    for k, i in res.items()
-    #                    if k.startswith("self_")
-    #                    and not any(
-    #                        x in k for x in ["chip_", "ko_", "classifier", "_base"]
-    #                    )
-    #                ]
-    #            )
-    #        ),
-    #        "grn_sroy/epr_self": float(
-    #            np.mean(
-    #                [
-    #                    i["epr"]
-    #                    for k, i in res.items()
-    #                    if k.startswith("self_")
-    #                    and not any(
-    #                        x in k for x in ["chip_", "ko_", "classifier", "_base"]
-    #                    )
-    #                ]
-    #            )
-    #        ),
-    #        "grn_sroy/auprc_omni": float(
-    #            np.mean(
-    #                [
-    #                    i["auprc"]
-    #                    for k, i in res.items()
-    #                    if k.startswith("omni_")
-    #                    and not any(
-    #                        x in k for x in ["chip_", "ko_", "classifier", "_base"]
-    #                    )
-    #                ]
-    #            )
-    #        ),
-    #        "grn_sroy/epr_omni": float(
-    #            np.mean(
-    #                [
-    #                    i["epr"]
-    #                    for k, i in res.items()
-    #                    if k.startswith("omni_")
-    #                    and not any(
-    #                        x in k for x in ["chip_", "ko_", "classifier", "_base"]
-    #                    )
-    #                ]
-    #            )
-    #        ),
-    #        "grn_sroy/auprc": float(
-    #            np.mean(
-    #                [
-    #                    i["auprc"]
-    #                    for k, i in res.items()
-    #                    if k.startswith("mean_")
-    #                    and not any(
-    #                        x in k for x in ["chip_", "ko_", "classifier", "_base"]
-    #                    )
-    #                ]
-    #            )
-    #        ),
-    #        "grn_sroy/epr": float(
-    #            np.mean(
-    #                [
-    #                    i["epr"]
-    #                    for k, i in res.items()
-    #                    if k.startswith("mean_")
-    #                    and not any(
-    #                        x in k for x in ["chip_", "ko_", "classifier", "_base"]
-    #                    )
-    #                ]
-    #            )
-    #        ),
-    #    }
-    # )
-    # print(metrics)
-    # gc.collect()
     for dataset, filepath in {
         "kidney": "https://datasets.cellxgene.cziscience.com/01bc7039-961f-4c24-b407-d535a2a7ba2c.h5ad",
         "lung_smart": "https://datasets.cellxgene.cziscience.com/6ebba0e0-a159-406f-8095-451115673a2c.h5ad",
@@ -821,55 +716,56 @@ def test(
             maxcells=maxcells_grn,
             maxgenes=4000,
         )
-    f = open("metrics_" + name + ".json", "a")
-    f.write(
-        json.dumps({"grn_omni_" + dataset: res}, default=lambda o: str(o), indent=4)
-    )
-    f.close()
-    metrics.update(
-        {
-            "grn_omni_" + dataset + "/auprc_class": float(
-                np.mean([i["auprc"] for k, i in res.items() if "_class" in k])
-            ),
-            "grn_omni_" + dataset + "/epr_class": float(
-                np.mean([i["epr"] for k, i in res.items() if "_class" in k])
-            ),
-            "grn_omni_" + dataset + "/tf_enr_class": float(
-                np.sum(
-                    [i.get("TF_enr", False) for k, i in res.items() if "_class" in k]
-                )
-            ),
-            "grn_omni_" + dataset + "/tf_targ_enr_class": float(
-                np.mean(
-                    [
-                        i["significant_enriched_TFtargets"]
-                        for k, i in res.items()
-                        if "_class" in k
-                    ]
-                )
-            ),
-            "grn_omni_" + dataset + "/auprc": float(
-                np.mean([i["auprc"] for k, i in res.items() if "_mean" in k])
-            ),
-            "grn_omni_" + dataset + "/epr": float(
-                np.mean([i["epr"] for k, i in res.items() if "_mean" in k])
-            ),
-            "grn_omni_" + dataset + "/tf_enr": float(
-                np.sum([i.get("TF_enr", False) for k, i in res.items() if "_mean" in k])
-            ),
-            "grn_omni_" + dataset + "/tf_targ_enr": float(
-                np.mean(
-                    [
-                        i["significant_enriched_TFtargets"]
-                        for k, i in res.items()
-                        if "_mean" in k
-                    ]
-                )
-            ),
-            # 'grn_omni/ct': res['classif']['cell_type_ontology_term_id']['accuracy'],
-        }
-    )
-    print(metrics)
-    gc.collect()
-    
-    return metrics
+        tot["grn_omni_" + dataset] = res
+        metrics.update(
+            {
+                "grn_omni_" + dataset + "/auprc_class": float(
+                    np.mean([i["auprc"] for k, i in res.items() if "_class" in k])
+                ),
+                "grn_omni_" + dataset + "/epr_class": float(
+                    np.mean([i["epr"] for k, i in res.items() if "_class" in k])
+                ),
+                "grn_omni_" + dataset + "/tf_enr_class": float(
+                    np.sum(
+                        [
+                            i.get("TF_enr", False)
+                            for k, i in res.items()
+                            if "_class" in k
+                        ]
+                    )
+                ),
+                "grn_omni_" + dataset + "/tf_targ_enr_class": float(
+                    np.mean(
+                        [
+                            i["significant_enriched_TFtargets"]
+                            for k, i in res.items()
+                            if "_class" in k
+                        ]
+                    )
+                ),
+                "grn_omni_" + dataset + "/auprc": float(
+                    np.mean([i["auprc"] for k, i in res.items() if "_mean" in k])
+                ),
+                "grn_omni_" + dataset + "/epr": float(
+                    np.mean([i["epr"] for k, i in res.items() if "_mean" in k])
+                ),
+                "grn_omni_" + dataset + "/tf_enr": float(
+                    np.sum(
+                        [i.get("TF_enr", False) for k, i in res.items() if "_mean" in k]
+                    )
+                ),
+                "grn_omni_" + dataset + "/tf_targ_enr": float(
+                    np.mean(
+                        [
+                            i["significant_enriched_TFtargets"]
+                            for k, i in res.items()
+                            if "_mean" in k
+                        ]
+                    )
+                ),
+                # 'grn_omni/ct': res['classif']['cell_type_ontology_term_id']['accuracy'],
+            }
+        )
+        print(metrics)
+        gc.collect()
+    return metrics, tot
