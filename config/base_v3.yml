@@ -72,6 +72,7 @@ data:
   max_len: 2600
   pin_memory: True
   prefetch_factor: 3
+  persistent_workers: False
   metacell_mode: 0.2
   weight_scaler: 200
   do_gene_pos: False

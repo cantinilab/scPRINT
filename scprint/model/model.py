@@ -12,6 +12,7 @@ from typing import Dict, Optional
 import lightning as L
 import pandas as pd
 import torch
+import numpy as np
 import torch.distributed
 from huggingface_hub import PyTorchModelHubMixin
 from lightning.pytorch.callbacks.lr_finder import LearningRateFinder
@@ -1673,7 +1674,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             print(metrics)
             print("done test")
             f = open("metrics_" + name + ".json", "a")
-            f.write(json.dumps(tot, indent=4))
+            f.write(
+                json.dumps(
+                    tot,
+                    indent=4,
+                    default=lambda x: int(x) if isinstance(x, np.int64) else x,
+                )
+            )
             f.close()
             if self.set_step is not None:
                 print("this part only works in some cases and for wandb")

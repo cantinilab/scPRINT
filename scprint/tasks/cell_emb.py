@@ -388,9 +388,6 @@ def default_benchmark(
         how="random expr",
     )
     adata, metrics = embedder(model, adata)
-    import pdb
-
-    pdb.set_trace()
 
     bm = Benchmarker(
         adata,
