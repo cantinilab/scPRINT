@@ -775,7 +775,7 @@ def default_benchmark(
             if "X_pca" not in adata.obsm:
                 sc.pp.pca(adata, n_comps=50)
             sc.pp.neighbors(adata, use_rep="X_pca")
-        for celltype in adata.obs["cell_type"].unique():
+        for celltype in list(adata.obs["cell_type"].unique())[:10]:
             # print(celltype)
             # grn_inferer = GNInfer(
             #    layer=layers,

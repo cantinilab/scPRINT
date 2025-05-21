@@ -383,6 +383,7 @@ def default_benchmark(
         pred_embedding=["cell_type_ontology_term_id"],
         doclass=do_class,
         max_len=max_len,
+        doplot=False,
         keep_all_labels_pred=False,
         save_every=40_000,
         how="random expr",

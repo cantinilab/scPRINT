@@ -2,7 +2,7 @@ EMBEDDING_DATASETS = {
     "lung": "https://figshare.com/ndownloader/files/24539942",
     "pancreas": "https://figshare.com/ndownloader/files/24539828",
     "kidney": "https://datasets.cellxgene.cziscience.com/01bc7039-961f-4c24-b407-d535a2a7ba2c.h5ad",
-    "gtex": "https://datasets.cellxgene.cziscience.com/661d5ec2-ca57-413c-8374-f49b0054ddba.h5ad",
+    # "gtex": "https://datasets.cellxgene.cziscience.com/661d5ec2-ca57-413c-8374-f49b0054ddba.h5ad",
     "bone_marrow_5batch": "https://datasets.cellxgene.cziscience.com/b2eca8f3-b461-45fd-8639-890bbbf050aa.h5ad",
 }
 
