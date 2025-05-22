@@ -276,7 +276,15 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if self.use_metacell_token:
             self.metacell_encoder = encoders.CategoryValueEncoder(2, d_model)
         # compute tensor for mat_labels_hierarchy
-        for i in ["strict_loading", "optim", "weight_decay", "d_hid", "edge_dim"]:
+        for i in [
+            "strict_loading",
+            "optim",
+            "weight_decay",
+            "d_hid",
+            "edge_dim",
+            "prenorm",
+            "use_flash_attn",
+        ]:
             if i in flash_attention_kwargs:
                 flash_attention_kwargs.pop(i)
         # Transformer
