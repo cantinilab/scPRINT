@@ -17,8 +17,8 @@ trainer:
     - class_path: lightning.pytorch.loggers.WandbLogger
       init_args:
         project: ${project}
-        save_dir: /pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/data/log/
-        offline: False
+        save_dir: /lustre/fswork/projects/rech/xeg/uat95fg/ #/pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/data/log/
+        offline: True
   callbacks:
     #- class_path: lightning.pytorch.callbacks.StochasticWeightAveraging
     #  init_args:
@@ -33,11 +33,10 @@ scprint_training:
   noise: [0.7]
   do_ecs: True
   do_cce: True
-  mask_ratio: ["TF"]
   zinb_and_mse: True
   var_context_length: True
 scprint_early_stopping:
-  patience: 4
+  patience: 3
 model:
   dropout: 0
   num_heads_kv: 4
@@ -74,7 +73,7 @@ data:
   gene_embeddings: ./data/main/gene_embeddings.parquet
   collection_name: scPRINT-V2 full #scPRINT-V2 (good quality) # scPRINT-V2 (some)
   how: random expr
-  max_len: 3200
+  max_len: 2600
   pin_memory: True
   prefetch_factor: 3
   metacell_mode: 0.2

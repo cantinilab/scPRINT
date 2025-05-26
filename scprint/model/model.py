@@ -1413,11 +1413,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                         if clsname in self.mat_labels_hierarchy.keys()
                         else None,
                     )
-                except Exception as e:
-                    print(f"Error in hierarchical_classification for {clsname}: {e}")
-                    import pdb
-
-                    pdb.set_trace()
+                except:
+                    print(clsname)
+                    print(self.mat_labels_hierarchy)
+                    raise
 
                 # Adversarial part for 'assay_ontology_term_id'
                 if do_adv_cls and clsname == "assay_ontology_term_id":

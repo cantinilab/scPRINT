@@ -18,8 +18,8 @@ trainer:
     - class_path: lightning.pytorch.loggers.WandbLogger
       init_args:
         project: ${project}
-        save_dir: /pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/lustre/fswork/projects/rech/xeg/uat95fg/ #/pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/data/log/
-        offline: False
+        save_dir: /lustre/fswork/projects/rech/xeg/uat95fg/ #/pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/data/log/
+        offline: True
   callbacks:
     #- class_path: lightning.pytorch.callbacks.StochasticWeightAveraging
     #  init_args:
@@ -27,7 +27,7 @@ trainer:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint
       init_args:
         monitor: val_loss
-        save_top_k: 3
+        save_top_k: 15
         save_last: True
 scprint_training:
   run_full_forward: False
