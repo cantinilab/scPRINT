@@ -287,6 +287,7 @@ class GNInfer:
                     if model.expr_emb_style == "metacell"
                     else None,
                     predict_mode=self.forward_mode,
+                    keep_output=False,
                     get_attention_layer=layer if type(layer) is list else [layer],
                 )
                 torch.cuda.empty_cache()
