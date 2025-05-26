@@ -429,9 +429,16 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             for k, v in compress_class_dim.items():
                 self.bottleneck_mlps[k] = fsq.FSQ(levels=[2] * v, dim=self.d_model)
         elif class_compression == "vae":
-            self.vae_decoder = decoders.VAEDecoder(
-                d_model, layers=[128, 64], dropout=dropout
-            )
+            self.vae_decoder = torch.nn.ModuleDict()
+            for k in self.classes:
+                self.vae_decoder[k] = decoders.VAEDecoder(
+                    d_model_cell if cell_specific_blocks else d_model,
+                    layers=[
+                        128,
+                        64 if compress_class_dim is None else compress_class_dim[k],
+                    ],
+                    dropout=dropout,
+                )
 
     def on_load_checkpoint(self, checkpoints):
         # if not the same number of labels (due to diff datasets)
@@ -675,11 +682,12 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
         if self.vae_decoder is not None:
             # Apply VAE to cell embeddings
-            decoded, _, _, kl_loss = self.vae_decoder(
-                output["cell_emb"], return_latent=True
-            )
-            output["cell_emb"] = decoded
-            output["vae_kl_loss"] = kl_loss
+            output["vae_kl_loss"] = 0
+            for i, clsname in enumerate(self.classes):
+                output["cell_embs"][:, i + 1, :], _, _, kl_loss = self.vae_decoder[
+                    clsname
+                ](output["cell_embs"][:, i + 1, :], return_latent=True)
+                output["vae_kl_loss"] += kl_loss
 
         elif self.bottleneck_mlps is not None:
             for i, clsname in enumerate(self.classes):
@@ -1397,13 +1405,19 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 if "cls_output_" + clsname not in output:
                     continue
                 # setting the classes from index to one hot
-                loss_cls += loss.hierarchical_classification(
-                    pred=output["cls_output_" + clsname],
-                    cl=clss[:, j],
-                    labels_hierarchy=self.mat_labels_hierarchy[clsname]
-                    if clsname in self.mat_labels_hierarchy.keys()
-                    else None,
-                )
+                try:
+                    loss_cls += loss.hierarchical_classification(
+                        pred=output["cls_output_" + clsname],
+                        cl=clss[:, j],
+                        labels_hierarchy=self.mat_labels_hierarchy[clsname]
+                        if clsname in self.mat_labels_hierarchy.keys()
+                        else None,
+                    )
+                except Exception as e:
+                    print(f"Error in hierarchical_classification for {clsname}: {e}")
+                    import pdb
+
+                    pdb.set_trace()
 
                 # Adversarial part for 'assay_ontology_term_id'
                 if do_adv_cls and clsname == "assay_ontology_term_id":
@@ -1612,6 +1626,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
     def on_validation_epoch_end(self):
         """@see pl.LightningModule"""
+        self.pos = None
+        self.expr_pred = None
         self.embs = self.all_gather(self.embs).view(-1, self.embs.shape[-1])
         self.info = self.all_gather(self.info).view(-1, self.info.shape[-1])
         self.pred = (
@@ -1619,8 +1635,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             if self.pred is not None
             else None
         )
-        self.pos = None
-        self.expr_pred = None
         # self.pos = self.all_gather(self.pos).view(-1, self.pos.shape[-1])
         # self.expr_pred[0] = self.all_gather(self.expr_pred[0]).view(
         #     -1, self.expr_pred[0].shape[-1]
@@ -1662,7 +1676,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             except:
                 print("not on wandb, could not set name")
         # Run the test only on global rank 0
-        name = self.name + "_step" + str(self.global_step) + "_test_metrics"
+        name = str(self.name) + "_step" + str(self.global_step) + "_test_metrics"
         import json
 
         try:
@@ -1977,13 +1991,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             doplot=self.doplot,
         )
         adata.write(
-            mdir
+            str(mdir)
             + "/step_"
             + str(self.global_step)
             + "_"
-            + self.name
+            + str(self.name)
             + "_"
-            + name
+            + str(name)
             + "_"
             + str(self.global_rank)
             + ".h5ad"

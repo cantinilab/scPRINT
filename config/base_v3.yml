@@ -52,6 +52,7 @@ model:
   freeze_embeddings: True
   finetune_gene_emb: True
   normalization: log
+  class_compression: vae
   pred_embedding:
     - cell_type_ontology_term_id
   #compress_class_dim:
@@ -63,7 +64,17 @@ model:
   #  self_reported_ethnicity_ontology_term_id: 10
   #  sex_ontology_term_id: 2
   #  organism_ontology_term_id: 8
-  # class_compression: vae
+  compress_class_dim:
+    cell_type_ontology_term_id: 64
+    tissue_ontology_term_id: 32
+    disease_ontology_term_id: 16
+    age_group: 8
+    assay_ontology_term_id: 8
+    self_reported_ethnicity_ontology_term_id: 8
+    sex_ontology_term_id: 2
+    organism_ontology_term_id: 8
+    cell_culture: 2
+    # total: 148
 data:
   gene_position_tolerance: 10_000
   gene_embeddings: ./data/main/gene_embs/
@@ -72,7 +83,7 @@ data:
   max_len: 2600
   pin_memory: True
   prefetch_factor: 3
-  persistent_workers: False
+  persistent_workers: True
   metacell_mode: 0.2
   weight_scaler: 200
   do_gene_pos: False
@@ -81,7 +92,7 @@ data:
   validation_split: 0.05
   test_split: 0.02
   batch_size: 32
-  num_workers: 20
+  num_workers: 5
   hierarchical_clss:
     - cell_type_ontology_term_id
     - tissue_ontology_term_id
@@ -98,15 +109,15 @@ data:
     - self_reported_ethnicity_ontology_term_id
     - sex_ontology_term_id
     - organism_ontology_term_id
-    #- cell_culture
+    - cell_culture
     - nnz
   clss_to_predict:
     - cell_type_ontology_term_id
     - tissue_ontology_term_id
     - disease_ontology_term_id
     - age_group
-    #- cell_culture
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id
     - sex_ontology_term_id
     - organism_ontology_term_id
+    - cell_culture

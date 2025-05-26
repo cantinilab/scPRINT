@@ -7,6 +7,5 @@ model:
   dropout: 0.1
 data:
   batch_size: 11
-  num_workers: 10
   n_samples_per_epoch: 500_000
 
