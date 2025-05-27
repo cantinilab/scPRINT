@@ -99,16 +99,15 @@ class GNInfer:
         self.layer = layer
         self.loc = loc
         self.how = how
-        assert (
-            self.how
-            in [
-                "most var within",
-                "most var across",
-                "random expr",
-                "some",
-                "most expr",
-            ]
-        ), "how must be one of 'most var within', 'most var across', 'random expr', 'some', 'most expr'"
+        assert self.how in [
+            "most var within",
+            "most var across",
+            "random expr",
+            "some",
+            "most expr",
+        ], (
+            "how must be one of 'most var within', 'most var across', 'random expr', 'some', 'most expr'"
+        )
         self.num_genes = num_genes
         self.preprocess = preprocess
         self.cell_type_col = cell_type_col
@@ -149,6 +148,9 @@ class GNInfer:
         model.attn.data = None
 
         subadata = self.predict(model, adata, self.layer, cell_type)
+        import pdb
+
+        pdb.set_trace()
         adjacencies = self.aggregate(model.attn.get(), model.genes)
         model.attn.data = None
         if self.head_agg == "none":

@@ -36,10 +36,10 @@ scPRINT can be used to perform the following analyses:
 
 - [scPRINT: Large Cell Model for scRNAseq data](#scprint-large-cell-model-for-scrnaseq-data)
   - [Table of Contents](#table-of-contents)
-  - [Install `scPRINT`](#install-scprint)
-    - [Test scPRINT on google colab!](#test-scprint-on-google-colab)
-    - [Use scPRINT in superbio.ai!](#use-scprint-in-superbioai)
-    - [lamin.ai](#laminai)
+  - [Use `scPRINT`](#use-scprint)
+    - [try scPRINT in superbio.ai!](#try-scprint-in-superbioai)
+    - [try scPRINT on a google colab notebook!](#try-scprint-on-a-google-colab-notebook)
+    - [To know: lamin.ai](#to-know-laminai)
     - [install](#install)
     - [pytorch and GPUs](#pytorch-and-gpus)
     - [dev install](#dev-install)
@@ -49,17 +49,21 @@ scPRINT can be used to perform the following analyses:
     - [Notes on GPU/CPU usage with triton](#notes-on-gpucpu-usage-with-triton)
     - [Simple tests:](#simple-tests)
   - [FAQ](#faq)
+    - [I have a dataset and want a quick analysis:](#i-have-a-dataset-and-want-a-quick-analysis)
+    - [I have a dataset and want some more control over what is going on and which model to use:](#i-have-a-dataset-and-want-some-more-control-over-what-is-going-on-and-which-model-to-use)
     - [I want to generate gene networks from scRNAseq data:](#i-want-to-generate-gene-networks-from-scrnaseq-data)
     - [I want to generate cell embeddings and cell label predictions from scRNAseq data:](#i-want-to-generate-cell-embeddings-and-cell-label-predictions-from-scrnaseq-data)
     - [I want to denoise my scRNAseq dataset:](#i-want-to-denoise-my-scrnaseq-dataset)
     - [I want to generate an atlas-level embedding](#i-want-to-generate-an-atlas-level-embedding)
     - [I need to generate gene tokens using pLLMs](#i-need-to-generate-gene-tokens-using-pllms)
-    - [I want to pre-train scPRINT from scratch on my own data](#i-want-to-pre-train-scprint-from-scratch-on-my-own-data)
+    - [I want to re-train scPRINT from scratch on my own data](#i-want-to-re-train-scprint-from-scratch-on-my-own-data)
+    - [I want to fine-tune scPRINT on my own data](#i-want-to-fine-tune-scprint-on-my-own-data)
     - [how can I find if scPRINT was trained on my data?](#how-can-i-find-if-scprint-was-trained-on-my-data)
     - [can I use scPRINT on other organisms rather than human?](#can-i-use-scprint-on-other-organisms-rather-than-human)
     - [how long does scPRINT takes? what kind of resources do I need? (or in alternative: can i run scPRINT locally?)](#how-long-does-scprint-takes-what-kind-of-resources-do-i-need-or-in-alternative-can-i-run-scprint-locally)
     - [I have different scRNASeq batches. Should I integrate my data before running scPRINT?](#i-have-different-scrnaseq-batches-should-i-integrate-my-data-before-running-scprint)
-    - [where to find the gene embeddings?](#where-to-find-the-gene-embeddings)
+    - [where to find the input gene embeddings?](#where-to-find-the-input-gene-embeddings)
+    - [I want to extract output gene embeddings from scPRINT](#i-want-to-extract-output-gene-embeddings-from-scprint)
   - [Documentation](#documentation)
   - [Model Weights](#model-weights)
   - [Docker](#docker)
@@ -70,23 +74,24 @@ scPRINT can be used to perform the following analyses:
   - [Work in progress (PR welcomed):](#work-in-progress-pr-welcomed)
 
 
-## Install `scPRINT`
+## Use `scPRINT`
 
 For the moment scPRINT has been tested on MacOS and Linux (Ubuntu 20.04) with Python 3.10. Its instalation takes on average 10 minutes.
 
 If you want to be using flashattention2, know that it only supports triton 2.0 MLIR's version and torch==2.0.0 for now.
 
-### Test scPRINT on google colab!
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1CacoQDAwJn86tq2sBhUoZ6M-xAqsYFDI#scrollTo=Vj73HINSzKHL)
-
-### Use scPRINT in superbio.ai!
+### try scPRINT in superbio.ai!
 
 [HERE](https://app.superbio.ai/apps/67333115ed44f27eb717cf84)
 
-### lamin.ai
+### try scPRINT on a google colab notebook!
 
-To use scPRINT, you will need to use [lamin.ai](https://lamin.ai/). This is needed to load biological informations like genes, cell types, organisms etc...
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1CacoQDAwJn86tq2sBhUoZ6M-xAqsYFDI#scrollTo=Vj73HINSzKHL)
+
+
+### To know: lamin.ai
+
+To use scPRINT, you will need to use [lamin.ai](https://lamin.ai/). This is needed to load biological informations like genes, cell types, organisms.. (but also to manage the pre-training datasets if this is something you want to set up)
 
 ### install
 
@@ -216,6 +221,18 @@ We now explore the different usages of scPRINT:
 
 ## FAQ
 
+### I have a dataset and want a quick analysis:
+
+-> use [superbio](#try-scprint-in-superbioai)
+
+### I have a dataset and want some more control over what is going on and which model to use:
+
+you will need to understand a few things like lamindb, scdataloader and scprint's inference tool. 
+
+-> start with a quick intro using the [google collab notebook](#try-scprint-on-a-google-colab-notebook)
+
+-> look at the other FAQ element based on your desired use-case
+
 ### I want to generate gene networks from scRNAseq data:
 
 -> Refer to the section . gene network inference in [this notebook](./docs/notebooks/cancer_usecase.ipynb#).
@@ -242,9 +259,17 @@ To run scPRINT, you can use the option to define the gene tokens using protein l
 
 -> To generate this file please refer to the notebook [generate_gene_embeddings](notebooks/generate_gene_embeddings.ipynb).
 
-### I want to pre-train scPRINT from scratch on my own data
+### I want to re-train scPRINT from scratch on my own data
 
 -> Refer to the documentation page [pretrain scprint](docs/pretrain.md)
+
+### I want to fine-tune scPRINT on my own data
+
+-> make sure that you did a few run of scPRINT's inference e.g. [this one](#i-want-to-generate-cell-embeddings-and-cell-label-predictions-from-scrnaseq-data)
+
+-> make sure that you read the [pretrain scprint](docs/pretrain.md) documentation
+
+-> re-use the same logic as in the [scprint-train](notebooks/scprint_train.ipynb) notebook but apply the necessary modification in term of tasks, learning rate or parameter-efficient-fine-tuning method, if you think you will need it (given the small size of the model, this not necessary at all). This is the step where you will get your hands dirty. you might want to really understand how the model [collates](https://www.jkobject.com/scDataLoader/collator/) data, and [train](https://cantinilab.github.io/scPRINT/model/#scprint.model.model.scPrint.training_step)
 
 ### how can I find if scPRINT was trained on my data?
 
@@ -262,7 +287,7 @@ please look at our supplementary tables in the [manuscript](https://www.biorxiv.
 
 scPRINT takes raw count as inputs, so please don't use integrated data. Just give the raw counts to scPRINT and it will take care of the rest.
 
-### where to find the gene embeddings?
+### where to find the input gene embeddings?
 
 If you think you need the gene embeddings file for loading the model from a checkpoint, you don't, as the embeddings are also stored in the model weights. You just need to load the weights like this:
 
@@ -277,9 +302,15 @@ You can also recreate the gene embedding file through [this notebook](notebooks/
 
 the file itself is also available on [hugging face](https://huggingface.co/jkobject/scPRINT/tree/main)
 
+/!\ Please understand that what I mean by gene embedding are the immutable input gene embeddings encoding the gene name. scPRINT directly takes raw counts as input and takes care of doing the embedding on the fly. (it does similarly for a gene's location in the genome).
+
+### I want to extract output gene embeddings from scPRINT
+
+I created a novel task script that should work similarly to the other ones (make sure that you understood how they work by running at least one inference notebook) in [scprint/tasks/gene_emb.py](scprint/tasks/gene_emb.py)
+
 ## Documentation
 
-For more information on usage please see the documentation in [https://www.jkobject.com/scPRINT/](https://www.jkobject.com/scPRINT/)
+For more information on usage please see the documentation in [https://www.jkobject.com/scPRINT/](https://cantinilab.github.io/scPRINT)
 
 ## Model Weights
 
@@ -292,6 +323,8 @@ By using the `scPRINT Docker image`, you can bypass the complexities of manual p
 Make sure that you have the `docker` command line interface installed on your system.
 
 A recommended way to install docker with the correct nvidia drivers on linux is to use this [script](https://gist.github.com/xueerchen1990/baad7baa545cb547e8633bc9e5b84786)
+
+/!\ A MORE UP TO DATE DOCKER IMAGE is made as part of the open-problems benchmark and available in their github for all tasks where scPRINT is benchmarked
 
 ### Building the Docker Image
 

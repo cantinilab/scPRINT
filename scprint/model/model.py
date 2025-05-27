@@ -308,6 +308,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             "edge_dim",
             "prenorm",
             "domain_spec_batchnorm",
+            "use_flash_attn",
             "cell_emb_style",
             "num_batch_labels",
         ]:

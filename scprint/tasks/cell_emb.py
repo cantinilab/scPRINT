@@ -43,7 +43,8 @@ class Embedder:
         keep_all_labels_pred: bool = False,
         dtype: torch.dtype = torch.float16,
         genelist: List[str] = [],
-        save_every: int = 100_000,
+        get_gene_emb: bool = False,
+        save_every: int = 40_000,
     ):
         """
         Embedder a class to embed and annotate cells using a model
