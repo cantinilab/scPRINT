@@ -47,7 +47,7 @@ class Embedder:
         output_expression: str = "none",
         genelist: List[str] = [],
         get_gene_emb: bool = False,
-        save_every: int = 100_000,
+        save_every: int = 40_000,
     ):
         """
         Embedder a class to embed and annotate cells using a model

@@ -147,6 +147,8 @@ class GNInfer:
         self.n_cell_embs = model.attn.additional_tokens
 
         subadata = self.predict(model, adata, self.layer, cell_type)
+        import pdb
+        pdb.set_trace()
         adjacencies = self.aggregate(model.attn.get(), model.genes)
         if self.head_agg == "none":
             return self.save(
@@ -264,9 +266,10 @@ class GNInfer:
                     expression,
                     depth,
                     predict_mode=self.forward_mode,
+                    keep_output=False,
                     get_attention_layer=layer if type(layer) is list else [layer],
                 )
-                torch.cuda.empty_cache()
+            torch.cuda.empty_cache()
                 
         return subadata
 
