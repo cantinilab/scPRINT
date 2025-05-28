@@ -428,8 +428,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         for i, dec in self.cls_decoders.items():
             torch.nn.init.constant_(dec.out_layer.bias, -0.13)
 
-        self.bottleneck_mlps = None
-        self.vae_decoder = None
         if compress_class_dim is not None:
             self.compressor = torch.nn.ModuleDict()
             dim = self.d_model_cell if cell_specific_blocks else self.d_model
@@ -439,9 +437,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                         dim,
                         layers=[
                             128,
-                            64 if compress_class_dim is None else compress_class_dim[k],
+                            compress_class_dim[k],
                         ],
                         dropout=dropout,
+                        return_latent=True,
                     )
                 else:
                     self.compressor[k] = fsq.FSQ(levels=[2] * v, dim=dim)
