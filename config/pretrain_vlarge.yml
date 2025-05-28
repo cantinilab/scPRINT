@@ -2,12 +2,17 @@ trainer:
   strategy: ddp_find_unused_parameters_true
   gradient_clip_val: 2
 model:
-  nhead: 16
-  num_heads_kv: 4
-  lr: 0.00005
+  nhead: 32
+  num_heads_kv: 8
   nlayers: 30
-  d_model: 1024
+  d_model: 2048
+  d_model_cell: 512
+  nhead_cell: 8
+  nlayers_cell: 10
+  checkpointing: True
 data:
-  batch_size: 4
-  num_workers: 10
+  batch_size: 1
   max_len: 2400
+  n_samples_per_epoch: 40000
+scprint_training:
+  run_full_forward: False
