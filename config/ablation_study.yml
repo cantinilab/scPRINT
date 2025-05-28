@@ -18,8 +18,8 @@ trainer:
     - class_path: lightning.pytorch.loggers.WandbLogger
       init_args:
         project: ${project}
-        save_dir: /lustre/fswork/projects/rech/xeg/uat95fg/ #/pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/data/log/
         offline: False
+        save_dir: /pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/lustre/fswork/projects/rech/xeg/uat95fg/ #/pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/data/log/
   callbacks:
     #- class_path: lightning.pytorch.callbacks.StochasticWeightAveraging
     #  init_args:
@@ -65,7 +65,7 @@ model:
     self_reported_ethnicity_ontology_term_id: 8
     sex_ontology_term_id: 2
     organism_ontology_term_id: 8
-    cell_culture: 2
+    # cell_culture: 2
     # total: 148
 data:
   gene_position_tolerance: 10_000

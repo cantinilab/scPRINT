@@ -685,18 +685,20 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             output.update({"spl_" + k: v for k, v in splicing_output.items()})
             output["spl_mean"] = splicing_mult.unsqueeze(1) * output["spl_mean"]
 
-        output["cell_emb"] = torch.mean(cell_embs, dim=1)
-        output["cell_embs"] = cell_embs
-
         if self.compressor is not None and do_class:
             # Apply VAE to cell embeddings
             output["vae_kl_loss"] = 0
+            res = []
+            res.append(cell_embs[:, 0, :])
             for i, clsname in enumerate(self.classes):
-                res = self.compressor[clsname](output["cell_embs"][:, i + 1, :])
-                output["cell_embs"][:, i + 1, :] = res[0]
-                if len(res) == 4:
-                    output["vae_kl_loss"] += res[3]
-
+                out = self.compressor[clsname](cell_embs[:, i + 1, :])
+                res.append(out[0])
+                if len(out) == 4:
+                    output["vae_kl_loss"] += out[3]
+            output["cell_embs"] = torch.cat(res, dim=1)
+        else:
+            output["cell_embs"] = cell_embs
+        output["cell_emb"] = torch.mean(output["cell_embs"], dim=1)
         if len(self.classes) > 0 and do_class:
             for i, clsname in enumerate(self.classes):
                 output.update(
