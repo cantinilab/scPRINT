@@ -433,7 +433,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.compressor = torch.nn.ModuleDict()
             dim = self.d_model_cell if cell_specific_blocks else self.d_model
             for k, v in compress_class_dim.items():
-                if v > 8:
+                if v >= 8:
                     self.compressor[k] = decoders.VAEDecoder(
                         dim,
                         layers=[
