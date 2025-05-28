@@ -44,6 +44,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         nhead: int = 4,
         nlayers: int = 8,
         precpt_gene_emb: Optional[str] = None,
+        memmap_gene_emb: bool = False,
         finetune_gene_emb: bool = False,
         freeze_embeddings: bool = True,
         gene_pos_enc: Optional[list] = None,
@@ -235,15 +236,18 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     "Warning: only a subset of the genes available in the embeddings file."
                 )
             print("number of genes: ", len(embeddings))
-            sembeddings = torch.nn.AdaptiveAvgPool1d(d_model)(
-                torch.tensor(embeddings.values, dtype=torch.float32)
-            )
+            if not memmap_gene_emb:
+                sembeddings = torch.nn.AdaptiveAvgPool1d(d_model)(
+                    torch.tensor(embeddings.values, dtype=torch.float32)
+                )
+            else:
+                embeddings = None
 
             gene_encoder = encoders.GeneEncoder(
                 len(self.vocab),
                 d_model,
-                # weights_file=precpt_gene_emb,
-                weights=sembeddings,
+                weights_file=precpt_gene_emb if memmap_gene_emb else None,
+                weights=sembeddings if not memmap_gene_emb else None,
                 freeze=freeze_embeddings,
             )
         else:
@@ -680,7 +684,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         output["cell_emb"] = torch.mean(cell_embs, dim=1)
         output["cell_embs"] = cell_embs
 
-        if self.vae_decoder is not None:
+        if self.vae_decoder is not None and do_class:
             # Apply VAE to cell embeddings
             output["vae_kl_loss"] = 0
             for i, clsname in enumerate(self.classes):

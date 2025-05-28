@@ -1,11 +1,16 @@
+trainer:
+  strategy: ddp_find_unused_parameters_true
+  log_every_n_steps: 300
+  limit_train_batches: 40000
+  limit_val_batches: 10000
+  gradient_clip_val: 2
 model:
-  nhead: 8
+  nhead: 16
   num_heads_kv: 4
-  nlayers: 16 #used to be 12
-  layers_cls: []
-  d_model: 512
+  lr: 0.00005
+  nlayers: 30
+  d_model: 1024
   dropout: 0.1
 data:
-  batch_size: 11
-  n_samples_per_epoch: 500_000
-
+  batch_size: 4
+  max_len: 2400
