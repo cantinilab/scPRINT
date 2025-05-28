@@ -56,6 +56,17 @@ model:
   normalization: log
   pred_embedding:
     - cell_type_ontology_term_id
+  compress_class_dim:
+    cell_type_ontology_term_id: 64
+    tissue_ontology_term_id: 32
+    disease_ontology_term_id: 16
+    age_group: 8
+    assay_ontology_term_id: 8
+    self_reported_ethnicity_ontology_term_id: 8
+    sex_ontology_term_id: 2
+    organism_ontology_term_id: 8
+    cell_culture: 2
+    # total: 148
 data:
   gene_position_tolerance: 10_000
   gene_embeddings: ./data/main/gene_embs/ #./data/main/gene_embeddings.parquet # /lustre/fswork/projects/rech/xeg/uat95fg/gene_embeddings.parquet
@@ -72,7 +83,7 @@ data:
   n_samples_per_epoch: 1_400_000
   test_split: 0.02
   batch_size: 64
-  num_workers: 20
+  num_workers: 7
   hierarchical_clss: #['cell_type_ontology_term_id','tissue_ontology_term_id','disease_ontology_term_id','assay_ontology_term_id','self_reported_ethnicity_ontology_term_id']
     - cell_type_ontology_term_id
     - tissue_ontology_term_id

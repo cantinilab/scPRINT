@@ -52,7 +52,6 @@ model:
   freeze_embeddings: True
   finetune_gene_emb: True
   normalization: log
-  class_compression: vae
   pred_embedding:
     - cell_type_ontology_term_id
   #compress_class_dim:

@@ -50,12 +50,12 @@ class ExprDecoder(nn.Module):
         super(ExprDecoder, self).__init__()
         self.fc = nn.Sequential(
             nn.Linear(d_model if not use_depth else d_model + 1, d_model),
-            nn.LayerNorm(d_model),
             nn.LeakyReLU(),
+            nn.LayerNorm(d_model),
             nn.Dropout(dropout),
             nn.Linear(d_model, d_model),
-            nn.LayerNorm(d_model),
             nn.LeakyReLU(),
+            nn.LayerNorm(d_model),
         )
         self.pred_var_zero = nn.Linear(d_model, 3 if zinb else 1)
         self.zinb = zinb
@@ -245,8 +245,8 @@ class ClsDecoder(nn.Module):
         self.n_cls = n_cls
         for i, l in enumerate(layers[1:]):
             self.decoder.append(nn.Linear(layers[i], l))
-            self.decoder.append(nn.LayerNorm(l))
             self.decoder.append(activation())
+            self.decoder.append(nn.LayerNorm(l))
             self.decoder.append(nn.Dropout(dropout))
         self.out_layer = nn.Linear(layers[-1], n_cls)
 
@@ -285,8 +285,8 @@ class VAEDecoder(nn.Module):
             zip(encoder_layers[:-2], encoder_layers[1:-1])
         ):
             self.encoder.append(nn.Linear(in_size, out_size))
-            self.encoder.append(nn.LayerNorm(out_size))
             self.encoder.append(activation())
+            self.encoder.append(nn.LayerNorm(out_size))
             self.encoder.append(nn.Dropout(dropout))
 
         # VAE latent parameters

@@ -257,8 +257,8 @@ class ContinuousValueEncoder(nn.Module):
         # self.mask_value = nn.Embedding(1, d_model)
         self.encoder.append(nn.Linear(size, d_model))
         for _ in range(layers - 1):
-            self.encoder.append(nn.LayerNorm(d_model))
             self.encoder.append(nn.ReLU())
+            self.encoder.append(nn.LayerNorm(d_model))
             self.encoder.append(nn.Dropout(p=dropout))
             self.encoder.append(nn.Linear(d_model, d_model))
 

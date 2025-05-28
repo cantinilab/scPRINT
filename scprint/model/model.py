@@ -166,6 +166,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.predict_mode = "none"
         self.keep_all_labels_pred = False
         self.mask_zeros = False
+        self.vae_kl_warmup_steps = 20_000  # Default value, can be adjusted
 
         self.depth_atinput = depth_atinput
         self.tf_masker = WeightedMasker(genes, inv_weight=0.05)
@@ -428,21 +429,23 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
         self.bottleneck_mlps = None
         self.vae_decoder = None
-        if class_compression == "fsq":
-            self.bottleneck_mlps = torch.nn.ModuleDict()
+        if compress_class_dim is not None:
+            self.compressor = torch.nn.ModuleDict()
+            dim = self.d_model_cell if cell_specific_blocks else self.d_model
             for k, v in compress_class_dim.items():
-                self.bottleneck_mlps[k] = fsq.FSQ(levels=[2] * v, dim=self.d_model)
-        elif class_compression == "vae":
-            self.vae_decoder = torch.nn.ModuleDict()
-            for k in self.classes:
-                self.vae_decoder[k] = decoders.VAEDecoder(
-                    d_model_cell if cell_specific_blocks else d_model,
-                    layers=[
-                        128,
-                        64 if compress_class_dim is None else compress_class_dim[k],
-                    ],
-                    dropout=dropout,
-                )
+                if v > 8:
+                    self.compressor[k] = decoders.VAEDecoder(
+                        dim,
+                        layers=[
+                            128,
+                            64 if compress_class_dim is None else compress_class_dim[k],
+                        ],
+                        dropout=dropout,
+                    )
+                else:
+                    self.compressor[k] = fsq.FSQ(levels=[2] * v, dim=dim)
+        else:
+            self.compressor = None
 
     def on_load_checkpoint(self, checkpoints):
         # if not the same number of labels (due to diff datasets)
@@ -684,20 +687,17 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         output["cell_emb"] = torch.mean(cell_embs, dim=1)
         output["cell_embs"] = cell_embs
 
-        if self.vae_decoder is not None and do_class:
+        if self.compressor is not None and do_class:
             # Apply VAE to cell embeddings
             output["vae_kl_loss"] = 0
             for i, clsname in enumerate(self.classes):
-                output["cell_embs"][:, i + 1, :], _, _, kl_loss = self.vae_decoder[
-                    clsname
-                ](output["cell_embs"][:, i + 1, :], return_latent=True)
-                output["vae_kl_loss"] += kl_loss
+                res = self.compressor[clsname](output["cell_embs"][:, i + 1, :])
+                if type(res) is tuple:
+                    output["cell_embs"][:, i + 1, :] = res[0]
+                    output["vae_kl_loss"] += res[3]
+                else:
+                    output["cell_embs"][:, i + 1, :] = res
 
-        elif self.bottleneck_mlps is not None:
-            for i, clsname in enumerate(self.classes):
-                output["cell_embs"][:, i + 1, :] = self.bottleneck_mlps[clsname](
-                    output["cell_embs"][:, i + 1, :]
-                )[0]
         if len(self.classes) > 0 and do_class:
             for i, clsname in enumerate(self.classes):
                 output.update(
@@ -1517,10 +1517,18 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # Add VAE KL loss if present
         if do_vae_kl and "vae_kl_loss" in output:
             vae_kl_loss = output["vae_kl_loss"]
-            total_loss += (
-                self.vae_kl_scale * vae_kl_loss
-            )  # Scale factor of 0.1 for KL loss
-            losses.update({"vae_kl": vae_kl_loss})
+            # Calculate current VAE KL scale based on global step
+            if self.trainer.global_step < self.vae_kl_warmup_steps:
+                current_vae_kl_scale = (
+                    self.vae_kl_scale
+                    * float(self.trainer.global_step + 1)
+                    / self.vae_kl_warmup_steps
+                )
+            else:
+                current_vae_kl_scale = self.vae_kl_scale
+
+            total_loss += current_vae_kl_scale * vae_kl_loss
+            losses.update({"vae_kl": vae_kl_loss, "vae_kl_scale": current_vae_kl_scale})
 
         return losses, total_loss
 
