@@ -688,10 +688,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             # Apply VAE to cell embeddings
             output["vae_kl_loss"] = 0
             res = []
-            res.append(cell_embs[:, 0, :])
+            res.append(cell_embs[:, 0, :].unsqueeze(1))
             for i, clsname in enumerate(self.classes):
                 out = self.compressor[clsname](cell_embs[:, i + 1, :])
-                res.append(out[0])
+                res.append(out[0].unsqueeze(1))
                 if len(out) == 4:
                     output["vae_kl_loss"] += out[3]
             output["cell_embs"] = torch.cat(res, dim=1)
