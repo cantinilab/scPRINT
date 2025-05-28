@@ -692,11 +692,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             output["vae_kl_loss"] = 0
             for i, clsname in enumerate(self.classes):
                 res = self.compressor[clsname](output["cell_embs"][:, i + 1, :])
-                if type(res) is tuple:
-                    output["cell_embs"][:, i + 1, :] = res[0]
+                output["cell_embs"][:, i + 1, :] = res[0]
+                if len(res) == 4:
                     output["vae_kl_loss"] += res[3]
-                else:
-                    output["cell_embs"][:, i + 1, :] = res
 
         if len(self.classes) > 0 and do_class:
             for i, clsname in enumerate(self.classes):
