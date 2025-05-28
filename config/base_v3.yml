@@ -5,7 +5,7 @@ trainer:
   precision: 16-mixed
   strategy: ddp_find_unused_parameters_true
   use_distributed_sampler: False
-  gradient_clip_val: 10
+  gradient_clip_val: 3
   log_every_n_steps: 100
   limit_train_batches: 40000
   gradient_clip_algorithm: norm
@@ -16,8 +16,8 @@ trainer:
     - class_path: lightning.pytorch.loggers.WandbLogger
       init_args:
         project: ${project}
-        save_dir: /pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/data/log/
-        offline: False
+        save_dir: /lustre/fswork/projects/rech/xeg/uat95fg/ #/pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/data/log/
+        offline: True
   callbacks:
     #- class_path: lightning.pytorch.callbacks.StochasticWeightAveraging
     #  init_args:
@@ -32,7 +32,6 @@ scprint_training:
   noise: [0.7]
   do_ecs: True
   do_cce: True
-  mask_ratio: ["TF"]
   zinb_and_mse: True
   var_context_length: True
 scprint_early_stopping:
@@ -49,6 +48,7 @@ model:
   fused_mlp: False
   fused_bias_fc: False
   drop_path_rate: 0
+  class_compression: vae
   freeze_embeddings: True
   finetune_gene_emb: True
   normalization: log
@@ -82,8 +82,8 @@ data:
   how: random expr
   max_len: 2600
   pin_memory: True
-  prefetch_factor: 3
   persistent_workers: True
+  prefetch_factor: 3
   metacell_mode: 0.2
   weight_scaler: 200
   do_gene_pos: False

@@ -7,7 +7,7 @@
 
 # run script from above
 echo "Running scprint fit $1"
-module load cuda/12.2
+module load cuda/12.2.0
 export TRITON_CACHE_DIR=$TMPDIR/triton_cache
 mkdir -p $TRITON_CACHE_DIR
 eval "srun scprint fit $1" --trainer.default_root_dir ./$SLURM_JOB_ID

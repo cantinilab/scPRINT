@@ -1,8 +1,10 @@
+trainer:
+  strategy: ddp_find_unused_parameters_true
+  gradient_clip_val: 2
 model:
   nhead: 32
   num_heads_kv: 8
   nlayers: 30
-  layers_cls: []
   d_model: 2048
   d_model_cell: 512
   nhead_cell: 8
@@ -10,11 +12,7 @@ model:
   checkpointing: True
 data:
   batch_size: 1
-  max_len: 2200
+  max_len: 2400
   n_samples_per_epoch: 40000
 scprint_training:
   run_full_forward: False
-  noise: [0.7]
-  do_ecs: True
-  do_cce: True
-  mask_ratio: ["TF"]

@@ -14,3 +14,4 @@ model:
 data:
   batch_size: 4
   max_len: 2400
+  n_samples_per_epoch: 200_000
