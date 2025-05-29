@@ -134,7 +134,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.ecs_scale = 0.2
         self.do_mvc = False
         self.mvc_scale = 1.0
-        self.vae_kl_scale = 0.3
         self.class_embd_diss_scale = 0.3
         self.do_adv_cls = do_adv_cls
         self.adv_class_scale = 1.0
@@ -166,7 +165,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.predict_mode = "none"
         self.keep_all_labels_pred = False
         self.mask_zeros = False
-        self.vae_kl_warmup_steps = 20_000  # Default value, can be adjusted
+        self.vae_kl_scale = 0.05
+        self.vae_kl_warmup_steps = 40_000  # Default value, can be adjusted
 
         self.depth_atinput = depth_atinput
         self.tf_masker = WeightedMasker(genes, inv_weight=0.05)
