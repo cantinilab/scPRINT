@@ -15,6 +15,7 @@ from scprint.tasks import Denoiser, Embedder, GNInfer
 from .trainer import TrainingMode
 
 TASKS = [("embed", Embedder), ("gninfer", GNInfer), ("denoise", Denoiser)]
+TIMEOUT = 3600 * 5  # 5 hours in seconds
 
 
 class MyCLI(LightningCLI):
@@ -56,14 +57,12 @@ class MyCLI(LightningCLI):
         parser.link_arguments(
             "data.gene_embeddings", "model.precpt_gene_emb", apply_on="parse"
         )
-        parser.link_arguments("data.organisms", "model.organisms", apply_on="parse")
         parser.link_arguments(
-            "data.num_datasets", "model.num_batch_labels", apply_on="instantiate"
+            "data.organisms", "model.organisms", apply_on="instantiate"
         )
+
         parser.add_argument("--set_float32_matmul_precision", type=bool, default=False)
         parser.add_argument("--wandblog", type=str, default="")
-        parser.add_argument("--log_freq", type=int, default=500)
-        parser.add_argument("--log_graph", type=bool, default=False)
         parser.add_argument("--project", type=str)
 
     def _add_subcommands(self, parser, **kwargs) -> None:
@@ -125,8 +124,11 @@ class MyCLI(LightningCLI):
                 help=(
                     "If not included in the anndata under 'organism_ontology_term_id', the species of the dataset."
                 ),
-                required=True,
+                required=False,
             )
+            parser.add_argument("--use_raw", type=bool, default=False)
+            parser.add_argument("--skip_validate", type=bool, default=True)
+            parser.add_argument("--is_symbol", type=bool, default=False)
             parser.add_class_arguments(subcommand[1])
             added = parser.add_method_arguments(
                 subcommand[1],
@@ -160,12 +162,16 @@ class MyCLI(LightningCLI):
 
             adata = sc.read_h5ad(self.config_init[subcommand]["adata"])
             adata.obs.drop(columns="is_primary_data", inplace=True, errors="ignore")
-            adata.obs["organism_ontology_term_id"] = self.config_init[subcommand][
-                "species"
-            ]
+            if self.config_init[subcommand]["species"] is not None:
+                adata.obs["organism_ontology_term_id"] = self.config_init[subcommand][
+                    "species"
+                ]
             preprocessor = Preprocessor(
                 do_postp=False,
                 force_preprocess=True,
+                skip_validate=self.config_init[subcommand].get("skip_validate", True),
+                use_raw=self.config_init[subcommand].get("use_raw", False),
+                is_symbol=self.config_init[subcommand].get("is_symbol", False),
             )
             adata = preprocessor(adata)
             conf = dict(self.config_init[subcommand])
@@ -270,11 +276,11 @@ class MyCLI(LightningCLI):
         ]:
             import os
 
-            os.environ["NCCL_TIMEOUT"] = str(7000)  # 2 hours in seconds
-            os.environ["TORCH_DISTRIBUTED_TIMEOUT"] = str(7000)  # 2 hours in seconds
-            os.environ["PL_TRAINER_STRATEGY_TIMEOUT"] = str(7000)
+            os.environ["NCCL_TIMEOUT"] = str(TIMEOUT)  # 2 hours in seconds
+            os.environ["TORCH_DISTRIBUTED_TIMEOUT"] = str(TIMEOUT)  # 2 hours in seconds
+            os.environ["PL_TRAINER_STRATEGY_TIMEOUT"] = str(TIMEOUT)
 
-            print("setting global pytorch distributed timeout to 10000s")
+            print(f"setting global pytorch distributed timeout to {TIMEOUT}s")
 
     def instantiate_trainer(self, **kwargs) -> Trainer:
         """Override to customize trainer instantiation"""
@@ -289,7 +295,7 @@ class MyCLI(LightningCLI):
 
             # Update the config
             print("updating the config")
-            trainer.strategy._timeout = timedelta(seconds=7000)  # 2hours in second
+            trainer.strategy._timeout = timedelta(seconds=TIMEOUT)  # 2hours in second
             trainer.strategy.setup_distributed()
         # Call parent method to create trainer
         return trainer

@@ -104,6 +104,7 @@ def subset_fasta(
     """
     dup = set()
     weird = 0
+    nc = 0
     genes_found = set()
     gene_tosubset = set(gene_tosubset) if gene_tosubset else []
     names = []
@@ -126,6 +127,7 @@ def subset_fasta(
                 description = record.description.split("description:")[1]
             names.append([gene_name, gene_biotype, record.id, gene_symbol, description])
             if subset_protein_coding and gene_biotype != "protein_coding":
+                nc += 1
                 continue
             if len(gene_tosubset) == 0 or gene_name in gene_tosubset:
                 if drop_unknown_seq:
@@ -142,6 +144,7 @@ def subset_fasta(
                 genes_found.add(gene_name)
     print(len(dup), " genes had duplicates")
     print("dropped", weird, "weird sequences")
+    print("dropped", nc, "non-coding sequences")
     return genes_found, pd.DataFrame(
         names, columns=["name", "biotype", "ensembl_id", "gene_symbol", "description"]
     )
