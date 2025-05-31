@@ -57,6 +57,7 @@ model:
   pred_embedding:
     - cell_type_ontology_term_id
   compress_class_dim:
+    default: 16
     cell_type_ontology_term_id: 64
     tissue_ontology_term_id: 32
     disease_ontology_term_id: 16
