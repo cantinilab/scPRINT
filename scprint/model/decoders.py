@@ -285,7 +285,7 @@ class VAEDecoder(nn.Module):
         encoder_layers = [d_model] + layers
         self.encoder = nn.Sequential()
         for i, (in_size, out_size) in enumerate(
-            zip(encoder_layers[:-2], encoder_layers[1:-1])
+            zip(encoder_layers[:-1], encoder_layers[1:])
         ):
             self.encoder.append(nn.Linear(in_size, out_size))
             self.encoder.append(activation())
@@ -293,8 +293,8 @@ class VAEDecoder(nn.Module):
             self.encoder.append(nn.Dropout(dropout))
 
         # VAE latent parameters
-        self.fc_mu = nn.Linear(encoder_layers[-2], encoder_layers[-1])
-        self.fc_var = nn.Linear(encoder_layers[-2], encoder_layers[-1])
+        self.fc_mu = nn.Linear(encoder_layers[-1], encoder_layers[-1])
+        self.fc_var = nn.Linear(encoder_layers[-1], encoder_layers[-1])
 
         # Decoder layers
         decoder_layers = [encoder_layers[-1]] + list(reversed(layers[:-1])) + [d_model]
@@ -377,5 +377,5 @@ class VAEDecoder(nn.Module):
 
         if self.return_latent:
             kl_loss = self.kl_divergence(mu, log_var)
-            return decoded, mu, log_var, kl_loss
+            return decoded, mu, log_var, encoded, kl_loss
         return decoded

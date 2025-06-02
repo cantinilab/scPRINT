@@ -67,7 +67,7 @@ model:
     sex_ontology_term_id: 2
     organism_ontology_term_id: 8
     # cell_culture: 2
-    # total: 148
+    # total: 164
 data:
   gene_position_tolerance: 10_000
   gene_embeddings: ./data/main/gene_embs/ #./data/main/gene_embeddings.parquet # /lustre/fswork/projects/rech/xeg/uat95fg/gene_embeddings.parquet
