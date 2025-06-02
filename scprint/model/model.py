@@ -687,7 +687,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             output.update({"spl_" + k: v for k, v in splicing_output.items()})
             output["spl_mean"] = splicing_mult.unsqueeze(1) * output["spl_mean"]
 
-        if self.compressor is not None and do_class:
+        if self.compressor is not None:
             # Apply VAE to cell embeddings
             output["vae_kl_loss"] = 0
             res = []
@@ -1163,7 +1163,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 batch_idx,
                 do_ecs,
                 do_adv_cls & do_cls,
-                do_vae_kl=do_vae_kl,
+                do_vae_kl=do_vae_kl & do_cls,
             )
             cell_embs.append(output["cell_emb"].clone())
             full_cell_embs = output["cell_embs"].clone()
@@ -1214,7 +1214,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 do_ecs,
                 do_adv_cls & do_cls,
                 do_mse=self.zinb_and_mse,
-                do_vae_kl=do_vae_kl,
+                do_vae_kl=do_vae_kl & do_cls,
             )
             # we only want to do them once
             do_mvc = False
@@ -1257,7 +1257,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     do_ecs,
                     do_adv_cls & do_cls,
                     do_mse=self.zinb_and_mse,
-                    do_vae_kl=do_vae_kl,
+                    do_vae_kl=do_vae_kl & do_cls,
                 )
                 do_mvc = False
                 do_cls = False
@@ -1291,7 +1291,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 ("cell_emb" in output) and do_ecs,
                 do_adv_cls & do_cls,
                 do_mse=self.zinb_and_mse,
-                do_vae_kl=do_vae_kl,
+                do_vae_kl=do_vae_kl & do_cls,
             )
             losses.update({"gen_" + k: v for k, v in l.items()})
             total_loss += tloss
