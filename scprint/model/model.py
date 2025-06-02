@@ -392,9 +392,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # should be a very simple classifier for most things
         # (maybe scale with the number of classes) should be 1 layer...
         for clss, n_cls in classes.items():
-            mdim = d_model if not cell_specific_blocks else d_model_cell
+            mdim = d_model_cell if cell_specific_blocks else self.d_model
             dim = compress_class_dim[clss] if compress_class_dim is not None else mdim
-            print(dim, n_cls)
             self.cls_decoders[clss] = decoders.ClsDecoder(
                 dim if dim >= 8 else mdim,
                 n_cls,
@@ -698,9 +697,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 res.append(out[0].unsqueeze(1))
                 if len(out) == 5:
                     output["vae_kl_loss"] += out[4]
-                    zs.append(out[3])
-                else:
-                    zs.append(out[0])
             else:
                 res.append(cell_embs[:, 0, :].unsqueeze(1))
             for i, clsname in enumerate(self.classes):
@@ -722,7 +718,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 output.update(
                     {
                         "cls_output_" + clsname: self.cls_decoders[clsname](
-                            output["compressed_cell_embs"][i + 1]
+                            output["compressed_cell_embs"][i]
                             if self.compressor is not None
                             else cell_embs[:, i + 1, :]
                         )

@@ -64,16 +64,16 @@ model:
   #  sex_ontology_term_id: 2
   #  organism_ontology_term_id: 8
   compress_class_dim:
-    cell_type_ontology_term_id: 64
-    tissue_ontology_term_id: 32
-    disease_ontology_term_id: 16
-    age_group: 8
+    cell_type_ontology_term_id: 128
+    tissue_ontology_term_id: 64
+    disease_ontology_term_id: 32
+    age_group: 16
     assay_ontology_term_id: 8
-    self_reported_ethnicity_ontology_term_id: 8
+    self_reported_ethnicity_ontology_term_id: 16
     sex_ontology_term_id: 2
-    organism_ontology_term_id: 8
+    organism_ontology_term_id: 16
     cell_culture: 2
-    # total: 148
+    # total: 284
 data:
   gene_position_tolerance: 10_000
   gene_embeddings: ./data/main/gene_embs/
