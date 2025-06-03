@@ -99,15 +99,16 @@ class GNInfer:
         self.layer = layer
         self.loc = loc
         self.how = how
-        assert self.how in [
-            "most var within",
-            "most var across",
-            "random expr",
-            "some",
-            "most expr",
-        ], (
-            "how must be one of 'most var within', 'most var across', 'random expr', 'some', 'most expr'"
-        )
+        assert (
+            self.how
+            in [
+                "most var within",
+                "most var across",
+                "random expr",
+                "some",
+                "most expr",
+            ]
+        ), "how must be one of 'most var within', 'most var across', 'random expr', 'some', 'most expr'"
         self.num_genes = num_genes
         self.preprocess = preprocess
         self.cell_type_col = cell_type_col
@@ -630,7 +631,6 @@ def default_benchmark(
             min_valid_genes_id=maxgenes,
             min_dataset_size=64,
         )
-        adata.obs["organism_ontology_term_id"] = "NCBITaxon:9606"
 
         nadata = preprocessor(adata.copy())
         if model.expr_emb_style == "metacell":

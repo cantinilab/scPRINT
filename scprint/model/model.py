@@ -695,16 +695,16 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             if "default" in self.compressor:
                 out = self.compressor["default"](cell_embs[:, 0, :])
                 res.append(out[0].unsqueeze(1))
-                if len(out) == 5:
-                    output["vae_kl_loss"] += out[4]
+                if len(out) == 4:
+                    output["vae_kl_loss"] += out[3]
             else:
                 res.append(cell_embs[:, 0, :].unsqueeze(1))
             for i, clsname in enumerate(self.classes):
                 out = self.compressor[clsname](cell_embs[:, i + 1, :])
                 res.append(out[0].unsqueeze(1))
-                if len(out) == 5:
-                    output["vae_kl_loss"] += out[4]
-                    zs.append(out[3])
+                if len(out) == 4:
+                    output["vae_kl_loss"] += out[3]
+                    zs.append(out[1])
                 else:
                     zs.append(out[0])
             output["cell_embs"] = torch.cat(res, dim=1)
@@ -2063,7 +2063,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             except:
                 print("couldn't log to tensorboard")
             try:
-                self.logger.log_image(key="umaps", images=[fig])
+                self.logger.log_image(key="umaps", images=[fig], step=self.global_step)
             except:
                 print("couldn't log to wandb")
 
