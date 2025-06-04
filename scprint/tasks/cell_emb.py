@@ -348,6 +348,8 @@ def default_benchmark(
             adata.obs_names[np.random.choice(adata.shape[0], 100_000, replace=False)]
         ]
     max_len = 4000 if adata.X.sum(1).mean() < 150_000 else 8000
+    batch_size = 64 if adata.X.sum(1).mean() < 150_000 else 32
+    log_every = 40_000 if adata.X.sum(1).mean() < 150_000 else 20_000
     if dataset.split("/")[-1] in ["24539942", "24539828"]:  # lung and pancreas
         adata.obs["organism_ontology_term_id"] = "NCBITaxon:9606"
         use_layer = "counts"
@@ -386,7 +388,8 @@ def default_benchmark(
         max_len=max_len,
         doplot=False,
         keep_all_labels_pred=False,
-        save_every=40_000,
+        save_every=log_every,
+        batch_size=batch_size,
         how="random expr",
     )
     adata, metrics = embedder(model, adata)
