@@ -1957,11 +1957,15 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 # [self.embs, output["cls_output_" + "cell_type_ontology_term_id"]]
                 [self.embs, torch.mean(cell_embs[:, ind, :], dim=1)]
             )
-            self.compressed_embs = torch.cat(
-                [
-                    self.compressed_embs,
-                    torch.cat([output["compressed_cell_embs"][i] for i in ind], dim=1),
-                ]
+            self.compressed_embs = (
+                torch.cat(
+                    [
+                        self.compressed_embs,
+                        torch.cat(
+                            [output["compressed_cell_embs"][i] for i in ind], dim=1
+                        ),
+                    ]
+                )
                 if self.compressor is not None
                 else None
             )

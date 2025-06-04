@@ -187,7 +187,7 @@ class Embedder:
             adata.obs["scprint_leiden"] = pred_adata.obs["scprint_leiden"]
         except:
             print("too few cells to compute a clustering")
-        adata.obsm["scprint_emb"] = pred_adata.obsm["scprint_emb"]
+        adata.obsm["scprint_emb"] = pred_adata.obsm["scprint_emb"].astype(np.float32)
         for key, value in pred_adata.uns.items():
             adata.uns[key] = value
 
