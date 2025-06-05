@@ -1111,6 +1111,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         gene_pos = batch["genes"][:, :context_length]
         total_count = batch["depth"]
         clss = batch.get("class", None)
+        # print(clss)
         batch_idx = batch.get("dataset", None)
         metacell_token = batch.get("is_meta", None)
         if metacell_token is None:
@@ -1903,7 +1904,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             return {
                 "embs": torch.mean(cell_embs[:, ind, :], dim=1),
                 "compressed_embs": (
-                    torch.cat([output["compressed_cell_embs"][i] for i in ind], dim=1)
+                    torch.cat(
+                        [output["compressed_cell_embs"][i - 1] for i in ind], dim=1
+                    )
                     if self.compressor is not None
                     else None
                 ),
@@ -1927,7 +1930,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if self.embs is None:
             self.embs = torch.mean(cell_embs[:, ind, :], dim=1)
             self.compressed_embs = (
-                torch.cat([output["compressed_cell_embs"][i] for i in ind], dim=1)
+                torch.cat([output["compressed_cell_embs"][i - 1] for i in ind], dim=1)
                 if self.compressor is not None
                 else None
             )
@@ -1962,7 +1965,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     [
                         self.compressed_embs,
                         torch.cat(
-                            [output["compressed_cell_embs"][i] for i in ind], dim=1
+                            [output["compressed_cell_embs"][i - 1] for i in ind], dim=1
                         ),
                     ]
                 )
