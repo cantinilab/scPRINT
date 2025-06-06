@@ -16,7 +16,7 @@ trainer:
     - class_path: lightning.pytorch.loggers.WandbLogger
       init_args:
         project: ${project}
-        save_dir: /lustre/fswork/projects/rech/xeg/uat95fg/ #/pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/data/log/
+        save_dir: /pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/lustre/fswork/projects/rech/xeg/uat95fg/  #/data/log/
         offline: True
   callbacks:
     #- class_path: lightning.pytorch.callbacks.StochasticWeightAveraging
@@ -64,16 +64,16 @@ model:
   #  sex_ontology_term_id: 2
   #  organism_ontology_term_id: 8
   compress_class_dim:
-    cell_type_ontology_term_id: 64
-    tissue_ontology_term_id: 32
-    disease_ontology_term_id: 16
-    age_group: 8
+    cell_type_ontology_term_id: 128
+    tissue_ontology_term_id: 64
+    disease_ontology_term_id: 32
+    age_group: 16
     assay_ontology_term_id: 8
-    self_reported_ethnicity_ontology_term_id: 8
+    self_reported_ethnicity_ontology_term_id: 16
     sex_ontology_term_id: 2
-    organism_ontology_term_id: 8
+    organism_ontology_term_id: 16
     cell_culture: 2
-    # total: 148
+    # total: 284
 data:
   gene_position_tolerance: 10_000
   gene_embeddings: ./data/main/gene_embs/
@@ -99,7 +99,7 @@ data:
     - age_group
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id
-  clss_to_weight:
+  clss_to_weight: #['clust_cell_type','tissue_ontology_term_id','disease_ontology_term_id','assay_ontology_term_id','self_reported_ethnicity_ontology_term_id','sex_ontology_term_id','organism_ontology_term_id','cell_culture','nnz']
     - clust_cell_type
     - tissue_ontology_term_id
     - disease_ontology_term_id

@@ -266,6 +266,7 @@ class VAEDecoder(nn.Module):
         layers: list[int] = [64, 64],
         activation: Callable = nn.ReLU,
         dropout: float = 0.1,
+        return_latent: bool = False,
     ):
         """
         VAEDecoder for variational autoencoding of cell embeddings.
@@ -275,14 +276,16 @@ class VAEDecoder(nn.Module):
             layers (list[int]): List of hidden layer sizes for encoder and decoder
             activation (Callable): Activation function to use
             dropout (float): Dropout rate
+            return_latent (bool): Whether to return the latent vectors
         """
         super(VAEDecoder, self).__init__()
 
         # Encoder layers
+        self.return_latent = return_latent
         encoder_layers = [d_model] + layers
         self.encoder = nn.Sequential()
         for i, (in_size, out_size) in enumerate(
-            zip(encoder_layers[:-2], encoder_layers[1:-1])
+            zip(encoder_layers[:-1], encoder_layers[1:])
         ):
             self.encoder.append(nn.Linear(in_size, out_size))
             self.encoder.append(activation())
@@ -290,8 +293,8 @@ class VAEDecoder(nn.Module):
             self.encoder.append(nn.Dropout(dropout))
 
         # VAE latent parameters
-        self.fc_mu = nn.Linear(encoder_layers[-2], encoder_layers[-1])
-        self.fc_var = nn.Linear(encoder_layers[-2], encoder_layers[-1])
+        self.fc_mu = nn.Linear(encoder_layers[-1], encoder_layers[-1])
+        self.fc_var = nn.Linear(encoder_layers[-1], encoder_layers[-1])
 
         # Decoder layers
         decoder_layers = [encoder_layers[-1]] + list(reversed(layers[:-1])) + [d_model]
@@ -305,8 +308,8 @@ class VAEDecoder(nn.Module):
             if (
                 i < len(decoder_layers) - 2
             ):  # Don't apply activation/norm to final layer
-                self.decoder.append(nn.LayerNorm(out_size))
                 self.decoder.append(activation())
+                self.decoder.append(nn.LayerNorm(out_size))
                 self.decoder.append(nn.Dropout(dropout))
 
     def reparameterize(self, mu: Tensor, log_var: Tensor) -> Tensor:
@@ -340,22 +343,21 @@ class VAEDecoder(nn.Module):
         return kl_loss.mean()
 
     def forward(
-        self, x: Tensor, return_latent: bool = False
-    ) -> Union[Tensor, Tuple[Tensor, Tensor, Tensor, Tensor]]:
+        self, x: Tensor
+    ) -> Union[Tensor, Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]]:
         """
         Forward pass through VAE.
 
         Args:
             x (Tensor): Input tensor of shape [batch_size, d_model]
-            return_latent (bool): Whether to return the latent vectors
 
         Returns:
-            If return_latent:
-                Tuple[Tensor, Tensor, Tensor, Tensor]: (reconstructed_x, mu, log_var, kl_loss) where:
-                    - reconstructed_x has shape [batch_size, d_model]
-                    - mu has shape [batch_size, latent_dim]
-                    - log_var has shape [batch_size, latent_dim]
-                    - kl_loss is a scalar tensor
+            If self.return_latent is True:
+                Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
+                    - reconstructed_x (Tensor): Reconstructed input, shape [batch_size, d_model]
+                    - mu (Tensor): Mean of the latent Gaussian, shape [batch_size, latent_dim]
+                    - log_var (Tensor): Log variance of the latent Gaussian, shape [batch_size, latent_dim]
+                    - kl_loss (Tensor): KL divergence loss (scalar tensor)
             Else:
                 Tensor: reconstructed_x of shape [batch_size, d_model]
         """
@@ -372,7 +374,7 @@ class VAEDecoder(nn.Module):
         # Decode
         decoded = self.decoder(z)
 
-        if return_latent:
+        if self.return_latent:
             kl_loss = self.kl_divergence(mu, log_var)
             return decoded, mu, log_var, kl_loss
         return decoded

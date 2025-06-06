@@ -15,7 +15,6 @@ class TrainingMode(Callback):
         ecs_threshold: float = 0.4,
         class_embd_diss_scale: float = 0.3,
         ecs_scale: float = 0.2,  # .1
-        vae_kl_scale: float = 0.3,
         do_mvc: bool = False,
         mvc_scale: float = 1.0,
         do_next_tp: bool = False,
@@ -38,7 +37,8 @@ class TrainingMode(Callback):
         weight_decay: float = 0.01,
         zinb_and_mse: bool = False,
         var_context_length: bool = False,
-        vae_kl_warmup_steps: int = 20_000,
+        vae_kl_warmup_steps: int = 80_000,
+        vae_kl_scale: float = 0.001,
         name="",
         set_step: Optional[int] = None,
         mask_zeros: bool = False,
