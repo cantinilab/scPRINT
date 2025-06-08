@@ -207,6 +207,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.hparams["label_decoders"] = label_decoders
         self.hparams["gene_pos_enc"] = gene_pos_enc
         self.hparams["genes"] = genes
+        self.hparams["organisms"] = organisms
+        self.hparams["use_metacell_token"] = use_metacell_token
         self.attn = utils.Attention(
             len(genes),
             additional_tokens=(
@@ -1581,11 +1583,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.mat_labels_hierarchy[k] = v.to(self.device)
 
     def on_validation_epoch_start(self):
-        if self.trainer.is_global_zero:
-            try:
-                self.name = self.trainer._loggers[0].version
-            except:
-                print("not on wandb, could not set name")
+        try:
+            self.name = self.trainer._loggers[0].version
+        except:
+            print("not on wandb, could not set name")
         self.embs = None
         self.compressed_embs = None
         self.counter = 0
@@ -1705,11 +1706,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         pass
 
     def on_test_epoch_end(self):
-        if self.trainer.is_global_zero:
-            try:
-                self.name = self.trainer._loggers[0].version
-            except:
-                print("not on wandb, could not set name")
+        try:
+            self.name = self.trainer._loggers[0].version
+        except:
+            print("not on wandb, could not set name")
         # Run the test only on global rank 0
         name = str(self.name) + "_step" + str(self.global_step) + "_test_metrics"
         import json
@@ -1746,11 +1746,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
     def on_predict_epoch_start(self):
         """@see pl.LightningModule"""
-        if self.trainer.is_global_zero:
-            try:
-                self.name = self.trainer._loggers[0].version
-            except:
-                print("not on wandb, could not set name")
+        try:
+            self.name = self.trainer._loggers[0].version
+        except:
+            print("not on wandb, could not set name")
         self.embs = None
         self.attn.data = None
         self.attn.attn = None
