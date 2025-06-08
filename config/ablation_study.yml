@@ -53,19 +53,20 @@ model:
   depth_atinput: False
   drop_path_rate: 0
   freeze_embeddings: True
+  finetune_gene_emb: False
   normalization: log
   pred_embedding:
     - cell_type_ontology_term_id
-  compress_class_dim:
-    default: 16
-    cell_type_ontology_term_id: 64
-    tissue_ontology_term_id: 32
-    disease_ontology_term_id: 16
-    age_group: 8
-    assay_ontology_term_id: 8
-    self_reported_ethnicity_ontology_term_id: 8
-    sex_ontology_term_id: 2
-    organism_ontology_term_id: 8
+  #compress_class_dim:
+  #  default: 16
+  #  cell_type_ontology_term_id: 64
+  #  tissue_ontology_term_id: 32
+  #  disease_ontology_term_id: 16
+  #  age_group: 8
+  #  assay_ontology_term_id: 8
+  #  self_reported_ethnicity_ontology_term_id: 8
+  #  sex_ontology_term_id: 2
+  #  organism_ontology_term_id: 8
     # cell_culture: 2
     # total: 164
 data:

@@ -551,8 +551,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     self.d_model, max_len=max_len, token_to_pos=token_to_pos
                 )
         mencoders = {}
-        if self.label_decoders != checkpoints["hyper_parameters"]["label_decoders"]:
-            raise ValueError("label decoders have changed")
         try:
             if self.trainer.datamodule.decoders != self.label_decoders:
                 print("label decoders have changed, be careful")
