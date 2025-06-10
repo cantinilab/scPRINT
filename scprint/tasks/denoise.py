@@ -133,6 +133,9 @@ class Denoiser:
         model.eval()
         device = model.device.type
         stored_noisy = None
+        import pdb
+
+        pdb.set_trace()
         with torch.no_grad(), torch.autocast(device_type=device, dtype=self.dtype):
             for batch in tqdm(dataloader):
                 gene_pos, expression, depth = (
