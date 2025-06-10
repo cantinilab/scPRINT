@@ -347,9 +347,9 @@ def default_benchmark(
         adata = adata[
             adata.obs_names[np.random.choice(adata.shape[0], 100_000, replace=False)]
         ]
-    max_len = 4000 if adata.X.sum(1).mean() < 80_000 else 8000
-    batch_size = 64 if adata.X.sum(1).mean() < 80_000 else 32
-    log_every = 30_000
+    max_len = 4000 if adata.X.sum(1).mean() < 50_000 else 8000
+    batch_size = 64 if adata.X.sum(1).mean() < 50_000 else 32
+    log_every = 10_000
     if dataset.split("/")[-1] in ["24539942", "24539828"]:  # lung and pancreas
         adata.obs["organism_ontology_term_id"] = "NCBITaxon:9606"
         use_layer = "counts"

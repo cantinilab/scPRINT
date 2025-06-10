@@ -32,6 +32,9 @@ scprint_training:
   noise: [0.7]
   do_ecs: True
   do_cce: True
+  mask_ratio: ["TF"]
+  do_generate: True
+  test_every: 5
   zinb_and_mse: True
   var_context_length: True
 scprint_early_stopping:
@@ -44,7 +47,6 @@ model:
   checkpointing: True
   cell_specific_blocks: True
   fused_dropout_add_ln: False
-  depth_atinput: False
   fused_mlp: False
   fused_bias_fc: False
   drop_path_rate: 0
@@ -54,24 +56,16 @@ model:
   normalization: log
   pred_embedding:
     - cell_type_ontology_term_id
-  #compress_class_dim:
-  #  cell_type_ontology_term_id: 18 # 20
-  #  tissue_ontology_term_id: 8
-  #  disease_ontology_term_id: 14
-  #  age_group: 8
-  #  assay_ontology_term_id: 5 #6
-  #  self_reported_ethnicity_ontology_term_id: 10
-  #  sex_ontology_term_id: 2
-  #  organism_ontology_term_id: 8
   compress_class_dim:
-    cell_type_ontology_term_id: 128
-    tissue_ontology_term_id: 64
-    disease_ontology_term_id: 32
-    age_group: 16
+    default: 64
+    cell_type_ontology_term_id: 64
+    tissue_ontology_term_id: 32
+    disease_ontology_term_id: 16
+    age_group: 8
     assay_ontology_term_id: 8
-    self_reported_ethnicity_ontology_term_id: 16
+    self_reported_ethnicity_ontology_term_id: 8
     sex_ontology_term_id: 2
-    organism_ontology_term_id: 16
+    organism_ontology_term_id: 8
     cell_culture: 2
     # total: 284
 data:

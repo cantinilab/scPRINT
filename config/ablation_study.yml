@@ -43,14 +43,12 @@ model:
   dropout: 0.1
   num_heads_kv: 4
   transformer: flash
-  mvc_decoder: inner product
   residual_in_fp32: True
   checkpointing: False
   cell_specific_blocks: False
   fused_dropout_add_ln: False
   fused_mlp: False
   fused_bias_fc: False
-  depth_atinput: False
   drop_path_rate: 0
   freeze_embeddings: True
   finetune_gene_emb: False
