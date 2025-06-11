@@ -101,6 +101,7 @@ class Embedder:
         """
         # one of "all" "sample" "none"
         model.predict_mode = "none"
+        prevkeep = model.keep_all_labels_pred
         model.keep_all_labels_pred = self.keep_all_labels_pred
         # Add at least the organism you are working with
         if self.how == "most var":
@@ -131,6 +132,7 @@ class Embedder:
         model.eval()
         model.on_predict_epoch_start()
         device = model.device.type
+        prevplot = model.doplot
         model.doplot = self.doplot
         with (
             torch.no_grad(),
@@ -204,6 +206,8 @@ class Embedder:
             adata.uns[key] = value
 
         pred_adata.obs.index = adata.obs.index
+        model.keep_all_labels_pred = prevkeep
+        model.doplot = prevplot
         adata.obs = pd.concat([adata.obs, pred_adata.obs], axis=1)
         if self.keep_all_labels_pred:
             allclspred = model.pred

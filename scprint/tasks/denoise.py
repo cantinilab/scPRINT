@@ -127,6 +127,7 @@ class Denoiser:
             shuffle=False,
         )
 
+        prevplot = model.doplot
         model.doplot = self.doplot
         model.on_predict_epoch_start()
         model.eval()
@@ -186,6 +187,7 @@ class Denoiser:
             pred_adata.append(sc.read_h5ad(file))
         pred_adata = concat(pred_adata)
         metrics = None
+        model.doplot = prevplot
         if self.downsample_expr is not None:
             pred_adata.layers["scprint_mu"]
             if model.transformer.attn_type == "hyper":

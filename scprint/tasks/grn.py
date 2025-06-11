@@ -97,15 +97,16 @@ class GNInfer:
         self.layer = layer
         self.loc = loc
         self.how = how
-        assert self.how in [
-            "most var within",
-            "most var across",
-            "random expr",
-            "some",
-            "most expr",
-        ], (
-            "how must be one of 'most var within', 'most var across', 'random expr', 'some', 'most expr'"
-        )
+        assert (
+            self.how
+            in [
+                "most var within",
+                "most var across",
+                "random expr",
+                "some",
+                "most expr",
+            ]
+        ), "how must be one of 'most var within', 'most var across', 'random expr', 'some', 'most expr'"
         self.num_genes = num_genes
         self.preprocess = preprocess
         self.cell_type_col = cell_type_col
@@ -234,6 +235,7 @@ class GNInfer:
             shuffle=False,
         )
         model.attn.comp_attn = self.head_agg == "mean_full"
+        prevplot = model.doplot
         model.doplot = self.doplot
         model.on_predict_epoch_start()
         model.eval()
@@ -279,7 +281,8 @@ class GNInfer:
                     get_attention_layer=layer if type(layer) is list else [layer],
                 )
                 torch.cuda.empty_cache()
-
+        model.doplot = prevplot
+        model.pred_log_adata = True
         return subadata
 
     def aggregate(self, attn, genes):

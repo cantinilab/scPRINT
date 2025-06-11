@@ -624,6 +624,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if req_depth is not None:
             depth_encoded = self.depth_encoder(torch.log2(1 + req_depth)).unsqueeze(1)
             enc = torch.cat((depth_encoded, enc), dim=1)
+
         return cell_embs, enc  # self.norm_and_dropout(enc)
         # we already apply prenorm & dropout  # (minibatch, seq_len, embsize)
 
@@ -837,7 +838,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             cell_embs, transformer_output = transformer_output.split(
                 [
                     len(self.classes) + 1,
-                    transformer_output.shape[1] - len(self.classes) + 1,
+                    transformer_output.shape[1] - (len(self.classes) + 1),
                 ],
                 dim=1,
             )
@@ -861,6 +862,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         gene_pos: Tensor,
         depth_mult: Tensor,
         req_depth: Optional[Tensor] = None,
+        metacell_token: Optional[Tensor] = None,
         **decoder_kwargs,
     ):
         """
@@ -880,6 +882,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         _, encoding = self._encoder(
             cell_embs=cell_embs,
             gene_pos=gene_pos,
+            req_depth=req_depth if self.depth_atinput else None,
+            metacell_token=metacell_token,
         )
         if self.cell_transformer:
             transformer_output = self.transformer(encoding, x_kv=cell_embs)
@@ -889,7 +893,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             cell_embs, transformer_output = transformer_output.split(
                 [
                     len(self.classes) + 1,
-                    transformer_output.shape[1] - len(self.classes) + 1,
+                    transformer_output.shape[1] - (len(self.classes) + 1),
                 ],
                 dim=1,
             )
@@ -1247,6 +1251,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 req_depth=total_count,
                 do_mvc=do_mvc,
                 do_class=do_cls,
+                metacell_token=metacell_token,
             )
             if "cell_emb" in output:
                 cell_embs.append(output["cell_emb"].clone())
