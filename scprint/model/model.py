@@ -1599,9 +1599,21 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 metacell_token=metacell_token,
             )
         self.log("val_loss", val_loss, sync_dist=True)
-        expr_loss = mean([v.cpu().item() for k, v in losses.items() if "expr" in k])
+        expr_loss = mean(
+            [
+                v.cpu().item() if type(v) == Tensor else v
+                for k, v in losses.items()
+                if "expr" in k
+            ]
+        )
         self.log("val_loss_expr", expr_loss, sync_dist=True)
-        cls_loss = mean([v.cpu().item() for k, v in losses.items() if "cls" in k])
+        cls_loss = mean(
+            [
+                v.cpu().item() if type(v) == Tensor else v
+                for k, v in losses.items()
+                if "cls" in k
+            ]
+        )
         self.log("val_loss_cls", cls_loss, sync_dist=True)
         # self.log_dict(losses, sync_dist=True)
         return val_loss
