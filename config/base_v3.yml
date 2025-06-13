@@ -97,8 +97,8 @@ data:
     - self_reported_ethnicity_ontology_term_id
     - sex_ontology_term_id
     - organism_ontology_term_id
-    - cell_culture
-    - nnz
+    #- cell_culture
+    #- nnz
   clss_to_predict:
     - cell_type_ontology_term_id
     - tissue_ontology_term_id
