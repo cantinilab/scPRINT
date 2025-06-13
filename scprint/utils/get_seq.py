@@ -32,6 +32,7 @@ def list_files(ftp, match=""):
 def load_fasta_species(
     species: str = "homo_sapiens",
     output_path: str = "/tmp/data/fasta/",
+    load: list[str] = ["pep", "ncrna", "cds"],
     cache: bool = True,
 ) -> None:
     """
@@ -44,6 +45,7 @@ def load_fasta_species(
     """
     ftp = ftplib.FTP("ftp.ensembl.org")
     ftp.login()
+    local_file_path = []
     try:
         ftp.cwd("/pub/release-110/fasta/" + species + "/pep/")
         types = "animals"
@@ -61,23 +63,41 @@ def load_fasta_species(
                 raise ValueError(
                     f"Species {species} not found in Ensembl or Ensembl Genomes."
                 )
-    file = list_files(ftp, ".all.fa.gz")[0]
-    local_file_path = output_path + file
-    if not os.path.exists(local_file_path) or not cache:
-        os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
-        with open(local_file_path, "wb") as local_file:
-            ftp.retrbinary("RETR " + file, local_file.write)
-    if types == "animals":
-        ftp.cwd("/pub/release-110/fasta/" + species + "/ncrna/")
-    elif types == "plants":
-        ftp.cwd("/pub/plants/release-60/fasta/" + species + "/ncrna/")
-    file = list_files(ftp, ".ncrna.fa.gz")[0]
-    local_file_path2 = output_path + file
-    if not os.path.exists(local_file_path2) or not cache:
-        with open(local_file_path2, "wb") as local_file:
-            ftp.retrbinary("RETR " + file, local_file.write)
+
+    os.makedirs(output_path, exist_ok=True)
+    if "pep" in load:
+        file = list_files(ftp, ".all.fa.gz")[0]
+        local_file_path.append(output_path + file)
+        if not os.path.exists(local_file_path[-1]) or not cache:
+            with open(local_file_path[-1], "wb") as local_file:
+                ftp.retrbinary("RETR " + file, local_file.write)
+
+    # ncRNA
+    if "ncrna" in load:
+        if types == "animals":
+            ftp.cwd("/pub/release-110/fasta/" + species + "/ncrna/")
+        elif types == "plants":
+            ftp.cwd("/pub/plants/release-60/fasta/" + species + "/ncrna/")
+        file = list_files(ftp, ".ncrna.fa.gz")[0]
+        local_file_path.append(output_path + file)
+        if not os.path.exists(local_file_path[-1]) or not cache:
+            with open(local_file_path[-1], "wb") as local_file:
+                ftp.retrbinary("RETR " + file, local_file.write)
+
+    # CDNA:
+    if "cdna" in load:
+        if types == "animals":
+            ftp.cwd("/pub/release-110/fasta/" + species + "/cdna/")
+        elif types == "plants":
+            ftp.cwd("/pub/plants/release-60/fasta/" + species + "/cdna/")
+        file = list_files(ftp, ".cdna.all.fa.gz")[0]
+        local_file_path.append(output_path + file)
+        if not os.path.exists(local_file_path[-1]) or not cache:
+            with open(local_file_path[-1], "wb") as local_file:
+                ftp.retrbinary("RETR " + file, local_file.write)
+
     ftp.quit()
-    return local_file_path, local_file_path2
+    return local_file_path
 
 
 def subset_fasta(

@@ -193,3 +193,4 @@ data/main/*.parquet
 !data/main/avg_embedding.parquet
 !data/main/biomart_pos.parquet
 data/main/gene_embs/
+data/main/gene_locs/
