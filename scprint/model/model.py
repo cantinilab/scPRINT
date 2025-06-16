@@ -12,6 +12,7 @@ from typing import Dict, Optional
 import lightning as L
 import pandas as pd
 import torch
+import numpy as np
 import torch.distributed
 from huggingface_hub import PyTorchModelHubMixin
 from lightning.pytorch.callbacks.lr_finder import LearningRateFinder
@@ -20,8 +21,6 @@ from performer_pytorch import Performer
 from scipy.sparse import load_npz
 from simpler_flash import FlashTransformer
 from torch import Tensor, nn, optim
-
-from numpy import mean
 
 # from .linear_transformer import FastTransformerEncoderWrapper as FastTransformer
 from . import decoders, encoders, fsq, loss, utils
@@ -45,6 +44,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         nhead: int = 4,
         nlayers: int = 8,
         precpt_gene_emb: Optional[str] = None,
+        memmap_gene_emb: bool = False,
         finetune_gene_emb: bool = False,
         freeze_embeddings: bool = True,
         gene_pos_enc: Optional[list] = None,
@@ -132,7 +132,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.ecs_scale = 0.2
         self.do_mvc = False
         self.mvc_scale = 1.0
-        self.vae_kl_scale = 0.3
         self.class_embd_diss_scale = 0.3
         self.do_adv_cls = do_adv_cls
         self.adv_class_scale = 1.0
@@ -164,6 +163,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.predict_mode = "none"
         self.keep_all_labels_pred = False
         self.mask_zeros = False
+        self.vae_kl_scale = 0.05
+        self.vae_kl_warmup_steps = 40_000  # Default value, can be adjusted
 
         self.depth_atinput = depth_atinput
         self.tf_masker = WeightedMasker(genes, inv_weight=0.05)
@@ -305,11 +306,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             "weight_decay",
             "d_hid",
             "edge_dim",
-            "organisms",
+            "prenorm",
             "domain_spec_batchnorm",
+            "use_flash_attn",
             "cell_emb_style",
             "num_batch_labels",
-            "num_heads_kv",
         ]:
             if i in attention_kwargs:
                 attention_kwargs.pop(i)
@@ -422,16 +423,24 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         for i, dec in self.cls_decoders.items():
             torch.nn.init.constant_(dec.out_layer.bias, -0.13)
 
-        self.bottleneck_mlps = None
-        self.vae_decoder = None
-        if class_compression == "fsq":
-            self.bottleneck_mlps = torch.nn.ModuleDict()
+        if compress_class_dim is not None:
+            self.compressor = torch.nn.ModuleDict()
+            dim = d_model_cell if cell_specific_blocks else self.d_model
             for k, v in compress_class_dim.items():
-                self.bottleneck_mlps[k] = fsq.FSQ(levels=[2] * v, dim=self.d_model)
-        elif class_compression == "vae":
-            self.vae_decoder = decoders.VAEDecoder(
-                d_model, layers=[d_model_cell, d_model_cell // 2], dropout=dropout
-            )
+                if v >= 8:
+                    self.compressor[k] = decoders.VAEDecoder(
+                        dim,
+                        layers=[
+                            128,
+                            compress_class_dim[k],
+                        ],
+                        dropout=dropout,
+                        return_latent=True,
+                    )
+                else:
+                    self.compressor[k] = fsq.FSQ(levels=[2] * v, dim=dim)
+        else:
+            self.compressor = None
 
     def on_load_checkpoint(self, checkpoints):
         # if not the same number of labels (due to diff datasets)
@@ -629,7 +638,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if req_depth is not None:
             depth_encoded = self.depth_encoder(torch.log2(1 + req_depth)).unsqueeze(1)
             enc = torch.cat((depth_encoded, enc), dim=1)
-
         return cell_embs, enc  # self.norm_and_dropout(enc)
         # we already apply prenorm & dropout  # (minibatch, seq_len, embsize)
 
@@ -671,28 +679,32 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             output.update({"spl_" + k: v for k, v in splicing_output.items()})
             output["spl_mean"] = splicing_mult.unsqueeze(1) * output["spl_mean"]
 
-        output["cell_emb"] = torch.mean(cell_embs, dim=1)
-        output["cell_embs"] = cell_embs
-
-        if self.vae_decoder is not None:
+        if self.compressor is not None and do_class:
             # Apply VAE to cell embeddings
-            decoded, _, _, kl_loss = self.vae_decoder(
-                output["cell_emb"], return_latent=True
-            )
-            output["cell_emb"] = decoded
-            output["vae_kl_loss"] = kl_loss
-
-        elif self.bottleneck_mlps is not None:
+            output["vae_kl_loss"] = 0
+            res = []
+            if "default" in self.compressor:
+                out = self.compressor["default"](cell_embs[:, 0, :])
+                res.append(out[0].unsqueeze(1))
+                if len(out) == 4:
+                    output["vae_kl_loss"] += out[3]
+            else:
+                res.append(cell_embs[:, 0, :].unsqueeze(1))
             for i, clsname in enumerate(self.classes):
-                output["cell_embs"][:, i + 1, :] = self.bottleneck_mlps[clsname](
-                    output["cell_embs"][:, i + 1, :]
-                )[0]
+                out = self.compressor[clsname](cell_embs[:, i + 1, :])
+                res.append(out[0].unsqueeze(1))
+                if len(out) == 4:
+                    output["vae_kl_loss"] += out[3]
+            output["cell_embs"] = torch.cat(res, dim=1)
+        else:
+            output["cell_embs"] = cell_embs
+        output["cell_emb"] = torch.mean(output["cell_embs"], dim=1)
         if len(self.classes) > 0 and do_class:
             for i, clsname in enumerate(self.classes):
                 output.update(
                     {
                         "cls_output_" + clsname: self.cls_decoders[clsname](
-                            output["cell_embs"][:, i + 1, :]
+                            cell_embs[:, i + 1, :]
                         )
                     }
                 )
@@ -1048,6 +1060,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         do_generate: bool = False,
         run_full_forward: bool = True,
         mask_ratio: list[float] = [0.15],
+        do_vae_kl: bool = True,
     ):
         """
         _full_training implement the trainng steps: forward (multiple sometimes), loss
@@ -1069,6 +1082,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             do_generate (bool, optional): A flag to indicate whether to perform data generation. Defaults to False.
             run_full_forward (bool, optional): A flag to indicate whether to perform a full forward pass. Defaults to True.
             mask_ratio (list, optional): A list of mask ratios to be used in the training. Defaults to [0.15].
+            do_vae_kl (bool, optional): A flag to indicate whether to perform VAE KL loss. Defaults to True.
 
         Returns:
             loss, losses: the total loss as float and the individual losses as dict
@@ -1142,6 +1156,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 batch_idx,
                 do_ecs,
                 do_adv_cls & do_cls,
+                do_vae_kl=do_vae_kl,
             )
             cell_embs.append(output["cell_emb"].clone())
             full_cell_embs = output["cell_embs"].clone()
@@ -1192,6 +1207,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 do_ecs,
                 do_adv_cls & do_cls,
                 do_mse=self.zinb_and_mse,
+                do_vae_kl=do_vae_kl,
             )
             # we only want to do them once
             do_mvc = False
@@ -1234,6 +1250,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     do_ecs,
                     do_adv_cls & do_cls,
                     do_mse=self.zinb_and_mse,
+                    do_vae_kl=do_vae_kl,
                 )
                 do_mvc = False
                 do_cls = False
@@ -1256,7 +1273,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 req_depth=total_count,
                 do_mvc=do_mvc,
                 do_class=do_cls,
-                metacell_token=metacell_token,
             )
             if "cell_emb" in output:
                 cell_embs.append(output["cell_emb"].clone())
@@ -1268,6 +1284,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 ("cell_emb" in output) and do_ecs,
                 do_adv_cls & do_cls,
                 do_mse=self.zinb_and_mse,
+                do_vae_kl=do_vae_kl,
             )
             losses.update({"gen_" + k: v for k, v in l.items()})
             total_loss += tloss
@@ -1304,6 +1321,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         do_ecs=False,
         do_adv_cls=False,
         do_mse=0,
+        do_vae_kl=False,
         spl_expression=None,
     ):
         """
@@ -1321,6 +1339,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             do_mse (float, optional): A scaling factor to indicate whether and how much to weight mean
             squared error loss in addition to zinb loss.
                 Defaults to 0.
+            do_vae_kl (bool, optional): A flag to indicate whether to perform VAE KL loss.
+                Defaults to False.
 
         Raises:
             ValueError: Raised when an invalid operation or input is encountered.
@@ -1386,6 +1406,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
         # TASK 2. predict classes
         if len(self.classes) > 0 and "cell_embs" in output:
+            ## Calculate pairwise cosine similarity for the embeddings
+            # Calculate pairwise cosine similarity more efficiently
             if do_ecs:
                 loss_emb_indep = loss.within_sample(output["cell_embs"])
                 losses.update({"emb_independence": loss_emb_indep})
@@ -1503,12 +1525,20 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             losses.update({"ecs": loss_ecs})
 
         # Add VAE KL loss if present
-        if "vae_kl_loss" in output:
+        if do_vae_kl and "vae_kl_loss" in output:
             vae_kl_loss = output["vae_kl_loss"]
-            total_loss += (
-                self.vae_kl_scale * vae_kl_loss
-            )  # Scale factor of 0.1 for KL loss
-            losses.update({"vae_kl": vae_kl_loss})
+            # Calculate current VAE KL scale based on global step
+            if self.trainer.global_step < self.vae_kl_warmup_steps:
+                current_vae_kl_scale = (
+                    self.vae_kl_scale
+                    * float(self.trainer.global_step + 1)
+                    / self.vae_kl_warmup_steps
+                )
+            else:
+                current_vae_kl_scale = self.vae_kl_scale
+
+            total_loss += current_vae_kl_scale * vae_kl_loss
+            losses.update({"vae_kl": vae_kl_loss, "vae_kl_scale": current_vae_kl_scale})
 
         return losses, total_loss
 
@@ -1545,6 +1575,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.mat_labels_hierarchy[k] = v.to(self.device)
 
     def on_validation_epoch_start(self):
+        if self.trainer.is_global_zero:
+            try:
+                self.name = self.trainer._loggers[0].version
+            except:
+                print("not on wandb, could not set name")
         self.embs = None
         self.counter = 0
 
@@ -1570,6 +1605,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             do_ecs=False,
             do_mvc=self.do_mvc,
             do_adv_cls=self.do_adv_cls,
+            do_vae_kl=False,
             do_cls=self.do_cls,
             do_generate=self.do_generate,
             run_full_forward=self.run_full_forward,
@@ -1671,17 +1707,32 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         pass
 
     def on_test_epoch_end(self):
+        if self.trainer.is_global_zero:
+            try:
+                self.name = self.trainer._loggers[0].version
+            except:
+                print("not on wandb, could not set name")
         # Run the test only on global rank 0
-        name = self.name + "_step" + str(self.global_step)
+        name = str(self.name) + "_step" + str(self.global_step) + "_test_metrics"
+        import json
+
         try:
-            metrics = utils.test(
+            metrics, tot = utils.test(
                 self,
-                name,
                 filedir=str(FILEDIR),
                 do_class=self.do_cls,
             )
             print(metrics)
             print("done test")
+            f = open("metrics_" + name + ".json", "a")
+            f.write(
+                json.dumps(
+                    tot,
+                    indent=4,
+                    default=lambda x: int(x) if isinstance(x, np.int64) else x,
+                )
+            )
+            f.close()
             if self.set_step is not None:
                 print("this part only works in some cases and for wandb")
                 self.trainer._loggers[0].log_metrics(metrics, self.set_step)
@@ -1697,6 +1748,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
     def on_predict_epoch_start(self):
         """@see pl.LightningModule"""
+        if self.trainer.is_global_zero:
+            try:
+                self.name = self.trainer._loggers[0].version
+            except:
+                print("not on wandb, could not set name")
         self.embs = None
         self.attn.data = None
         self.attn.attn = None
@@ -1793,7 +1849,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             )
             if len(get_attention_layer) > 0:
                 # only first 2 (QK)
-                self.attn.add([i[:, :, :2, :] for i in output[1]], gene_pos)
+                self.attn.add(
+                    [i[:, :, :2, :] for i in output[1]],
+                    gene_pos,
+                    expression if self.mask_zeros else None,
+                )
                 output = output[0]
             cell_embs = output["cell_embs"]
         elif predict_mode == "denoise":
@@ -1810,7 +1870,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             )
             if len(get_attention_layer) > 0:
                 # only first 2 (QK)
-                self.attn.add([i[:, :, :2, :] for i in output[1]], gene_pos)
+                self.attn.add(
+                    [i[:, :, :2, :] for i in output[1]],
+                    gene_pos,
+                    expression if self.mask_zeros else None,
+                )
                 output = output[0]
             cell_embs = output["cell_embs"]
         elif predict_mode == "generate":
@@ -1969,13 +2033,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             doplot=self.doplot,
         )
         adata.write(
-            mdir
+            str(mdir)
             + "/step_"
             + str(self.global_step)
             + "_"
-            + self.name
+            + str(self.name)
             + "_"
-            + name
+            + str(name)
             + "_"
             + str(self.global_rank)
             + ".h5ad"
