@@ -266,6 +266,7 @@ class VAEDecoder(nn.Module):
         layers: list[int] = [64, 64],
         activation: Callable = nn.ReLU,
         dropout: float = 0.1,
+        return_latent: bool = False,
     ):
         """
         VAEDecoder for variational autoencoding of cell embeddings.
@@ -275,10 +276,12 @@ class VAEDecoder(nn.Module):
             layers (list[int]): List of hidden layer sizes for encoder and decoder
             activation (Callable): Activation function to use
             dropout (float): Dropout rate
+            return_latent (bool): Whether to return the latent vectors
         """
         super(VAEDecoder, self).__init__()
 
         # Encoder layers
+        self.return_latent = return_latent
         encoder_layers = [d_model] + layers
         self.encoder = nn.Sequential()
         for i, (in_size, out_size) in enumerate(
@@ -340,7 +343,7 @@ class VAEDecoder(nn.Module):
         return kl_loss.mean()
 
     def forward(
-        self, x: Tensor, return_latent: bool = False
+        self, x: Tensor
     ) -> Union[Tensor, Tuple[Tensor, Tensor, Tensor, Tensor]]:
         """
         Forward pass through VAE.
@@ -372,7 +375,7 @@ class VAEDecoder(nn.Module):
         # Decode
         decoded = self.decoder(z)
 
-        if return_latent:
+        if self.return_latent:
             kl_loss = self.kl_divergence(mu, log_var)
             return decoded, mu, log_var, kl_loss
         return decoded
