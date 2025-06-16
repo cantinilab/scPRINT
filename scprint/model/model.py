@@ -71,11 +71,14 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         do_adv_cls: bool = False,
         dropout: float = 0.1,
         use_metacell_token: bool = False,
-        cell_transformer_layers: int = 6,
         lr: float = 0.0001,
         nb_features: Optional[int] = None,
         feature_redraw_interval: Optional[int] = None,
         num_heads_kv: int = 4,
+        d_model_cell: int = 128,
+        nhead_cell: int = 4,
+        nlayers_cell: int = 6,
+        num_heads_kv_cell: int = 4,
         **attention_kwargs,
     ):
         """
@@ -285,7 +288,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # base cell embedding will store other cell specific information
         self.class_encoder = encoders.CategoryValueEncoder(
             len(self.classes) + 1,
-            d_model if not cell_specific_blocks else 128,
+            d_model if not cell_specific_blocks else d_model_cell,
         )
         # self.time_encoder = encoders.ContinuousValueEncoder(d_model, dropout)
         if self.depth_atinput:
@@ -339,7 +342,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 dropout=dropout,
                 nlayers=nlayers,
                 cross_attn=cell_specific_blocks,
-                cross_dim=128,
+                cross_dim=d_model_cell,
                 attn_type=transformer,
                 num_heads_kv=num_heads_kv,
                 **attention_kwargs,
@@ -347,10 +350,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if cell_specific_blocks:
             attention_kwargs.pop("num_heads_kv", None)
             self.cell_transformer = FlashTransformer(
-                d_model=128,
-                nhead=4,
-                num_heads_kv=4,
-                nlayers=cell_transformer_layers,
+                d_model=d_model_cell,
+                nhead=nhead_cell,
+                num_heads_kv=num_heads_kv_cell,
+                nlayers=nlayers_cell,
                 dropout=dropout,
                 cross_attn=True,
                 cross_dim=d_model,
@@ -383,14 +386,14 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # (maybe scale with the number of classes) should be 1 layer...
         for clss, n_cls in classes.items():
             self.cls_decoders[clss] = decoders.ClsDecoder(
-                d_model if not cell_specific_blocks else 128,
+                d_model if not cell_specific_blocks else d_model_cell,
                 n_cls,
                 layers=layers_cls,
                 dropout=dropout,
             )
             if clss == "assay_ontology_term_id" and self.do_adv_cls:
                 self.adv_cls_decoder = decoders.ClsDecoder(
-                    d_model if not cell_specific_blocks else 128,
+                    d_model if not cell_specific_blocks else d_model_cell,
                     n_cls,
                     layers=layers_cls,
                     dropout=dropout,
@@ -427,7 +430,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 self.bottleneck_mlps[k] = fsq.FSQ(levels=[2] * v, dim=self.d_model)
         elif class_compression == "vae":
             self.vae_decoder = decoders.VAEDecoder(
-                d_model, layers=[128, 64], dropout=dropout
+                d_model, layers=[d_model_cell, d_model_cell // 2], dropout=dropout
             )
 
     def on_load_checkpoint(self, checkpoints):
@@ -1383,11 +1386,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
         # TASK 2. predict classes
         if len(self.classes) > 0 and "cell_embs" in output:
-            ## Calculate pairwise cosine similarity for the embeddings
-            # Calculate pairwise cosine similarity more efficiently
-            loss_emb_indep = loss.within_sample(output["cell_embs"])
-            losses.update({"emb_independence": loss_emb_indep})
-            total_loss += self.class_embd_diss_scale * loss_emb_indep
+            if do_ecs:
+                loss_emb_indep = loss.within_sample(output["cell_embs"])
+                losses.update({"emb_independence": loss_emb_indep})
+                total_loss += self.class_embd_diss_scale * loss_emb_indep
             ## compute class loss
             loss_cls = 0
             loss_adv_cls = 0
@@ -1395,13 +1397,18 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 if "cls_output_" + clsname not in output:
                     continue
                 # setting the classes from index to one hot
-                loss_cls += loss.hierarchical_classification(
-                    pred=output["cls_output_" + clsname],
-                    cl=clss[:, j],
-                    labels_hierarchy=self.mat_labels_hierarchy[clsname]
-                    if clsname in self.mat_labels_hierarchy.keys()
-                    else None,
-                )
+                try:
+                    loss_cls += loss.hierarchical_classification(
+                        pred=output["cls_output_" + clsname],
+                        cl=clss[:, j],
+                        labels_hierarchy=self.mat_labels_hierarchy[clsname]
+                        if clsname in self.mat_labels_hierarchy.keys()
+                        else None,
+                    )
+                except:
+                    print(clsname)
+                    print(self.mat_labels_hierarchy)
+                    raise
 
                 # Adversarial part for 'assay_ontology_term_id'
                 if do_adv_cls and clsname == "assay_ontology_term_id":
@@ -1558,9 +1565,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             do_denoise=self.do_denoise,
             noise=self.noise,
             do_next_tp=self.do_next_tp,
-            do_cce=self.do_cce,
+            do_cce=False,
             cce_temp=self.cce_temp,
-            do_ecs=self.do_ecs,
+            do_ecs=False,
             do_mvc=self.do_mvc,
             do_adv_cls=self.do_adv_cls,
             do_cls=self.do_cls,
@@ -1576,7 +1583,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
         # TODO: make this faster by only calling val loss
         if self.embs is not None:
-            if self.embs.shape[0] < 100_000:
+            if self.embs.shape[0] < 100_000 / self.trainer.world_size:
                 self.info = torch.cat([self.info, batch["class"]])
                 self._predict(
                     gene_pos,
@@ -1620,6 +1627,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
     def on_validation_epoch_end(self):
         """@see pl.LightningModule"""
+        self.pos = None
+        self.expr_pred = None
         self.embs = self.all_gather(self.embs).view(-1, self.embs.shape[-1])
         self.info = self.all_gather(self.info).view(-1, self.info.shape[-1])
         self.pred = (
@@ -1627,8 +1636,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             if self.pred is not None
             else None
         )
-        self.pos = None
-        self.expr_pred = None
         # self.pos = self.all_gather(self.pos).view(-1, self.pos.shape[-1])
         # self.expr_pred[0] = self.all_gather(self.expr_pred[0]).view(
         #     -1, self.expr_pred[0].shape[-1]
