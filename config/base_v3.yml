@@ -5,7 +5,7 @@ trainer:
   precision: 16-mixed
   strategy: ddp_find_unused_parameters_true
   use_distributed_sampler: False
-  gradient_clip_val: 10
+  gradient_clip_val: 3
   log_every_n_steps: 100
   limit_train_batches: 40000
   gradient_clip_algorithm: norm
@@ -16,8 +16,8 @@ trainer:
     - class_path: lightning.pytorch.loggers.WandbLogger
       init_args:
         project: ${project}
-        save_dir: /pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/data/log/
-        offline: False
+        save_dir: /pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/lustre/fswork/projects/rech/xeg/uat95fg/  #/data/log/
+        offline: True
   callbacks:
     #- class_path: lightning.pytorch.callbacks.StochasticWeightAveraging
     #  init_args:
@@ -32,7 +32,6 @@ scprint_training:
   noise: [0.7]
   do_ecs: True
   do_cce: True
-  mask_ratio: ["TF"]
   zinb_and_mse: True
   var_context_length: True
 scprint_early_stopping:
@@ -49,6 +48,7 @@ model:
   fused_mlp: False
   fused_bias_fc: False
   drop_path_rate: 0
+  class_compression: vae
   freeze_embeddings: True
   finetune_gene_emb: True
   normalization: log
@@ -63,7 +63,17 @@ model:
   #  self_reported_ethnicity_ontology_term_id: 10
   #  sex_ontology_term_id: 2
   #  organism_ontology_term_id: 8
-  # class_compression: vae
+  compress_class_dim:
+    cell_type_ontology_term_id: 64
+    tissue_ontology_term_id: 32
+    disease_ontology_term_id: 16
+    age_group: 8
+    assay_ontology_term_id: 8
+    self_reported_ethnicity_ontology_term_id: 8
+    sex_ontology_term_id: 2
+    organism_ontology_term_id: 8
+    cell_culture: 2
+    # total: 148
 data:
   gene_position_tolerance: 10_000
   gene_embeddings: ./data/main/gene_embs/
@@ -71,6 +81,7 @@ data:
   how: random expr
   max_len: 2600
   pin_memory: True
+  persistent_workers: True
   prefetch_factor: 3
   metacell_mode: 0.2
   weight_scaler: 200
@@ -88,7 +99,7 @@ data:
     - age_group
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id
-  clss_to_weight:
+  clss_to_weight: #['clust_cell_type','tissue_ontology_term_id','disease_ontology_term_id','assay_ontology_term_id','self_reported_ethnicity_ontology_term_id', 'sex_ontology_term_id', 'organism_ontology_term_id', 'cell_culture', 'nnz']
     - clust_cell_type
     - tissue_ontology_term_id
     - disease_ontology_term_id

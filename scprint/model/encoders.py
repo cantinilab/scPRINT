@@ -34,9 +34,9 @@ class GeneEncoder(nn.Module):
 
         if weights_file is not None:
             self.memmap = True
-            if freeze:
+            if not freeze:
                 raise ValueError(
-                    "freeze must be False when using memory-mapped embeddings"
+                    "freeze must be True when using memory-mapped embeddings"
                 )
             # Load the parquet file and create memory-mapped array
             import pandas as pd
@@ -44,7 +44,8 @@ class GeneEncoder(nn.Module):
 
             # Create memory-mapped file path
             self.mmap_file = f"{weights_file}.mmap"
-
+            self.loc = None
+            self.enc = None
             # Only create the memory-mapped file if it doesn't exist
             if not os.path.exists(self.mmap_file):
                 print(f"Creating memory-mapped file for embeddings at {self.mmap_file}")
@@ -95,9 +96,16 @@ class GeneEncoder(nn.Module):
             Tensor: Embedded vectors [batch_size, seq_len, embedding_dim]
         """
         if self.memmap:
-            # Use .copy() to ensure we get a clean copy from the memory-mapped array
-            return torch.from_numpy(self.embeddings[x].copy()).to(x.device)
-
+            if self.loc is None or not torch.all(x.sum(1) == self.loc):
+                self.enc = (
+                    torch.from_numpy(
+                        self.embeddings[x.reshape(-1).cpu().numpy()].copy()
+                    )
+                    .reshape(x.shape + (-1,))
+                    .to(x.device)
+                )
+                self.loc = x.sum(1)
+            return self.enc.clone()
         else:
             return self.embeddings(x)
 

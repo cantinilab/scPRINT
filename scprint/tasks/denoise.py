@@ -16,6 +16,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from scprint.model import utils
+from scdataloader import Preprocessor
 
 from . import knn_smooth
 
@@ -185,6 +186,7 @@ class Denoiser:
                 + ".h5ad"
             )
             pred_adata.append(sc.read_h5ad(file))
+            os.remove(file)
         pred_adata = concat(pred_adata)
         metrics = None
         model.doplot = prevplot
@@ -241,9 +243,9 @@ class Denoiser:
 
 def default_benchmark(
     model: Any,
-    default_dataset: str = FILE_DIR
+    folder_dir: str = FILE_DIR + "/../../data/",
+    dataset: str = FILE_DIR
     + "/../../data/gNNpgpo6gATjuxTE7CCp.h5ad",  # r4iCehg3Tw5IbCLiCIbl
-    max_len: int = 5000,
 ):
     """
     default_benchmark function used to run the default denoising benchmark of scPRINT
@@ -256,7 +258,29 @@ def default_benchmark(
     Returns:
         dict: A dictionary containing the benchmark metrics.
     """
-    adata = sc.read_h5ad(default_dataset)
+    if dataset.startswith("https://"):
+        adata = sc.read(
+            folder_dir + dataset.split("/")[-1],
+            backup_url=dataset,
+        )
+    else:
+        adata = sc.read_h5ad(dataset)
+    if dataset.split("/")[-1] == "gNNpgpo6gATjuxTE7CCp.h5ad":
+        use_layer = "counts"
+        is_symbol = True
+    else:
+        use_layer = None
+        is_symbol = False
+    max_len = 4000 if adata.X.sum(1).mean() < 150_000 else 8000
+    preprocessor = Preprocessor(
+        use_layer=use_layer,
+        is_symbol=is_symbol,
+        force_preprocess=True,
+        skip_validate=True,
+        do_postp=model.expr_emb_style == "metacell",
+        drop_non_primary=False,
+    )
+    adata = preprocessor(adata.copy())
     if model.expr_emb_style == "metacell":
         if "X_pca" not in adata.obsm:
             sc.pp.pca(adata, n_comps=50)
@@ -273,84 +297,11 @@ def default_benchmark(
     return denoise(model, adata)[0]
 
 
-def open_benchmark(model):
-    adata = sc.read(
-        FILE_DIR + "/../../data/pancreas_atlas.h5ad",
-        backup_url="https://figshare.com/ndownloader/files/24539828",
-    )
-    from scdataloader import Preprocessor
-
-    adata = adata[adata.obs.tech == "inDrop1"]
-
-    train, test = split_molecules(adata.layers["counts"].round().astype(int), 0.9)
-    is_missing = np.array(train.sum(axis=0) == 0)
-    true = adata.copy()
-    true.X = test
-    adata.layers["counts"] = train
-    test = test[:, ~is_missing.flatten()]
-    adata = adata[:, ~is_missing.flatten()]
-
-    adata.obs["organism_ontology_term_id"] = "NCBITaxon:9606"
-    preprocessor = Preprocessor(
-        subset_hvg=3000,
-        use_layer="counts",
-        is_symbol=True,
-        force_preprocess=True,
-        skip_validate=True,
-        do_postp=False,
-    )
-    nadata = preprocessor(adata.copy())
-
-    denoise = Denoiser(
-        batch_size=32,
-        max_len=15_800,
-        max_cells=10_000,
-        doplot=False,
-        predict_depth_mult=1.2,
-        downsample_expr=None,
-    )
-    expr = denoise(model, nadata)
-    denoised = ad.AnnData(
-        expr.cpu().numpy(),
-        var=nadata.var.loc[
-            np.array(denoise.model.genes)[
-                denoise.model.pos[0].cpu().numpy().astype(int)
-            ]
-        ],
-    )
-    denoised = denoised[:, denoised.var.symbol.isin(true.var.index)]
-    loc = true.var.index.isin(denoised.var.symbol)
-    true = true[:, loc]
-    train = train[:, loc]
-
-    # Ensure expr and adata are aligned by reordering expr to match adata's .var order
-    denoised = denoised[
-        :, denoised.var.set_index("symbol").index.get_indexer(true.var.index)
-    ]
-    denoised.X = np.maximum(denoised.X - train.astype(float), 0)
-    # scaling and transformation
-    target_sum = 1e4
-
-    sc.pp.normalize_total(true, target_sum)
-    sc.pp.log1p(true)
-
-    sc.pp.normalize_total(denoised, target_sum)
-    sc.pp.log1p(denoised)
-
-    error_mse = sklearn.metrics.mean_squared_error(true.X, denoised.X)
-    # scaling
-    initial_sum = train.sum()
-    target_sum = true.X.sum()
-    denoised.X = denoised.X * target_sum / initial_sum
-    error_poisson = poisson_nll_loss(true.X, denoised.X)
-    return {"error_poisson": error_poisson, "error_mse": error_mse}
-
-
 def mse(test_data, denoised_data, target_sum=1e4):
-    sc.pp.normalize_total(test_data, target_sum)
+    sc.pp.normalize_total(test_data, target_sum=target_sum)
     sc.pp.log1p(test_data)
 
-    sc.pp.normalize_total(denoised_data, target_sum)
+    sc.pp.normalize_total(denoised_data, target_sum=target_sum)
     sc.pp.log1p(denoised_data)
 
     print("Compute mse value", flush=True)

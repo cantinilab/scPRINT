@@ -236,15 +236,18 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     "Warning: only a subset of the genes available in the embeddings file."
                 )
             print("number of genes: ", len(embeddings))
-            sembeddings = torch.nn.AdaptiveAvgPool1d(d_model)(
-                torch.tensor(embeddings.values, dtype=torch.float32)
-            )
+            if not memmap_gene_emb:
+                sembeddings = torch.nn.AdaptiveAvgPool1d(d_model)(
+                    torch.tensor(embeddings.values, dtype=torch.float32)
+                )
+            else:
+                embeddings = None
 
             gene_encoder = encoders.GeneEncoder(
                 len(self.vocab),
                 d_model,
-                # weights_file=precpt_gene_emb,
-                weights=sembeddings,
+                weights_file=precpt_gene_emb if memmap_gene_emb else None,
+                weights=sembeddings if not memmap_gene_emb else None,
                 freeze=freeze_embeddings,
             )
         else:
@@ -1110,12 +1113,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         knn_cells = batch.get("knn_cells", None)
         if knn_cells is not None:
             knn_cells = knn_cells[:, :, :context_length]
-        if self.mask_zeros and knn_cells is None:
-            keep = expression.sum(0) != 0
-            # we can work on smaller datasets
-            if keep.sum() != keep.shape[0]:
-                expression = expression[:, keep]
-                gene_pos = gene_pos[:, keep]
         if self.transformer.attn_type == "hyper":
             # seq len must be a multiple of 128
             num = (
@@ -1819,11 +1816,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.pred_embedding (list, optional): the classes to predict. Defaults to [].
 
         """
-        if self.mask_zeros and knn_cells is None:
-            keep = expression.sum(0) != 0
-            if keep.sum() != keep.shape[0]:
-                expression = expression[:, keep]
-                gene_pos = gene_pos[:, keep]
         if self.transformer.attn_type == "hyper":
             # seq len must be a multiple of 128
             num = (

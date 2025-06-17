@@ -17,6 +17,8 @@ from anndata import AnnData
 from anndata.utils import make_index_unique
 from bengrn import BenGRN, get_perturb_gt, get_sroy_gt
 from bengrn.base import train_classifier
+
+# from bengrn.GeneRNIB_reg2 import run_gene_rnib, NORMAN, OP, ADAMSON
 from grnndata import GRNAnnData, from_anndata, read_h5ad
 from grnndata import utils as grnutils
 from matplotlib import pyplot as plt
@@ -144,9 +146,14 @@ class GNInfer:
         if self.layer is None:
             self.layer = list(range(model.nlayers))
         self.n_cell_embs = model.attn.additional_tokens
+        model.attn.data = None
 
         subadata = self.predict(model, adata, self.layer, cell_type)
+        import pdb
+
+        pdb.set_trace()
         adjacencies = self.aggregate(model.attn.get(), model.genes)
+        model.attn.data = None
         if self.head_agg == "none":
             return self.save(
                 adjacencies[self.n_cell_embs :, self.n_cell_embs :, :],
@@ -167,9 +174,17 @@ class GNInfer:
         else:
             subadata = adata.copy()
         if self.how == "most var within":
-            sc.pp.highly_variable_genes(
-                subadata, flavor="seurat_v3", n_top_genes=self.num_genes
-            )
+            try:
+                sc.pp.highly_variable_genes(
+                    subadata, flavor="seurat_v3", n_top_genes=self.num_genes
+                )
+            except ValueError:
+                sc.pp.highly_variable_genes(
+                    subadata,
+                    flavor="seurat_v3",
+                    n_top_genes=self.num_genes,
+                    span=0.6,
+                )
             self.curr_genes = (
                 subadata.var.index[subadata.var.highly_variable].tolist()
                 + self.genelist
@@ -236,6 +251,9 @@ class GNInfer:
         )
         model.attn.comp_attn = self.head_agg == "mean_full"
         prevplot = model.doplot
+        if self.head_agg == "mean_full" and not self.comp_attn:
+            raise ValueError("mean_full is only supported for comp_attn")
+
         model.doplot = self.doplot
         model.on_predict_epoch_start()
         model.eval()
@@ -254,14 +272,11 @@ class GNInfer:
             if self.num_genes > 10_000 and not self.comp_attn:
                 raise ValueError("need less genes for a non-shared-qk version")
             if not self.comp_attn:
-                model.attn.gene_dim = (
-                    len(set(self.curr_genes) & set(model.genes))
-                    + model.attn.additional_tokens
-                )
+                model.attn.gene_dim = len(set(self.curr_genes) & set(model.genes))
                 model.attn.apply_softmax = self.preprocess == "softmax"
         elif not self.comp_attn:
             raise ValueError(
-                "full attention (i.e. comp_attn=Fale) is not supported for random expr"
+                "full attention (i.e. comp_attn=False) is not supported for random expr"
             )
         with torch.no_grad(), torch.autocast(device_type=device, dtype=self.dtype):
             for batch in tqdm(dataloader):
@@ -278,6 +293,7 @@ class GNInfer:
                     if model.expr_emb_style == "metacell"
                     else None,
                     predict_mode=self.forward_mode,
+                    keep_output=False,
                     get_attention_layer=layer if type(layer) is list else [layer],
                 )
                 torch.cuda.empty_cache()
@@ -341,16 +357,21 @@ class GNInfer:
         for i in range(Qs.shape[0]):
             attn = Qs[i] @ Ks[i].T
             # return attn
-            scale = Qs.shape[-1] ** -0.5
-            attn = attn * scale
+
             if self.preprocess == "sinkhorn":
+                scale = Qs.shape[-1] ** -0.5
+                attn = attn * scale
                 if attn.numel() > 100_000_000:
                     raise ValueError("you can't sinkhorn such a large matrix")
                 sink = SinkhornDistance(0.1, max_iter=200)
                 attn = sink(attn)[0]
                 attn = attn * Qs.shape[-1]
             elif self.preprocess == "softmax":
+                scale = Qs.shape[-1] ** -0.5
+                attn = attn * scale
                 attn = torch.nn.functional.softmax(attn, dim=-1)
+            elif self.preprocess == "softpick":
+                attn = softpick(attn)
             elif self.preprocess == "none":
                 pass
             else:
@@ -475,6 +496,7 @@ def default_benchmark(
             do_postp=model.expr_emb_style == "metacell",
             min_valid_genes_id=5000,
             min_dataset_size=64,
+            keepdata=True,
         )
         clf_self = None
         todo = [
@@ -604,18 +626,17 @@ def default_benchmark(
                 ).compare_to(other=preadata)
             del grn
     elif default_dataset == "gwps":
-        if not os.path.exists(FILEDIR + "/../../data/perturb_gt.h5ad"):
-            adata = get_perturb_gt()
-            adata.write_h5ad(FILEDIR + "/../../data/perturb_gt.h5ad")
-        else:
-            adata = read_h5ad(FILEDIR + "/../../data/perturb_gt.h5ad")
+        adata = get_perturb_gt()
         preprocessor = Preprocessor(
             force_preprocess=True,
+            keepdata=True,
             skip_validate=True,
             do_postp=model.expr_emb_style == "metacell",
             min_valid_genes_id=maxgenes,
             min_dataset_size=64,
         )
+        adata.obs["organism_ontology_term_id"] = "NCBITaxon:9606"
+
         nadata = preprocessor(adata.copy())
         if model.expr_emb_style == "metacell":
             sc.pp.neighbors(nadata, use_rep="X_pca")
@@ -635,6 +656,7 @@ def default_benchmark(
             batch_size=batch_size,
         )
         grn = grn_inferer(model, nadata)
+        del nadata
         grn.varp["all"] = grn.varp["GRN"]
 
         grn.varp["GRN"] = grn.varp["all"].mean(-1).T
@@ -689,16 +711,79 @@ def default_benchmark(
         metrics["self_base"] = BenGRN(
             grn, do_auc=True, doplot=False
         ).scprint_benchmark()
+    elif default_dataset == "genernib":
+        for adata in [NORMAN, OP, ADAMSON]:
+            raise ValueError("Not implemented")
+            adata = sc.read_h5ad(adata)
+            adata.obs["organism_ontology_term_id"] = "NCBITaxon:9606"
+            preprocessor = Preprocessor(
+                force_preprocess=False,
+                skip_validate=True,
+                drop_non_primary=False,
+                do_postp=False,
+                min_valid_genes_id=1000,
+                min_dataset_size=64,
+                keepdata=True,
+                is_symbol=True,
+                use_raw=False,
+            )
+            adata = preprocessor(adata.copy())
+            # run_gene_rnib(
+            #    adata=adata,
+            #    model=model,
+            #    layer=layers,
+            #    how="most var within",
+            #    preprocess="softmax",
+            # )
+            grn_inferer = GNInfer(
+                how="most var across",
+                preprocess="softmax",
+                head_agg="mean",
+                filtration="none",
+                forward_mode="none",
+                num_genes=3_000,
+                max_cells=3000,
+                doplot=False,
+                batch_size=10,
+                cell_type_col="perturbation",
+                layer=list(range(model.nlayers))[:],
+            )
+            grn = grn_inferer(model, adata, cell_type="ctrl")
+            grn.var.index = make_index_unique(grn.var["symbol"].astype(str))
+
     else:
         # max_genes=4000
-        adata = sc.read_h5ad(default_dataset)
+        if default_dataset.startswith("https://"):
+            adata = sc.read(
+                FILEDIR + "/../../data/" + default_dataset.split("/")[-1],
+                backup_url=default_dataset,
+            )
+        else:
+            adata = sc.read_h5ad(default_dataset)
+        if default_dataset.split("/")[-1] in ["yBCKp6HmXuHa0cZptMo7.h5ad"]:
+            use_layer = "counts"
+            is_symbol = True
+        else:
+            use_layer = None
+            is_symbol = False
+
+        preprocessor = Preprocessor(
+            use_layer=use_layer,
+            is_symbol=is_symbol,
+            force_preprocess=True,
+            skip_validate=True,
+            do_postp=model.expr_emb_style == "metacell",
+            drop_non_primary=False,
+        )
+        adata = preprocessor(adata.copy())
+
         adata.var["isTF"] = False
         adata.var.loc[adata.var.symbol.isin(grnutils.TF), "isTF"] = True
         if model.expr_emb_style == "metacell":
             if "X_pca" not in adata.obsm:
                 sc.pp.pca(adata, n_comps=50)
             sc.pp.neighbors(adata, use_rep="X_pca")
-        for celltype in cell_types:
+        for celltype in list(adata.obs["cell_type"].unique())[:10]:
             # print(celltype)
             # grn_inferer = GNInfer(
             #    layer=layers,
@@ -761,3 +846,16 @@ def default_benchmark(
             del grn
             gc.collect()
     return metrics
+
+
+def softpick(x, dim=-1, eps=1e-6):
+    # softpick function: relu(exp(x)-1) / sum(abs(exp(x)-1))
+    # numerically stable version
+    x_m = torch.max(x, dim=dim, keepdim=True).values
+    x_m_e_m = torch.exp(-x_m)
+    x_e_1 = torch.exp(x - x_m) - x_m_e_m
+    r_x_e_1 = torch.nn.functional.relu(x_e_1)
+    a_x_e_1 = torch.where(x.isfinite(), torch.abs(x_e_1), 0)
+    return r_x_e_1 / (
+        torch.sum(a_x_e_1, dim=dim, keepdim=True) + eps
+    )  # epsilon is only useful if all inputs are EXACTLY 0. we might not even need it

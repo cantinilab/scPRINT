@@ -15,7 +15,6 @@ class TrainingMode(Callback):
         ecs_threshold: float = 0.4,
         class_embd_diss_scale: float = 0.3,
         ecs_scale: float = 0.2,  # .1
-        vae_kl_scale: float = 0.3,
         do_mvc: bool = False,
         mvc_scale: float = 1.0,
         do_next_tp: bool = False,
@@ -38,6 +37,8 @@ class TrainingMode(Callback):
         weight_decay: float = 0.01,
         zinb_and_mse: bool = False,
         var_context_length: bool = False,
+        vae_kl_warmup_steps: int = 80_000,
+        vae_kl_scale: float = 0.001,
         name="",
         set_step: Optional[int] = None,
         mask_zeros: bool = False,
@@ -83,6 +84,7 @@ class TrainingMode(Callback):
             set_step (int, optional): Set the global step for the model. Defaults to None.
             vae_kl_scale (float): Scaling factor for the VAE KL loss. Defaults to 0.3.
             randsamp (bool): Whether to use random sampling for the noise amount at each training step. Defaults to True.
+            vae_kl_warmup_steps (int): Number of warmup steps for the VAE KL loss. Defaults to 20_000.
             mask_zeros (bool): Whether to mask zeros in the expression matrix. Defaults to False.
         """
         super().__init__()
@@ -122,6 +124,7 @@ class TrainingMode(Callback):
         self.set_step = set_step
         self.randsamp = randsamp
         self.mask_zeros = mask_zeros
+        self.vae_kl_warmup_steps = vae_kl_warmup_steps
 
     def __repr__(self):
         return (
@@ -160,7 +163,8 @@ class TrainingMode(Callback):
             f"dropout={self.dropout}, "
             f"set_step={self.set_step}, "
             f"randsamp={self.randsamp}, "
-            f"mask_zeros={self.mask_zeros})"
+            f"mask_zeros={self.mask_zeros}, "
+            f"vae_kl_warmup_steps={self.vae_kl_warmup_steps})"
         )
 
     def setup(self, trainer, model, stage=None):
@@ -201,4 +205,5 @@ class TrainingMode(Callback):
         model.set_step = self.set_step
         model.randsamp = self.randsamp
         model.mask_zeros = self.mask_zeros
+        model.vae_kl_warmup_steps = self.vae_kl_warmup_steps
         # model.configure_optimizers()
