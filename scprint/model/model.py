@@ -206,6 +206,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.hparams["label_decoders"] = label_decoders
         self.hparams["gene_pos_enc"] = gene_pos_enc
         self.hparams["genes"] = genes
+        self.hparams["organisms"] = organisms
+        self.hparams["use_metacell_token"] = use_metacell_token
         self.attn = utils.Attention(
             len(genes),
             additional_tokens=(
@@ -408,7 +410,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     dropout=dropout,
                 )
         # expression decoder from batch embbedding
-        if mvc_decoder != "None":
+        if mvc_decoder is not None:
             if cell_specific_blocks:
                 raise ValueError(
                     "MVC decoder is not supported for cell specific blocks"
@@ -551,8 +553,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     self.d_model, max_len=max_len, token_to_pos=token_to_pos
                 )
         mencoders = {}
-        if self.label_decoders != checkpoints["hyper_parameters"]["label_decoders"]:
-            raise ValueError("label decoders have changed")
         try:
             if self.trainer.datamodule.decoders != self.label_decoders:
                 print("label decoders have changed, be careful")
@@ -590,7 +590,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         neighbors: Optional[Tensor] = None,
         mask: Optional[Tensor] = None,
         req_depth: Optional[Tensor] = None,
-        timepoint: Optional[Tensor] = None,
         cell_embs: Optional[Tensor] = None,  # (minibatch, n_labels, embsize)
         metacell_token: Optional[Tensor] = None,  # (minibatch, 1)
     ):
@@ -630,9 +629,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     device=gene_pos.device,
                 ).repeat(gene_pos.shape[0], 1)
             )
-            if timepoint is not None:
-                pass
-                # cell_embs[:, 2, :] = self.time_encoder(timepoint)
         if self.use_metacell_token:
             metacell_token = (
                 metacell_token
@@ -752,7 +748,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         neighbors: Optional[Tensor] = None,
         mask: Optional[Tensor] = None,
         req_depth: Optional[Tensor] = None,
-        timepoint: Optional[Tensor] = None,  # (new_minibatch_of_nxt_cells,)
         get_gene_emb: bool = False,
         metacell_token: Optional[Tensor] = None,  # (minibatch, 1)
         depth_mult: Optional[Tensor] = None,
@@ -777,8 +772,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 representing the full depth of each sequence in the minibatch. Defaults to None.
             depth_mult (Tensor, optional): A tensor of shape (minibatch,)
                 representing the depth multiplier for each sequence in the minibatch. Defaults to None.
-            timepoint (Tensor, optional): A tensor of shape (minibatch,)
-                representing the timepoint associated with each sequence in the minibatch. Defaults to None.
             get_gene_emb (bool, optional): A flag indicating whether to return the gene embeddings.
                 If True, the gene embeddings are included in the output. Defaults to False.
             do_sample (bool, optional): A flag indicating whether to sample the expression levels.
@@ -807,7 +800,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             neighbors,
             mask,
             req_depth=req_depth if self.depth_atinput else None,
-            timepoint=timepoint,
             metacell_token=metacell_token,
         )
         num = (
@@ -1434,7 +1426,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 total_loss += self.class_embd_diss_scale * loss_emb_indep
             ## compute class loss
             loss_cls = 0
-            loss_adv_cls = 0
             for j, clsname in enumerate(self.classes):
                 if "cls_output_" + clsname not in output:
                     continue
@@ -1483,46 +1474,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     total_loss += self.adv_class_scale * current_adv_loss
                     losses.update({"adv_cls": current_adv_loss})
 
-                # This was the old (likely incorrect) way for reference, now handled above
-                # if do_adv_cls and clsname == "assay_ontology_term_id":
-                #     loss_adv_cls = loss.hierarchical_classification(
-                #         pred=output["adv_cls_output"],
-                #         cl=clss[:, j],
-                #         labels_hierarchy=self.mat_labels_hierarchy[clsname]
-                #         if clsname in self.mat_labels_hierarchy.keys()
-                #         else None,
-                #     )
-                #     total_loss -= self.adv_class_scale * loss_adv_cls # Incorrect subtraction
-                #     losses.update({"adv_cls": loss_adv_cls})
             total_loss += self.class_scale * loss_cls
             if loss_cls != 0:
                 losses.update({"cls": loss_cls})
-            # TASK 2bis. adversarial label prediction
-            # if do_adv_cls:
-            #    embs = output["cell_embs"][
-            #        :,
-            #        (2 if self.depth_atinput else 1)
-            #        + (1 if self.use_metacell_token else 0) :,
-            #        :,
-            #    ].clone()
-            #    for j, adv_cls in enumerate(self.classes):
-            #        ind = torch.arange(len(self.classes))
-            #        mean_embs = torch.mean(embs[:, ind != j, :], dim=1)
-            #        mean_embs = grad_reverse(mean_embs, lambd=1.0)
-            #        adv_pred = self.cls_decoders[adv_cls](mean_embs)
-            #        loss_adv_cls += loss.hierarchical_classification(
-            #            pred=adv_pred,
-            #            cl=clss[:, j],
-            #            labels_hierarchy=self.mat_labels_hierarchy[adv_cls]
-            #            if adv_cls in self.mat_labels_hierarchy.keys()
-            #            else None,
-            #        )
-            #
-            #    total_loss += self.adv_class_scale * loss_adv_cls
-            #    losses.update({"adv_cls": loss_adv_cls})
-        # TASK 2ter. cell KO effect prediction
-        # (just use a novel class, cell state and predict if cell death or not from it)
-        # add large timepoint and set the KO gene to a KO embedding instead of expression embedding
+
         # TODO: try to require the gene id to still be predictable (with weight tying)
         if "mvc_zero_logits" in output:
             loss_expr_mvc = loss.zinb(
@@ -1597,11 +1552,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.mat_labels_hierarchy[k] = v.to(self.device)
 
     def on_validation_epoch_start(self):
-        if self.trainer.is_global_zero:
-            try:
-                self.name = self.trainer._loggers[0].version
-            except:
-                print("not on wandb, could not set name")
+        try:
+            self.name = self.trainer._loggers[0].version
+        except:
+            print("not on wandb, could not set name")
         self.embs = None
         self.compressed_embs = None
         self.counter = 0
@@ -1737,11 +1691,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         pass
 
     def on_test_epoch_end(self):
-        if self.trainer.is_global_zero:
-            try:
-                self.name = self.trainer._loggers[0].version
-            except:
-                print("not on wandb, could not set name")
+        try:
+            self.name = self.trainer._loggers[0].version
+        except:
+            print("not on wandb, could not set name")
         # Run the test only on global rank 0
         name = str(self.name) + "_step" + str(self.global_step) + "_test_metrics"
         import json
@@ -1778,11 +1731,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
     def on_predict_epoch_start(self):
         """@see pl.LightningModule"""
-        if self.trainer.is_global_zero:
-            try:
-                self.name = self.trainer._loggers[0].version
-            except:
-                print("not on wandb, could not set name")
+        try:
+            self.name = self.trainer._loggers[0].version
+        except:
+            print("not on wandb, could not set name")
         self.embs = None
         self.attn.data = None
         self.attn.attn = None
@@ -1994,11 +1946,15 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 # [self.embs, output["cls_output_" + "cell_type_ontology_term_id"]]
                 [self.embs, torch.mean(cell_embs[:, ind, :], dim=1)]
             )
-            self.compressed_embs = torch.cat(
-                [
-                    self.compressed_embs,
-                    torch.cat([output["compressed_cell_embs"][i] for i in ind], dim=1),
-                ]
+            self.compressed_embs = (
+                torch.cat(
+                    [
+                        self.compressed_embs,
+                        torch.cat(
+                            [output["compressed_cell_embs"][i] for i in ind], dim=1
+                        ),
+                    ]
+                )
                 if self.compressor is not None
                 else None
             )
@@ -2100,7 +2056,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             except:
                 print("couldn't log to tensorboard")
             try:
-                self.logger.log_image(key="umaps", images=[fig])
+                self.logger.log_image(key="umaps", images=[fig], step=self.global_step)
             except:
                 print("couldn't log to wandb")
 
