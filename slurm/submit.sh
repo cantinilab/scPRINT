@@ -1,12 +1,18 @@
 #!/bin/bash
 
-#SBATCH --cpus-per-task=24
 #SBATCH --hint=nomultithread
 #SBATCH --signal=SIGUSR1@180
 #SBATCH --requeue
 
 # run script from above
 echo "Running scprint fit $1"
+
+# If a second parameter is provided, consider it a git commit hash and checkout
+if [ -n "$2" ]; then
+    echo "Checking out git commit $2"
+    git checkout "$2" || { echo "Failed to checkout commit $2"; exit 1; }
+fi
+
 module load cuda/12.2
 export TRITON_CACHE_DIR=$TMPDIR/triton_cache
 mkdir -p $TRITON_CACHE_DIR
