@@ -108,4 +108,4 @@ data:
     - self_reported_ethnicity_ontology_term_id
     - sex_ontology_term_id
     - organism_ontology_term_id
-    #- cell_culture
+    - cell_culture

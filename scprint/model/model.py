@@ -13,6 +13,7 @@ import lightning as L
 import pandas as pd
 import torch
 import numpy as np
+from numpy import mean
 import torch.distributed
 from huggingface_hub import PyTorchModelHubMixin
 from lightning.pytorch.callbacks.lr_finder import LearningRateFinder
@@ -1430,6 +1431,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 except:
                     print(clsname)
                     print(self.mat_labels_hierarchy)
+                    print(clss[:, j])
+                    print(output["cls_output_" + clsname])
                     raise
 
                 # Adversarial part for 'assay_ontology_term_id'
