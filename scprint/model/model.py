@@ -1113,6 +1113,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         knn_cells = batch.get("knn_cells", None)
         if knn_cells is not None:
             knn_cells = knn_cells[:, :, :context_length]
+        if self.mask_zeros and knn_cells is None:
+            keep = expression.sum(0) != 0
+            # we can work on smaller datasets
+            if keep.sum() != keep.shape[0]:
+                expression = expression[:, keep]
+                gene_pos = gene_pos[:, keep]
+
         if self.transformer.attn_type == "hyper":
             # seq len must be a multiple of 128
             num = (
@@ -1816,6 +1823,12 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.pred_embedding (list, optional): the classes to predict. Defaults to [].
 
         """
+        if self.mask_zeros and knn_cells is None:
+            keep = expression.sum(0) != 0
+            if keep.sum() != keep.shape[0]:
+                expression = expression[:, keep]
+                gene_pos = gene_pos[:, keep]
+
         if self.transformer.attn_type == "hyper":
             # seq len must be a multiple of 128
             num = (
