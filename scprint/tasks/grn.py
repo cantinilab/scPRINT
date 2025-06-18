@@ -149,9 +149,7 @@ class GNInfer:
         model.attn.data = None
 
         subadata = self.predict(model, adata, self.layer, cell_type)
-        import pdb
 
-        pdb.set_trace()
         adjacencies = self.aggregate(model.attn.get(), model.genes)
         model.attn.data = None
         if self.head_agg == "none":
