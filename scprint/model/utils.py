@@ -548,9 +548,6 @@ class Attention:
                 dtype=torch.float32,
             )
             self.div = torch.zeros(1, device=pos.device, dtype=torch.float32)
-            import pdb
-
-            pdb.set_trace()
         for i, elem in enumerate(x):
             if self.apply_softmax:
                 attn = torch.nn.functional.softmax(
