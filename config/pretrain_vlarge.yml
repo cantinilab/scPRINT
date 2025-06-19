@@ -1,5 +1,5 @@
 trainer:
-  strategy: ddp_find_unused_parameters_true
+  strategy: fsdp_find_unused_parameters_true
   gradient_clip_val: 2
 model:
   nhead: 32
@@ -16,3 +16,4 @@ data:
   n_samples_per_epoch: 40000
 scprint_training:
   run_full_forward: False
+# model is 1.6B params

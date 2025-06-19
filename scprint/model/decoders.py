@@ -344,21 +344,20 @@ class VAEDecoder(nn.Module):
 
     def forward(
         self, x: Tensor
-    ) -> Union[Tensor, Tuple[Tensor, Tensor, Tensor, Tensor]]:
+    ) -> Union[Tensor, Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]]:
         """
         Forward pass through VAE.
 
         Args:
             x (Tensor): Input tensor of shape [batch_size, d_model]
-            return_latent (bool): Whether to return the latent vectors
 
         Returns:
-            If return_latent:
-                Tuple[Tensor, Tensor, Tensor, Tensor]: (reconstructed_x, mu, log_var, kl_loss) where:
-                    - reconstructed_x has shape [batch_size, d_model]
-                    - mu has shape [batch_size, latent_dim]
-                    - log_var has shape [batch_size, latent_dim]
-                    - kl_loss is a scalar tensor
+            If self.return_latent is True:
+                Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
+                    - reconstructed_x (Tensor): Reconstructed input, shape [batch_size, d_model]
+                    - mu (Tensor): Mean of the latent Gaussian, shape [batch_size, latent_dim]
+                    - log_var (Tensor): Log variance of the latent Gaussian, shape [batch_size, latent_dim]
+                    - kl_loss (Tensor): KL divergence loss (scalar tensor)
             Else:
                 Tensor: reconstructed_x of shape [batch_size, d_model]
         """

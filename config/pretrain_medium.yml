@@ -1,3 +1,5 @@
+trainer:
+  strategy: ddp_find_unused_parameters_true
 model:
   nhead: 8
   num_heads_kv: 4
@@ -6,6 +8,6 @@ model:
   d_model: 512
   dropout: 0.1
 data:
-  batch_size: 9
-  n_samples_per_epoch: 500_000
-
+  batch_size: 16
+  n_samples_per_epoch: 1_000_000
+# model is 100M params

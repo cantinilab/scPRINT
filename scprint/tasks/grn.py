@@ -633,8 +633,6 @@ def default_benchmark(
             min_valid_genes_id=maxgenes,
             min_dataset_size=64,
         )
-        adata.obs["organism_ontology_term_id"] = "NCBITaxon:9606"
-
         nadata = preprocessor(adata.copy())
         if model.expr_emb_style == "metacell":
             sc.pp.neighbors(nadata, use_rep="X_pca")

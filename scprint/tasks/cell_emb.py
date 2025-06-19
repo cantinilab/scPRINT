@@ -189,7 +189,7 @@ class Embedder:
             adata.obs["scprint_leiden"] = pred_adata.obs["scprint_leiden"]
         except:
             print("too few cells to compute a clustering")
-        adata.obsm["scprint_emb"] = pred_adata.obsm["scprint_emb"]
+        adata.obsm["scprint_emb"] = pred_adata.obsm["scprint_emb"].astype(np.float32)
         for key, value in pred_adata.uns.items():
             adata.uns[key] = value
 
@@ -351,7 +351,9 @@ def default_benchmark(
         adata = adata[
             adata.obs_names[np.random.choice(adata.shape[0], 100_000, replace=False)]
         ]
-    max_len = 4000 if adata.X.sum(1).mean() < 150_000 else 8000
+    max_len = 4000 if adata.X.sum(1).mean() < 50_000 else 8000
+    batch_size = 64 if adata.X.sum(1).mean() < 50_000 else 32
+    log_every = 10_000
     if dataset.split("/")[-1] in ["24539942", "24539828"]:  # lung and pancreas
         adata.obs["organism_ontology_term_id"] = "NCBITaxon:9606"
         use_layer = "counts"
@@ -390,7 +392,8 @@ def default_benchmark(
         max_len=max_len,
         doplot=False,
         keep_all_labels_pred=False,
-        save_every=40_000,
+        save_every=log_every,
+        batch_size=batch_size,
         how="random expr",
     )
     adata, metrics = embedder(model, adata)

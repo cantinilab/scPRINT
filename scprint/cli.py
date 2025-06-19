@@ -7,7 +7,6 @@ from lightning.pytorch.callbacks import (
     StochasticWeightAveraging,
 )
 from lightning.pytorch.cli import LightningCLI, _get_short_description
-from lightning.pytorch.strategies import DDPStrategy
 from lightning.pytorch.trainer import Trainer
 
 from scprint.tasks import Denoiser, Embedder, GNInfer
@@ -273,6 +272,7 @@ class MyCLI(LightningCLI):
         if "fit" in self.config and self.config["fit"]["trainer"]["strategy"] in [
             "ddp",
             "ddp_find_unused_parameters_true",
+            "fsdp",
         ]:
             import os
 
@@ -289,6 +289,7 @@ class MyCLI(LightningCLI):
         if "fit" in self.config and self.config["fit"]["trainer"]["strategy"] in [
             "ddp",
             "ddp_find_unused_parameters_true",
+            "fsdp",
         ]:
             # Create DDPStrategy with custom timeout
             from datetime import timedelta
