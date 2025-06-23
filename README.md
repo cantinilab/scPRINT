@@ -105,7 +105,7 @@ uv pip install scprint[dev] # for the dev dependencies (building etc..) OR
 uv pip install scprint[flash] # to use flashattention2 with triton: only if you have a compatible gpu (e.g. not available for apple GPUs for now, see https://github.com/triton-lang/triton?tab=readme-ov-file#compatibility)
 #OR pip install scPRINT[dev,flash]
 
-lamin init --storage ./testdb --name test --schema bionty
+lamin init --storage ./testdb --name test --modules bionty
 ```
 
 if you start with lamin and had to do a `lamin init`, you will also need to populate your ontologies. This is because scPRINT is using ontologies to define its cell types, diseases, sexes, ethnicities, etc.
