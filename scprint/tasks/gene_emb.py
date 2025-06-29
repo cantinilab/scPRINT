@@ -16,10 +16,10 @@ from scprint import scPrint
 def extract_gene_embeddings(
     model,
     adata,
+    genelist,
     batch_size: int = 64,
     num_workers: int = 8,
-    device: str = "cuda",
-    gene_list: list = None,
+    dtype: torch.dtype = torch.float16,
 ):
     """
     Extract gene embeddings from a scPrint model for a given AnnData object.
@@ -29,32 +29,27 @@ def extract_gene_embeddings(
         adata (AnnData): AnnData containing cell x gene matrix.
         batch_size (int): Batch size for the DataLoader.
         num_workers (int): Number of workers for DataLoader.
-        device (str): Device to run on ("cuda" or "cpu").
-        gene_list (list): Optional list of genes to restrict to. If None, uses model.genes.
+        genelist (list): list of genes to restrict to.
+        dtype (torch.dtype): Data type for computations. Defaults to torch.float16.
 
     Returns:
         embeddings (np.ndarray): A numpy array of shape (n_cells, n_genes, embedding_dim)
-        genes_processed (list): The list of genes processed in order.
     """
     model.eval()
-    model.to(device)
     model.pred_log_adata = False
 
     # Determine which genes to use
-    if gene_list is None:
-        gene_list = model.genes
-    else:
-        gene_list = [g for g in gene_list if g in model.genes]
-        if len(gene_list) == 0:
-            raise ValueError("No overlap between provided gene_list and model.genes")
+    gene_list = [g for g in genelist if g in model.genes]
+    if len(gene_list) == 0:
+        raise ValueError("No overlap between provided gene_list and model.genes")
 
     # Set up dataset and dataloader
     # If needed, ensure adata.obs contains 'organism_ontology_term_id' or adapt Collator arguments
     if "organism_ontology_term_id" not in adata.obs:
         # Assign a default organism if needed
-        adata.obs[
-            "organism_ontology_term_id"
-        ] = "NCBITaxon:9606"  # or your relevant organism ID
+        adata.obs["organism_ontology_term_id"] = (
+            "NCBITaxon:9606"  # or your relevant organism ID
+        )
 
     adataset = SimpleAnnDataset(adata, obs_to_output=["organism_ontology_term_id"])
     col = Collator(
@@ -75,12 +70,12 @@ def extract_gene_embeddings(
     all_embeddings = []
 
     # Use autocast to ensure half precision if required by the model
-    with torch.no_grad(), torch.autocast(device_type=device, dtype=torch.float16):
+    with torch.no_grad(), torch.autocast(device_type=model.device, dtype=model.dtype):
         for batch in dataloader:
             gene_pos, expression, depth = (
-                batch["genes"].to(device),
-                batch["x"].to(device),
-                batch["depth"].to(device),
+                batch["genes"].to(model.device),
+                batch["x"].to(model.device),
+                batch["depth"].to(model.device),
             )
 
             # Run encode_only to get transformer outputs
@@ -102,4 +97,4 @@ def extract_gene_embeddings(
     embeddings = np.concatenate(
         all_embeddings, axis=0
     )  # shape: (n_cells, n_genes, d_model)
-    return embeddings, gene_list
+    return embeddings
