@@ -339,8 +339,8 @@ docker build -t scprint:latest -f Dockerfile .
 If you don't want to build the image yourself, you can pull it directly from Docker Hub:
 
 ```bash
-docker pull jkobject/scprint:1.1.3
-docker tag jkobject/scprint:1.1.3 scprint:latest
+docker pull jkobject/scprint:1.2.0
+docker tag jkobject/scprint:1.2.0 scprint:latest
 ```
 
 ### Running the Docker Container
