@@ -5,6 +5,9 @@ import numpy as np
 import torch
 from torch import Tensor, nn
 from torch.nn import functional as F
+from torch_geometric.data import Batch, Data
+from torch_geometric.nn import MLP, GATConv, GCNConv, SAGEConv
+from torch_geometric.nn.aggr import DeepSetsAggregation
 
 
 class GeneEncoder(nn.Module):
@@ -39,8 +42,9 @@ class GeneEncoder(nn.Module):
                     "freeze must be True when using memory-mapped embeddings"
                 )
             # Load the parquet file and create memory-mapped array
-            import pandas as pd
             import os
+
+            import pandas as pd
 
             # Create memory-mapped file path
             self.mmap_file = f"{weights_file}.mmap"
@@ -307,11 +311,6 @@ class CategoryValueEncoder(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:
         return self.embedding(x.long())  # (batch, seq_len, embsize)
-
-
-from torch_geometric.data import Batch, Data
-from torch_geometric.nn import MLP, GATConv, GCNConv, SAGEConv
-from torch_geometric.nn.aggr import DeepSetsAggregation
 
 
 class GNN(nn.Module):

@@ -99,16 +99,15 @@ class GNInfer:
         self.layer = layer
         self.loc = loc
         self.how = how
-        assert (
-            self.how
-            in [
-                "most var within",
-                "most var across",
-                "random expr",
-                "some",
-                "most expr",
-            ]
-        ), "how must be one of 'most var within', 'most var across', 'random expr', 'some', 'most expr'"
+        assert self.how in [
+            "most var within",
+            "most var across",
+            "random expr",
+            "some",
+            "most expr",
+        ], (
+            "how must be one of 'most var within', 'most var across', 'random expr', 'some', 'most expr'"
+        )
         self.num_genes = num_genes
         self.preprocess = preprocess
         self.cell_type_col = cell_type_col
@@ -708,44 +707,44 @@ def default_benchmark(
             grn, do_auc=True, doplot=False
         ).scprint_benchmark()
     elif default_dataset == "genernib":
-        for adata in [NORMAN, OP, ADAMSON]:
-            raise ValueError("Not implemented")
-            adata = sc.read_h5ad(adata)
-            adata.obs["organism_ontology_term_id"] = "NCBITaxon:9606"
-            preprocessor = Preprocessor(
-                force_preprocess=False,
-                skip_validate=True,
-                drop_non_primary=False,
-                do_postp=False,
-                min_valid_genes_id=1000,
-                min_dataset_size=64,
-                keepdata=True,
-                is_symbol=True,
-                use_raw=False,
-            )
-            adata = preprocessor(adata.copy())
-            # run_gene_rnib(
-            #    adata=adata,
-            #    model=model,
-            #    layer=layers,
-            #    how="most var within",
-            #    preprocess="softmax",
-            # )
-            grn_inferer = GNInfer(
-                how="most var across",
-                preprocess="softmax",
-                head_agg="mean",
-                filtration="none",
-                forward_mode="none",
-                num_genes=3_000,
-                max_cells=3000,
-                doplot=False,
-                batch_size=10,
-                cell_type_col="perturbation",
-                layer=list(range(model.nlayers))[:],
-            )
-            grn = grn_inferer(model, adata, cell_type="ctrl")
-            grn.var.index = make_index_unique(grn.var["symbol"].astype(str))
+        raise ValueError("Not implemented")
+        # for adata in [NORMAN, OP, ADAMSON]:
+        #   adata = sc.read_h5ad(adata)
+        #   adata.obs["organism_ontology_term_id"] = "NCBITaxon:9606"
+        #   preprocessor = Preprocessor(
+        #       force_preprocess=False,
+        #       skip_validate=True,
+        #       drop_non_primary=False,
+        #       do_postp=False,
+        #       min_valid_genes_id=1000,
+        #       min_dataset_size=64,
+        #       keepdata=True,
+        #       is_symbol=True,
+        #       use_raw=False,
+        #   )
+        #   adata = preprocessor(adata.copy())
+        #   run_gene_rnib(
+        #      adata=adata,
+        #      model=model,
+        #      layer=layers,
+        #      how="most var within",
+        #      preprocess="softmax",
+        #   )
+        #   grn_inferer = GNInfer(
+        #      how="most var across",
+        #      preprocess="softmax",
+        #      head_agg="mean",
+        #      filtration="none",
+        #      forward_mode="none",
+        #      num_genes=3_000,
+        #      max_cells=3000,
+        #      doplot=False,
+        #      batch_size=10,
+        #      cell_type_col="perturbation",
+        #      layer=list(range(model.nlayers))[:],
+        #   )
+        # grn = grn_inferer(model, adata, cell_type="ctrl")
+        # grn.var.index = make_index_unique(grn.var["symbol"].astype(str))
 
     else:
         # max_genes=4000

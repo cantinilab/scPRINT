@@ -17,10 +17,11 @@ from torch import Tensor
 from torch.distributions import Gamma, Poisson
 
 from .. import utils
+from ..datasets import DENOISE_DATASETS, EMBEDDING_DATASETS
 from ..tasks import cell_emb as embbed_task
 from ..tasks import denoise as denoise_task
 from ..tasks import grn as grn_task
-from ..datasets import EMBEDDING_DATASETS, DENOISE_DATASETS
+
 # from scprint.tasks import generate
 
 FILEDIR = os.path.dirname(os.path.realpath(__file__))
@@ -350,7 +351,6 @@ def downsample_profile(mat: Tensor, dropout: float, method="new", randsamp=False
         )
     if method == "old":
         totcounts = mat.sum(-1)
-        batch = mat.shape[0]
         ngenes = mat.shape[-1]
         tnoise = 1 - (1 - dropout) ** (1 / 2)
         # we model the sampling zeros (dropping 30% of the reads)

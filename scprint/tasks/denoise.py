@@ -8,7 +8,7 @@ import scanpy as sc
 import sklearn.metrics
 import torch
 from anndata import AnnData, concat
-from scdataloader import Collator
+from scdataloader import Collator, Preprocessor
 from scdataloader.data import SimpleAnnDataset
 from scipy.sparse import issparse
 from scipy.stats import spearmanr
@@ -16,7 +16,6 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from scprint.model import utils
-from scdataloader import Preprocessor
 
 from . import knn_smooth
 

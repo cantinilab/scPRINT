@@ -10,14 +10,14 @@ from pathlib import Path
 from typing import Dict, Optional
 
 import lightning as L
+import numpy as np
 import pandas as pd
 import torch
-import numpy as np
-from numpy import mean
 import torch.distributed
 from huggingface_hub import PyTorchModelHubMixin
 from lightning.pytorch.callbacks.lr_finder import LearningRateFinder
 from lightning.pytorch.tuner.lr_finder import _LRCallback
+from numpy import mean
 from performer_pytorch import Performer
 from scipy.sparse import load_npz
 from simpler_flash import FlashTransformer
