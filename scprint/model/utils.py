@@ -591,14 +591,14 @@ class Attention:
             self.div = torch.zeros(
                 self.gene_dim + self.additional_tokens, device=pos.device
             )
-        for i in range(x[0].shape[0]):
+        for i in range(x[0].shape[0]): # batch size
             loc = torch.cat(
                 [
                     torch.arange(self.additional_tokens, device=pos.device),
                     pos[i] + self.additional_tokens,
                 ]
             ).int()
-            for j in range(len(x)):
+            for j in range(len(x)): # number of layers * heads
                 self.data[j, loc, :, :, :] += x[j][i]
             self.div[loc] += 1
 
