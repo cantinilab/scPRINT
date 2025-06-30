@@ -65,7 +65,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         classes: Dict[str, int] = {},
         labels_hierarchy: Dict[str, Dict[int, list[int]]] = {},
         label_decoders: Optional[Dict[str, Dict[int, str]]] = None,
-        class_compression: str = "none",  # "none", "fsq", "vae"
         compress_class_dim: Optional[Dict[str, int]] = None,
         cell_specific_blocks: bool = False,
         zinb: bool = True,
@@ -1938,18 +1937,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                         torch.cat(
                             [output["compressed_cell_embs"][i] for i in ind],
                             dim=1,
-                        ),
-                    ]
-                )
-                if self.compressor is not None
-                else None
-            )
-            self.compressed_embs = (
-                torch.cat(
-                    [
-                        self.compressed_embs,
-                        torch.cat(
-                            [output["compressed_cell_embs"][i] for i in ind], dim=1
                         ),
                     ]
                 )
