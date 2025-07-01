@@ -196,3 +196,7 @@ data/main/gene_embs/
 data/main/gene_locs/
 step_*.h5ad
 metrics_*.json
+*/.lamindb/
+*.lndb
+notebooks/data/xenium/
+notebooks/data/visium/
