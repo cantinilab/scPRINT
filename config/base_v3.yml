@@ -78,7 +78,6 @@ data:
   prefetch_factor: 3
   metacell_mode: 0.2
   weight_scaler: 200
-  do_gene_pos: False
   add_zero_genes: 0
   n_samples_per_epoch: 1300000 # {data.batch_size*trainer.limit_train_batches}
   validation_split: 0.05

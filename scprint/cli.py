@@ -276,8 +276,8 @@ class MyCLI(LightningCLI):
         ]:
             import os
 
-            os.environ["NCCL_TIMEOUT"] = str(TIMEOUT)  # 2 hours in seconds
-            os.environ["TORCH_DISTRIBUTED_TIMEOUT"] = str(TIMEOUT)  # 2 hours in seconds
+            os.environ["NCCL_TIMEOUT"] = str(TIMEOUT)  # 5 hours in seconds
+            os.environ["TORCH_DISTRIBUTED_TIMEOUT"] = str(TIMEOUT)  # 5 hours in seconds
             os.environ["PL_TRAINER_STRATEGY_TIMEOUT"] = str(TIMEOUT)
 
             print(f"setting global pytorch distributed timeout to {TIMEOUT}s")
@@ -296,7 +296,7 @@ class MyCLI(LightningCLI):
 
             # Update the config
             print("updating the config")
-            trainer.strategy._timeout = timedelta(seconds=TIMEOUT)  # 2hours in second
+            trainer.strategy._timeout = timedelta(seconds=TIMEOUT)  # 5 hours in seconds
             trainer.strategy.setup_distributed()
         # Call parent method to create trainer
         return trainer

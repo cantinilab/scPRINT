@@ -1097,7 +1097,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if type(mask_ratio) is not list:
             mask_ratio = [mask_ratio]
         # dynamically change the context length every 5 steps
-        if self.var_context_length and self.trainer.global_step % 5 == 0:
+        if self.var_context_length and torch.rand(1).item() < 0.2:
             context_length = torch.randint(400, batch["x"].shape[1], (1,)).item()
         else:
             context_length = batch["x"].shape[1]
