@@ -19,12 +19,14 @@ scPRINT is a large transformer model built for the inference of gene networks (c
 
 It uses novel encoding and decoding of the cell expression profile and new pre-training methodologies to learn a cell model.
 
-scPRINT can be used to perform the following analyses:
+scPRINT can be used to perform the following analyses in a zero-shot mode:
 
 - __expression denoising__: increase the resolution of your scRNAseq data
 - __cell embedding__: generate a low-dimensional representation of your dataset
 - __label prediction__: predict the cell type, disease, sequencer, sex, and ethnicity of your cells
 - __gene network inference__: generate a gene network from any cell or cell cluster in your scRNAseq dataset
+
+It is a foundation model and can be fine-tuned to perform any other analysis
 
 [Read the manuscript!](https://www.biorxiv.org/content/10.1101/2024.07.29.605556v1) if you would like to know more about scPRINT. Have a look at some of my [X-plainers](https://twitter.com/jkobject). 
 
@@ -232,6 +234,12 @@ you will need to understand a few things like lamindb, scdataloader and scprint'
 -> start with a quick intro using the [google collab notebook](#try-scprint-on-a-google-colab-notebook)
 
 -> look at the other FAQ element based on your desired use-case
+
+### What does my anndata need to contain to be run with scPRINT
+
+-> your anndata only needs to contain the species ontology id in its obs['organism_ontology_term_id'] (e.g. "NCBITaxon:9606"). It also needs to contain .var_names or .var.index with gene ids defined as ENSEMBL_IDs or HUGO_SYMBOL.
+
+-> That's it. you can then follow the preprocessing steps from various example notebooks to align your anndata to our gene set, make sure that it fits our requirements and then send it to the model!
 
 ### I want to generate gene networks from scRNAseq data:
 
