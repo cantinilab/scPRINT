@@ -1,17 +1,19 @@
 trainer:
-  strategy: ddp_find_unused_parameters_true
-  log_every_n_steps: 300
-  gradient_clip_val: 500
-  limit_train_batches: 14000
-  limit_val_batches: 2000
-  reload_dataloaders_every_n_epochs: 1
-  accumulate_grad_batches: 2
+  strategy: fsdp_find_unused_parameters_true
+  gradient_clip_val: 2
 model:
-  nhead: 20
-  lr: 0.00001
-  nlayers: 32
-  layers_cls: [512]
-  d_model: 1280
+  nhead: 32
+  num_heads_kv: 8
+  nlayers: 30
+  d_model: 2048
+  d_model_cell: 512
+  nhead_cell: 8
+  nlayers_cell: 10
+  checkpointing: True
 data:
-  batch_size: 3
-  num_workers: 9
+  batch_size: 1
+  max_len: 2400
+  n_samples_per_epoch: 40000
+scprint_training:
+  run_full_forward: False
+# model is 1.6B params

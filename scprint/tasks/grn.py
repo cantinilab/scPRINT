@@ -17,6 +17,8 @@ from anndata import AnnData
 from anndata.utils import make_index_unique
 from bengrn import BenGRN, get_perturb_gt, get_sroy_gt
 from bengrn.base import train_classifier
+
+# from bengrn.GeneRNIB_reg2 import run_gene_rnib, NORMAN, OP, ADAMSON
 from grnndata import GRNAnnData, from_anndata, read_h5ad
 from grnndata import utils as grnutils
 from matplotlib import pyplot as plt
@@ -35,31 +37,28 @@ FILEDIR = os.path.dirname(os.path.realpath(__file__))
 class GNInfer:
     def __init__(
         self,
-        layer: Optional[List[int]] = None,
         batch_size: int = 64,
         num_workers: int = 8,
-        drop_unexpressed: bool = False,
+        drop_unexpressed: bool = True,
         num_genes: int = 3000,
-        precision: str = "16-mixed",
+        max_cells: int = 0,
         cell_type_col: str = "cell_type",
         how: str = "random expr",  # random expr, most var within, most var across, given
-        max_len: int = 3000,
+        forward_mode: str = "none",
+        genelist: List[str] = [],
+        ### GRN inference parameters
+        layer: Optional[List[int]] = None,
         preprocess: str = "softmax",  # sinkhorn, softmax, none
         head_agg: str = "mean",  # mean, sum, none
         filtration: str = "thresh",  # thresh, top-k, mst, known, none
         k: int = 10,
         apc: bool = False,
         known_grn: Optional[any] = None,
+        comp_attn: bool = True,
         symmetrize: bool = False,
         doplot: bool = True,
-        comp_attn: bool = True,
-        max_cells: int = 0,
-        forward_mode: str = "none",
-        genes: List[str] = [],
         loc: str = "./",
         dtype: torch.dtype = torch.float16,
-        locname: str = "",
-        add_emb_in_model: bool = False,
     ):
         """
         GNInfer a class to infer gene regulatory networks from a dataset using a scPRINT model.
@@ -68,63 +67,64 @@ class GNInfer:
             layer (Optional[list[int]], optional): List of layers to use for the inference. Defaults to None.
             batch_size (int, optional): Batch size for processing. Defaults to 64.
             num_workers (int, optional): Number of workers for data loading. Defaults to 8.
-            drop_unexpressed (bool, optional): Whether to drop unexpressed genes. Defaults to False.
+            drop_unexpressed (bool, optional): Whether to drop unexpressed genes. Defaults to True.
+                In this context, genes that have no expression in the dataset are dropped.
             num_genes (int, optional): Number of genes to consider. Defaults to 3000.
-            precision (str, optional): Precision type for computations. Defaults to "16-mixed".
             cell_type_col (str, optional): Column name for cell type information. Defaults to "cell_type".
-            how (str, optional): Method to select genes. Options are "random expr", "most var within", "most var across", "given". Defaults to "random expr".
+            how (str, optional): Method to select genes. Options are "most var", "random expr", "some". Defaults to "most var".
+                - "most var across": select the most variable genes across all cell types
+                - "most var within": select the most variable genes within a cell type
+                - "random expr": select random expressed genes
+                - "some": select a subset of genes defined in genelist
+                - "most expr": select the most expressed genes in the cell type
             preprocess (str, optional): Preprocessing method. Options are "softmax", "sinkhorn", "none". Defaults to "softmax".
             head_agg (str, optional): Aggregation method for heads. Options are "mean", "sum", "none". Defaults to "mean".
             filtration (str, optional): Filtration method for the adjacency matrix. Options are "thresh", "top-k", "mst", "known", "none". Defaults to "thresh".
             k (int, optional): Number of top connections to keep if filtration is "top-k". Defaults to 10.
             apc (bool, optional): Whether to apply Average Product Correction. Defaults to False.
+                - This is not recommended for GRN inference.
             known_grn (optional): Known gene regulatory network to use as a reference. Defaults to None.
-            symmetrize (bool, optional): Whether to symmetrize the adjacency matrix. Defaults to False.
+                - We will only keep the genes that are present in the known GRN.
+            symmetrize (bool, optional): Whether to GRN. Defaults to False.
             doplot (bool, optional): Whether to generate plots. Defaults to True.
             max_cells (int, optional): Maximum number of cells to consider. Defaults to 0.
+                if less than total number of cells, only the top `max_cells` cells with the most counts will be considered.
             forward_mode (str, optional): Mode for forward pass. Defaults to "none".
-            genes (list, optional): List of genes to consider. Defaults to an empty list.
+            genelist (list, optional): List of genes to consider. Defaults to an empty list.
             loc (str, optional): Location to save results. Defaults to "./".
             dtype (torch.dtype, optional): Data type for computations. Defaults to torch.float16.
-            locname (str, optional): Name for the location. Defaults to an empty string.
-            add_emb_in_model (bool, optional): Whether to add cell embeddings in the grn. Defaults to False.
-
         """
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.layer = layer
-        self.locname = locname
+        self.loc = loc
         self.how = how
-        assert (
-            self.how
-            in [
-                "most var within",
-                "most var across",
-                "random expr",
-                "given",
-                "most expr",
-            ]
-        ), "how must be one of 'most var within', 'most var across', 'random expr', 'given', 'most expr'"
+        assert self.how in [
+            "most var within",
+            "most var across",
+            "random expr",
+            "some",
+            "most expr",
+        ], (
+            "how must be one of 'most var within', 'most var across', 'random expr', 'some', 'most expr'"
+        )
         self.num_genes = num_genes
         self.preprocess = preprocess
         self.cell_type_col = cell_type_col
         self.filtration = filtration
         self.doplot = doplot
-        self.genes = genes
+        self.genelist = genelist
         self.apc = apc
         self.dtype = dtype
         self.forward_mode = forward_mode
         self.k = k
-        self.max_len = max_len
         self.symmetrize = symmetrize
         self.known_grn = known_grn
         self.head_agg = head_agg
         self.max_cells = max_cells
         self.curr_genes = None
         self.drop_unexpressed = drop_unexpressed
-        self.precision = precision
         self.comp_attn = comp_attn
-        self.add_emb_in_model = add_emb_in_model
         if self.filtration != "none" and self.head_agg == "none":
             raise ValueError("filtration must be 'none' when head_agg is 'none'")
 
@@ -145,11 +145,10 @@ class GNInfer:
         if self.layer is None:
             self.layer = list(range(model.nlayers))
         self.n_cell_embs = model.attn.additional_tokens
-
         subadata = self.predict(model, adata, self.layer, cell_type)
-        import pdb
-        pdb.set_trace()
+
         adjacencies = self.aggregate(model.attn.get(), model.genes)
+        model.attn.data = None
         if self.head_agg == "none":
             return self.save(
                 adjacencies[self.n_cell_embs :, self.n_cell_embs :, :],
@@ -159,6 +158,7 @@ class GNInfer:
             return self.save(
                 self.filter(adjacencies)[self.n_cell_embs :, self.n_cell_embs :],
                 subadata,
+                loc=self.loc,
             )
 
     def predict(self, model, adata, layer, cell_type=None):
@@ -169,11 +169,20 @@ class GNInfer:
         else:
             subadata = adata.copy()
         if self.how == "most var within":
-            sc.pp.highly_variable_genes(
-                subadata, flavor="seurat_v3", n_top_genes=self.num_genes
-            )
+            try:
+                sc.pp.highly_variable_genes(
+                    subadata, flavor="seurat_v3", n_top_genes=self.num_genes
+                )
+            except ValueError:
+                sc.pp.highly_variable_genes(
+                    subadata,
+                    flavor="seurat_v3",
+                    n_top_genes=self.num_genes,
+                    span=0.6,
+                )
             self.curr_genes = (
-                subadata.var.index[subadata.var.highly_variable].tolist() + self.genes
+                subadata.var.index[subadata.var.highly_variable].tolist()
+                + self.genelist
             )
             print(
                 "number of expressed genes in this cell type: "
@@ -188,14 +197,14 @@ class GNInfer:
             )
             diff_expr_genes = adata.uns["rank_genes_groups"]["names"][cell_type]
             diff_expr_genes = [gene for gene in diff_expr_genes if gene in model.genes]
-            self.curr_genes = diff_expr_genes[: self.num_genes] + self.genes
+            self.curr_genes = diff_expr_genes[: self.num_genes] + self.genelist
             self.curr_genes.sort()
         elif self.how == "random expr":
             self.curr_genes = model.genes
             # raise ValueError("cannot do it yet")
             pass
-        elif self.how == "given" and len(self.genes) > 0:
-            self.curr_genes = self.genes
+        elif self.how == "some" and len(self.genelist) > 0:
+            self.curr_genes = self.genelist
         elif self.how == "most expr":
             self.curr_genes = adata.var.index[
                 adata.X.sum(0).A1.argsort()[::-1]
@@ -217,12 +226,14 @@ class GNInfer:
         if len(subadata) == 0:
             raise ValueError("no cells in the dataset")
         adataset = SimpleAnnDataset(
-            subadata, obs_to_output=["organism_ontology_term_id"]
+            subadata,
+            obs_to_output=["organism_ontology_term_id"],
+            get_knn_cells=model.expr_emb_style == "metacell",
         )
         col = Collator(
             organisms=model.organisms,
             valid_genes=model.genes,
-            max_len=self.max_len if self.how == "random expr" else 0,
+            max_len=self.num_genes if self.how == "random expr" else 0,
             how="some" if self.how != "random expr" else "random expr",
             genelist=self.curr_genes if self.how != "random expr" else [],
         )
@@ -234,26 +245,48 @@ class GNInfer:
             shuffle=False,
         )
         model.attn.comp_attn = self.head_agg == "mean_full"
+        prevplot = model.doplot
+        if self.head_agg == "mean_full" and not self.comp_attn:
+            raise ValueError("mean_full is only supported for comp_attn")
+
         model.doplot = self.doplot
         model.on_predict_epoch_start()
         model.eval()
-        device = model.device.type
-
+        model.attn.data = None
         # reparametrize the attn process
         model.attn.comp_attn = self.comp_attn
+        if model.transformer.attn_type == "hyper":
+            self.curr_genes = [i for i in model.genes if i in self.curr_genes]
+            num = model.cell_embs_count if not model.cell_transformer else 0
+            if (len(self.curr_genes) + num) % 128 != 0:
+                self.curr_genes = self.curr_genes[
+                    : (len(self.curr_genes) // 128 * 128) - num
+                ]
         if self.how != "random expr":
             if self.num_genes > 10_000 and not self.comp_attn:
                 raise ValueError("need less genes for a non-shared-qk version")
             if not self.comp_attn:
-                model.attn.gene_dim = (
-                    len(set(self.curr_genes) & set(model.genes))
-                    + model.attn.additional_tokens
-                )
+                model.attn.gene_dim = len(set(self.curr_genes) & set(model.genes))
                 model.attn.apply_softmax = self.preprocess == "softmax"
+            else:
+                if subadata.obs["organism_ontology_term_id"].unique().shape[0] > 1:
+                    raise ValueError(
+                        "only one organism at a time is supported for comp_attn"
+                    )
+                n = False
+                for i, k in col.start_idx.items():
+                    if n:
+                        model.attn.gene_dim = k - model.attn.speciesloc
+                        break
+                    if i == subadata.obs["organism_ontology_term_id"].unique()[0]:
+                        model.attn.speciesloc = k
+                        n = True
         elif not self.comp_attn:
             raise ValueError(
-                "full attention (i.e. comp_attn=Fale) is not supported for random expr"
+                "full attention (i.e. comp_attn=False) is not supported for random expr"
             )
+        device = model.device.type
+        # this is a debugger line
         with torch.no_grad(), torch.autocast(device_type=device, dtype=self.dtype):
             for batch in tqdm(dataloader):
                 gene_pos, expression, depth = (
@@ -265,18 +298,28 @@ class GNInfer:
                     gene_pos,
                     expression,
                     depth,
+                    knn_cells=batch["knn_cells"].to(device)
+                    if model.expr_emb_style == "metacell"
+                    else None,
                     predict_mode=self.forward_mode,
                     keep_output=False,
                     get_attention_layer=layer if type(layer) is list else [layer],
                 )
-            torch.cuda.empty_cache()
-                
+                torch.cuda.empty_cache()
+        model.doplot = prevplot
+        model.pred_log_adata = True
         return subadata
 
     def aggregate(self, attn, genes):
         if self.head_agg == "mean_full" or not self.comp_attn:
             self.curr_genes = [i for i in genes if i in self.curr_genes]
             return attn.detach().cpu().numpy()
+        if self.how == "random expr" and self.drop_unexpressed:
+            keep = np.array(
+                [1] * self.n_cell_embs + [i in self.curr_genes for i in genes],
+                dtype=bool,
+            )
+            attn = attn[:, keep, :, :, :]
         badloc = torch.isnan(attn.sum((0, 2, 3, 4)))
         attn = attn[:, ~badloc, :, :, :]
         badloc = badloc.detach().cpu().numpy()
@@ -323,16 +366,21 @@ class GNInfer:
         for i in range(Qs.shape[0]):
             attn = Qs[i] @ Ks[i].T
             # return attn
-            scale = Qs.shape[-1] ** -0.5
-            attn = attn * scale
+
             if self.preprocess == "sinkhorn":
+                scale = Qs.shape[-1] ** -0.5
+                attn = attn * scale
                 if attn.numel() > 100_000_000:
                     raise ValueError("you can't sinkhorn such a large matrix")
                 sink = SinkhornDistance(0.1, max_iter=200)
                 attn = sink(attn)[0]
                 attn = attn * Qs.shape[-1]
             elif self.preprocess == "softmax":
+                scale = Qs.shape[-1] ** -0.5
+                attn = attn * scale
                 attn = torch.nn.functional.softmax(attn, dim=-1)
+            elif self.preprocess == "softpick":
+                attn = softpick(attn)
             elif self.preprocess == "none":
                 pass
             else:
@@ -454,9 +502,10 @@ def default_benchmark(
             is_symbol=True,
             force_preprocess=True,
             skip_validate=True,
-            do_postp=False,
+            do_postp=model.expr_emb_style == "metacell",
             min_valid_genes_id=5000,
             min_dataset_size=64,
+            keepdata=True,
         )
         clf_self = None
         todo = [
@@ -477,13 +526,14 @@ def default_benchmark(
             print(da + "_" + gt)
             preadata = get_sroy_gt(get=da, species=spe, gt=gt)
             adata = preprocessor(preadata.copy())
+            if model.expr_emb_style == "metacell":
+                sc.pp.neighbors(adata, use_rep="X_pca")
             grn_inferer = GNInfer(
                 layer=layers,
                 how="most var within",
                 preprocess="softmax",
                 head_agg="none",
                 filtration="none",
-                forward_mode="none",
                 num_genes=maxgenes,
                 num_workers=8,
                 max_cells=maxcells,
@@ -585,29 +635,27 @@ def default_benchmark(
                 ).compare_to(other=preadata)
             del grn
     elif default_dataset == "gwps":
-        if not os.path.exists(FILEDIR + "/../../data/perturb_gt.h5ad"):
-            adata = get_perturb_gt()
-            adata.write_h5ad(FILEDIR + "/../../data/perturb_gt.h5ad")
-        else:
-            adata = read_h5ad(FILEDIR + "/../../data/perturb_gt.h5ad")
+        adata = get_perturb_gt()
         preprocessor = Preprocessor(
             force_preprocess=True,
+            keepdata=True,
             skip_validate=True,
-            do_postp=False,
+            do_postp=model.expr_emb_style == "metacell",
             min_valid_genes_id=maxgenes,
             min_dataset_size=64,
         )
         nadata = preprocessor(adata.copy())
-        adata.var["isTF"] = False
-        adata.var.loc[adata.var.gene_name.isin(grnutils.TF), "isTF"] = True
-        adata.var["isTF"].sum()
+        if model.expr_emb_style == "metacell":
+            sc.pp.neighbors(nadata, use_rep="X_pca")
+        nadata.var["isTF"] = False
+        nadata.var.loc[nadata.var.gene_name.isin(grnutils.TF), "isTF"] = True
+        nadata.var["isTF"].sum()
         grn_inferer = GNInfer(
             layer=layers,
             how="most var within",
             preprocess="softmax",
             head_agg="none",
             filtration="none",
-            forward_mode="none",
             num_genes=maxgenes,
             max_cells=maxcells,
             doplot=False,
@@ -615,6 +663,7 @@ def default_benchmark(
             batch_size=batch_size,
         )
         grn = grn_inferer(model, nadata)
+        del nadata
         grn.varp["all"] = grn.varp["GRN"]
 
         grn.varp["GRN"] = grn.varp["all"].mean(-1).T
@@ -669,12 +718,79 @@ def default_benchmark(
         metrics["self_base"] = BenGRN(
             grn, do_auc=True, doplot=False
         ).scprint_benchmark()
+    elif default_dataset == "genernib":
+        raise ValueError("Not implemented")
+        # for adata in [NORMAN, OP, ADAMSON]:
+        #   adata = sc.read_h5ad(adata)
+        #   adata.obs["organism_ontology_term_id"] = "NCBITaxon:9606"
+        #   preprocessor = Preprocessor(
+        #       force_preprocess=False,
+        #       skip_validate=True,
+        #       drop_non_primary=False,
+        #       do_postp=False,
+        #       min_valid_genes_id=1000,
+        #       min_dataset_size=64,
+        #       keepdata=True,
+        #       is_symbol=True,
+        #       use_raw=False,
+        #   )
+        #   adata = preprocessor(adata.copy())
+        #   run_gene_rnib(
+        #      adata=adata,
+        #      model=model,
+        #      layer=layers,
+        #      how="most var within",
+        #      preprocess="softmax",
+        #   )
+        #   grn_inferer = GNInfer(
+        #      how="most var across",
+        #      preprocess="softmax",
+        #      head_agg="mean",
+        #      filtration="none",
+        #      forward_mode="none",
+        #      num_genes=3_000,
+        #      max_cells=3000,
+        #      doplot=False,
+        #      batch_size=10,
+        #      cell_type_col="perturbation",
+        #      layer=list(range(model.nlayers))[:],
+        #   )
+        # grn = grn_inferer(model, adata, cell_type="ctrl")
+        # grn.var.index = make_index_unique(grn.var["symbol"].astype(str))
+
     else:
         # max_genes=4000
-        adata = sc.read_h5ad(default_dataset)
+        if default_dataset.startswith("https://"):
+            adata = sc.read(
+                FILEDIR + "/../../data/" + default_dataset.split("/")[-1],
+                backup_url=default_dataset,
+            )
+        else:
+            adata = sc.read_h5ad(default_dataset)
+        if default_dataset.split("/")[-1] in ["yBCKp6HmXuHa0cZptMo7.h5ad"]:
+            use_layer = "counts"
+            is_symbol = True
+        else:
+            use_layer = None
+            is_symbol = False
+
+        preprocessor = Preprocessor(
+            use_layer=use_layer,
+            is_symbol=is_symbol,
+            force_preprocess=True,
+            skip_validate=True,
+            do_postp=model.expr_emb_style == "metacell",
+            drop_non_primary=False,
+        )
+        adata = preprocessor(adata.copy())
+
         adata.var["isTF"] = False
         adata.var.loc[adata.var.symbol.isin(grnutils.TF), "isTF"] = True
-        for celltype in cell_types:
+        if model.expr_emb_style == "metacell":
+            if "X_pca" not in adata.obsm:
+                sc.pp.pca(adata, n_comps=50)
+            sc.pp.neighbors(adata, use_rep="X_pca")
+        for celltype in list(adata.obs["cell_type"].unique())[:10]:
             # print(celltype)
             # grn_inferer = GNInfer(
             #    layer=layers,
@@ -682,7 +798,6 @@ def default_benchmark(
             #    preprocess="softmax",
             #    head_agg="max",
             #    filtration="none",
-            #    forward_mode="none",
             #    num_workers=8,
             #    num_genes=2200,
             #    max_cells=maxcells,
@@ -703,7 +818,6 @@ def default_benchmark(
                 preprocess="softmax",
                 head_agg="none",
                 filtration="none",
-                forward_mode="none",
                 num_workers=8,
                 num_genes=maxgenes,
                 max_cells=maxcells,
@@ -739,3 +853,16 @@ def default_benchmark(
             del grn
             gc.collect()
     return metrics
+
+
+def softpick(x, dim=-1, eps=1e-6):
+    # softpick function: relu(exp(x)-1) / sum(abs(exp(x)-1))
+    # numerically stable version
+    x_m = torch.max(x, dim=dim, keepdim=True).values
+    x_m_e_m = torch.exp(-x_m)
+    x_e_1 = torch.exp(x - x_m) - x_m_e_m
+    r_x_e_1 = torch.nn.functional.relu(x_e_1)
+    a_x_e_1 = torch.where(x.isfinite(), torch.abs(x_e_1), 0)
+    return r_x_e_1 / (
+        torch.sum(a_x_e_1, dim=dim, keepdim=True) + eps
+    )  # epsilon is only useful if all inputs are EXACTLY 0. we might not even need it
