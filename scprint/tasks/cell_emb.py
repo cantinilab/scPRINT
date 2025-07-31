@@ -131,7 +131,7 @@ class Embedder:
         model.on_predict_epoch_start()
         device = model.device.type
         prevplot = model.doplot
-        model.doplot = self.doplot
+        model.doplot = self.doplot and not self.keep_all_labels_pred
         with (
             torch.no_grad(),
             torch.autocast(device_type=device, dtype=self.dtype),
@@ -189,7 +189,23 @@ class Embedder:
             adata.obs["scprint_leiden"] = pred_adata.obs["scprint_leiden"]
         except:
             print("too few cells to compute a clustering")
-        adata.obsm["scprint_emb"] = pred_adata.obsm["scprint_emb"].astype(np.float32)
+
+        if len(self.pred_embedding) == 1:
+            adata.obsm["scprint_emb"] = pred_adata.obsm[
+                "scprint_emb_" + self.pred_embedding[0]
+            ].astype(np.float32)
+        else:
+            adata.obsm["scprint_emb"] = np.zeros(
+                pred_adata.obsm["scprint_emb_" + self.pred_embedding[0]].shape,
+                dtype=np.float32,
+            )
+            i = 0
+            for k, v in pred_adata.obsm.items():
+                adata.obsm[k] = v.astype(np.float32)
+                adata.obsm["scprint_emb"] += v.astype(np.float32)
+                i += 1
+            adata.obsm["scprint_emb"] = adata.obsm["scprint_emb"] / i
+
         for key, value in pred_adata.uns.items():
             adata.uns[key] = value
 
@@ -199,7 +215,7 @@ class Embedder:
         adata.obs = pd.concat([adata.obs, pred_adata.obs], axis=1)
         del pred_adata
         if self.keep_all_labels_pred:
-            allclspred = model.pred
+            allclspred = model.pred.to(device="cpu").numpy()
             columns = []
             for cl in model.classes:
                 n = model.label_counts[cl]
@@ -207,7 +223,7 @@ class Embedder:
             allclspred = pd.DataFrame(
                 allclspred, columns=columns, index=adata.obs.index
             )
-            adata.obs = pd.concat(adata.obs, allclspred)
+            adata.obs = pd.concat([adata.obs, allclspred], axis=1)
 
         metrics = {}
         if self.doclass and not self.keep_all_labels_pred:
@@ -245,11 +261,11 @@ class Embedder:
                         elif true != "unknown":
                             res.append(False)
                         elif true not in class_topred:
-                            raise ValueError(
-                                f"true label {true} not in available classes"
-                            )
+                            print(f"true label {true} not in available classes")
+                            return adata, metrics
                     elif true not in class_topred:
-                        raise ValueError(f"true label {true} not in available classes")
+                        print(f"true label {true} not in available classes")
+                        return adata, metrics
                     elif true != "unknown":
                         res.append(False)
                     # else true is unknown
@@ -470,6 +486,96 @@ def compute_classification(
                 np.array(res), adata.obs[label].values, average=x
             )
     return metrics
+
+
+def get_top_labels(model, adata, k=3):
+    s = list(model.label_counts.values())
+    out = []
+    count = 0
+    for l, label in enumerate(model.label_counts.keys()):
+        if -sum(s) + count + s[l] == 0:
+            ct = adata.obs.iloc[:, -sum(s) + count :]
+        else:
+            ct = adata.obs.iloc[:, -sum(s) + count : -sum(s) + s[l] + count]
+        if s[l] < 3:
+            # append only the label corresponding to the maximum score (arg-max)
+            best_labels = [
+                model.label_decoders[label][idx]
+                for idx in np.argmax(ct.to_numpy(), axis=1)
+            ]
+            out.append(
+                pd.DataFrame(
+                    {label: best_labels}, index=adata.obs_names, columns=[label]
+                )
+            )
+        else:
+            res = []
+            for j, m in enumerate(np.argsort(ct)[:, ::-1]):
+                certainty = ct.iloc[j, m[0]]
+                best = model.label_decoders[label][m[0]]
+                other = []
+                for i in range(1, k):
+                    if ct.iloc[j, m[i]] > certainty - 0.15:
+                        other.append(model.label_decoders[label][m[i]])
+                    else:
+                        other.append(None)
+                res.append([best] + [certainty] + other)
+            out.append(
+                pd.DataFrame(
+                    res,
+                    columns=[label, label + "_certainty"]
+                    + [label + "_choice" + str(i) for i in range(1, k)],
+                    index=adata.obs_names,
+                )
+            )
+        count += s[l]  # keep the offset consistent with the else branch
+    out = pd.concat(out, axis=1)
+    return out
+
+
+def find_coarser_labels(out, model):
+    relabel = {}
+    for label in model.classes:
+        if label in model.labels_hierarchy.keys():
+            decoder = {k: v for k, v in model.label_decoders[label].items()}
+            ct_hier = {
+                decoder[k]: [decoder[u] for u in v]
+                for k, v in model.labels_hierarchy[label].items()
+            }
+            relabel[label] = {}
+            for i, r in enumerate(
+                out[~out[label + "_choice1"].isna()][
+                    [label, label + "_choice1", label + "_choice2"]
+                ].values
+            ):
+                prev_v = 100_000
+                res = None
+                if r[1] is not None:
+                    for k, v in ct_hier.items():
+                        if r[2] is not None:
+                            if (
+                                r[0] in v
+                                and r[1] in v
+                                and r[2] in v
+                                and k != "CL:0000000"
+                                and k != "None"
+                            ):
+                                if len(v) < prev_v:
+                                    res = k
+                                    prev_v = len(v)
+                        else:
+                            if (
+                                r[0] in v
+                                and r[1] in v
+                                and k != "CL:0000000"
+                                and k != "None"
+                            ):
+                                if len(v) < prev_v:
+                                    res = k
+                                    prev_v = len(v)
+                    if res is not None:
+                        relabel[label].update({i: res})
+    return relabel
 
 
 FINE = {

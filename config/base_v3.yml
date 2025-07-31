@@ -37,6 +37,10 @@ scprint_training:
   test_every: 5
   zinb_and_mse: True
   var_context_length: True
+  cce_scale: 0.2
+  class_embd_diss_scale: 0.3
+  ecs_scale: 0.2
+  vae_kl_scale: 0.001
 scprint_early_stopping:
   patience: 4
 model:

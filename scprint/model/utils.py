@@ -34,7 +34,6 @@ def make_adata(
     expr_pred: Tensor = None,
     classes: list[str] = None,
     pred: Tensor = None,
-    attention: Optional[Tensor] = None,
     label_decoders: Optional[Dict] = None,
     labels_hierarchy: Dict = {},
     gtclass: Optional[Tensor] = None,
@@ -50,7 +49,6 @@ def make_adata(
         embs (torch.Tensor): Embeddings of the cells. The shape of the tensor is (n_cells, n_features).
         classes (list): List of classes.
         pred (torch.Tensor, optional): Predicted labels. The shape of the tensor is (n_cells, n_classes). Default is None.
-        attention (torch.Tensor, optional): Attention weights. Default is None.
         label_decoders (dict, optional): Dictionary to map class codes to class names. Default is None.
         labels_hierarchy (dict, optional): Dictionary representing the hierarchy of labels. Default is {}.
         gtclass (torch.Tensor, optional): Ground truth class. Default is None.
@@ -85,7 +83,7 @@ def make_adata(
             obs = np.hstack([obs, nobs])
 
     size = len(genes)
-    n_cells = embs.shape[0]
+    n_cells = embs[list(embs.keys())[0]].shape[0]
     layers = None
     if pos is not None:
         mu_array = np.zeros((n_cells, size), dtype=np.float32)
@@ -122,7 +120,10 @@ def make_adata(
         else None,
     )
 
-    adata.obsm["scprint_emb"] = embs.cpu().numpy()
+    for k, v in embs.items():
+        adata.obsm["scprint_emb_" + k] = v.cpu().numpy()
+        rep = "scprint_emb_" + k
+    del embs
     adata.var_names = genes
     accuracy = {}
     if pred is not None:
@@ -167,7 +168,7 @@ def make_adata(
         adata.obs = adata.obs.astype("category")
     print(adata)
     if doplot and adata.shape[0] > 100:
-        sc.pp.neighbors(adata, use_rep="scprint_emb")
+        sc.pp.neighbors(adata, use_rep=rep)
         sc.tl.umap(adata)
         sc.tl.leiden(adata, key_added="sprint_leiden")
         if gtclass is not None:
@@ -521,6 +522,7 @@ class Attention:
         self.apply_softmax: bool = apply_softmax
         self.sum_heads: bool = sum_heads
         self.comp_attn: bool = comp_attn
+        self.speciesloc: int = 0
 
     def add(self, *args, **kwargs) -> None:
         if self.comp_attn:
@@ -591,14 +593,16 @@ class Attention:
             self.div = torch.zeros(
                 self.gene_dim + self.additional_tokens, device=pos.device
             )
-        for i in range(x[0].shape[0]): # batch size
+        # this is a debugger line
+        for i in range(x[0].shape[0]):  # batch size
             loc = torch.cat(
                 [
                     torch.arange(self.additional_tokens, device=pos.device),
-                    pos[i] + self.additional_tokens,
+                    pos[i] + self.additional_tokens - self.speciesloc,
                 ]
             ).int()
-            for j in range(len(x)): # number of layers * heads
+            # this is a debugger line
+            for j in range(len(x)):  # number of layers * heads
                 self.data[j, loc, :, :, :] += x[j][i]
             self.div[loc] += 1
 

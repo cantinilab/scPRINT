@@ -145,8 +145,6 @@ class GNInfer:
         if self.layer is None:
             self.layer = list(range(model.nlayers))
         self.n_cell_embs = model.attn.additional_tokens
-        model.attn.data = None
-
         subadata = self.predict(model, adata, self.layer, cell_type)
 
         adjacencies = self.aggregate(model.attn.get(), model.genes)
@@ -254,8 +252,7 @@ class GNInfer:
         model.doplot = self.doplot
         model.on_predict_epoch_start()
         model.eval()
-        device = model.device.type
-
+        model.attn.data = None
         # reparametrize the attn process
         model.attn.comp_attn = self.comp_attn
         if model.transformer.attn_type == "hyper":
@@ -271,10 +268,25 @@ class GNInfer:
             if not self.comp_attn:
                 model.attn.gene_dim = len(set(self.curr_genes) & set(model.genes))
                 model.attn.apply_softmax = self.preprocess == "softmax"
+            else:
+                if subadata.obs["organism_ontology_term_id"].unique().shape[0] > 1:
+                    raise ValueError(
+                        "only one organism at a time is supported for comp_attn"
+                    )
+                n = False
+                for i, k in col.start_idx.items():
+                    if n:
+                        model.attn.gene_dim = k - model.attn.speciesloc
+                        break
+                    if i == subadata.obs["organism_ontology_term_id"].unique()[0]:
+                        model.attn.speciesloc = k
+                        n = True
         elif not self.comp_attn:
             raise ValueError(
                 "full attention (i.e. comp_attn=False) is not supported for random expr"
             )
+        device = model.device.type
+        # this is a debugger line
         with torch.no_grad(), torch.autocast(device_type=device, dtype=self.dtype):
             for batch in tqdm(dataloader):
                 gene_pos, expression, depth = (
