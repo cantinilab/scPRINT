@@ -392,12 +392,19 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 dropout=dropout,
             )
             if clss == "assay_ontology_term_id" and self.do_adv_cls:
-                self.adv_cls_decoder = decoders.ClsDecoder(
+                self.adv_assay_decoder = decoders.ClsDecoder(
                     dim,
                     n_cls,
                     layers=layers_cls,
                     dropout=dropout,
                 )
+        if len(self.organisms) > 1 and self.do_adv_cls:
+            self.adv_organism_decoder = decoders.ClsDecoder(
+                dim,
+                len(self.organisms),
+                layers=layers_cls,
+                dropout=dropout,
+            )
         # expression decoder from batch embbedding
         if mvc_decoder is not None:
             if cell_specific_blocks:
@@ -1490,17 +1497,23 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     raise
 
                 # Adversarial part for 'assay_ontology_term_id'
-                if do_adv_cls and clsname == "assay_ontology_term_id":
+                if do_adv_cls and clsname in [
+                    "assay_ontology_term_id",
+                    "organism_ontology_term_id",
+                ]:
                     pos = self.classes.index("cell_type_ontology_term_id") + 1
                     # Apply gradient reversal to the input embedding
                     adv_input_emb = loss.grad_reverse(
                         output["input_cell_embs"][:, pos, :].clone(), lambd=1.0
                     )
                     # Get predictions from the adversarial decoder
-                    adv_pred = self.adv_cls_decoder(adv_input_emb)
+                    if "assay" in clsname:
+                        adv_pred = self.adv_assay_decoder(adv_input_emb)
+                    else:
+                        adv_pred = self.adv_organism_decoder(adv_input_emb)
 
                     # Compute the adversarial loss
-                    current_adv_loss = loss.hierarchical_classification(
+                    adv_loss = loss.hierarchical_classification(
                         pred=adv_pred,
                         cl=clss[
                             :, j
@@ -1510,8 +1523,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                         else None,
                     )
                     # Add the adversarial loss to the total loss (gradient reversal handles the maximization objective for the generator)
-                    total_loss += self.adv_class_scale * current_adv_loss
-                    losses.update({"adv_cls": current_adv_loss})
+                    total_loss += self.adv_class_scale * adv_loss
+                    losses.update({"adv_cls_" + clsname: adv_loss})
 
             total_loss += self.class_scale * loss_cls
             if loss_cls != 0:
