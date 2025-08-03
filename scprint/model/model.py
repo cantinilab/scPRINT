@@ -1509,8 +1509,12 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 ]:
                     pos = self.classes.index("cell_type_ontology_term_id") + 1
                     # Apply gradient reversal to the input embedding
+
                     adv_input_emb = loss.grad_reverse(
-                        output["input_cell_embs"][:, pos, :].clone(), lambd=1.0
+                        output["input_cell_embs"][:, pos, :].clone()
+                        if self.compressor is not None
+                        else output["input_cell_embs"][:, pos, :].clone(),
+                        lambd=1.0,
                     )
                     # Get predictions from the adversarial decoder
                     if "assay" in clsname:
