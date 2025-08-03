@@ -59,7 +59,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             str
         ] = None,  # "inner product", "concat query", "sum query"
         pred_embedding: list[str] = [],
-        label_counts: Dict[str, int] = {},
         organisms: list[str] = [],
         layers_cls: list[int] = [],
         classes: Dict[str, int] = {},
@@ -391,20 +390,27 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 layers=layers_cls,
                 dropout=dropout,
             )
-            if clss == "assay_ontology_term_id" and self.do_adv_cls:
+        if "cell_type_ontology_term_id" in classes and self.do_adv_cls:
+            mdim = d_model_cell if cell_specific_blocks else self.d_model
+            dim = (
+                compress_class_dim["cell_type_ontology_term_id"]
+                if compress_class_dim is not None
+                else mdim
+            )
+            if "assay_ontology_term_id" in classes:
                 self.adv_assay_decoder = decoders.ClsDecoder(
                     dim,
-                    n_cls,
+                    classes["assay_ontology_term_id"],
                     layers=layers_cls,
                     dropout=dropout,
                 )
-        if len(self.organisms) > 1 and self.do_adv_cls:
-            self.adv_organism_decoder = decoders.ClsDecoder(
-                dim,
-                len(self.organisms),
-                layers=layers_cls,
-                dropout=dropout,
-            )
+            if len(self.organisms) > 1:
+                self.adv_organism_decoder = decoders.ClsDecoder(
+                    dim,
+                    len(self.organisms),
+                    layers=layers_cls,
+                    dropout=dropout,
+                )
         # expression decoder from batch embbedding
         if mvc_decoder is not None:
             if cell_specific_blocks:
