@@ -1511,7 +1511,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     # Apply gradient reversal to the input embedding
 
                     adv_input_emb = loss.grad_reverse(
-                        output["input_cell_embs"][:, pos, :].clone()
+                        output["compressed_cell_embs"][:, pos, :].clone()
                         if self.compressor is not None
                         else output["input_cell_embs"][:, pos, :].clone(),
                         lambd=1.0,
