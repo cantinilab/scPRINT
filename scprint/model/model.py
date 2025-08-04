@@ -27,6 +27,13 @@ from .utils import WeightedMasker, simple_masker
 
 FILEDIR = os.path.dirname(os.path.realpath(__file__))
 
+KNOWN_ATTN_TYPE = [
+    "flash",
+    "normal",
+    "hyper",
+    "criss-cross",
+]  # from https://github.com/jkobject/simpler_flash/blob/19d3b225158db62d1dc0716d2b9b634095374d47/src/simpler_flash/flashformer.py#L51
+
 
 def is_interactive():
     import __main__ as main
@@ -303,7 +310,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 dropout=dropout,
                 nlayers=nlayers,
                 cross_attn=cell_specific_blocks,
-                use_flash_attn=(transformer == "flash"),
+                attn_type=(transformer if transformer in KNOWN_ATTN_TYPE else "normal"),
                 **flash_attention_kwargs,
             )
         if cell_specific_blocks:
@@ -313,7 +320,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 nlayers=6,
                 dropout=dropout,
                 cross_attn=True,
-                use_flash_attn=(transformer == "flash"),
+                attn_type=(transformer if transformer in KNOWN_ATTN_TYPE else "normal"),
                 **flash_attention_kwargs,
             )
         else:
