@@ -1708,13 +1708,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.pos = None
         self.expr_pred = None
         gathered_embs = self.all_gather(self.embs)
-        gathered_embs = [
-            d for d in gathered_embs if isinstance(d, dict) and d is not None
-        ]
         # Merge the dictionaries from all processes
         merged_embs = {}
         for key in self.embs.keys():
-            merged_embs[key] = torch.cat([d[key] for d in gathered_embs], dim=0)
+            self.embs[key] = gathered_embs[key].view(-1, gathered_embs[key].shape[-1])
         self.embs = merged_embs
         self.info = self.all_gather(self.info).view(-1, self.info.shape[-1])
         self.pred = (
