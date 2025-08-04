@@ -1711,9 +1711,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         gathered_embs = [
             d for d in gathered_embs if isinstance(d, dict) and d is not None
         ]
-        if not gathered_embs:
-            self.embs = None
-            return
         # Merge the dictionaries from all processes
         merged_embs = {}
         for key in self.embs.keys():
