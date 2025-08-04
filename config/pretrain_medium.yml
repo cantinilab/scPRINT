@@ -1,5 +1,5 @@
 trainer:
-  strategy: ddp_find_unused_parameters_true
+  strategy: ddp
 model:
   nhead: 8
   num_heads_kv: 4
@@ -7,7 +7,14 @@ model:
   layers_cls: []
   d_model: 512
   dropout: 0.1
+  d_model_cell: 256
+  nhead_cell: 4
+  nlayers_cell: 6
 data:
   batch_size: 16
-  n_samples_per_epoch: 1_000_000
-# model is 100M params
+  n_samples_per_epoch: 1_500_000
+# model is 90M params
+scprint_training:
+  test_every: 10
+  weight_decay: 0.1
+  warmup_duration: 2000
