@@ -40,7 +40,6 @@ class Embedder:
             "self_reported_ethnicity_ontology_term_id",
             "sex_ontology_term_id",
         ],
-        plot_corr_size: int = 64,
         doplot: bool = True,
         keep_all_cls_pred: bool = False,
         dtype: torch.dtype = torch.float16,
@@ -74,7 +73,6 @@ class Embedder:
         self.add_zero_genes = add_zero_genes
         self.pred_embedding = pred_embedding
         self.keep_all_cls_pred = keep_all_cls_pred
-        self.plot_corr_size = plot_corr_size
         self.precision = precision
         self.doplot = doplot
         self.dtype = dtype

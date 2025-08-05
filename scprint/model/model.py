@@ -8,7 +8,7 @@ from functools import partial
 from math import factorial
 from pathlib import Path
 from typing import Dict, Optional
-
+import numpy as np
 import lightning as L
 import pandas as pd
 import torch
@@ -482,6 +482,26 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 print("RuntimeError caught: scPrint is not attached to a `Trainer`.")
         if not is_interactive():
             self.save_hyperparameters()
+            
+    def _rm_genes(self, names):
+        tokeep = ~np.array([g in names for g in self.genes])
+        # Keep only embeddings for genes that are NOT being deleted
+        kept_embeddings = self.gene_encoder.embeddings.weight.data[tokeep]
+        
+        # Create new embeddings layer with reduced vocabulary size
+        new_vocab_size = tokeep.sum()
+        new_gene_encoder = encoders.GeneEncoder(new_vocab_size, self.d_model)
+        # Copy the kept embeddingss to the new encoder
+        new_gene_encoder.embeddings.weight.data = kept_embeddings
+        # Replace the old encoder with the new one
+        self.gene_encoder = new_gene_encoder
+        # Update vocabulary
+        self.vocab = {i: n for i, n in enumerate(self.genes)}
+        self.genes = [g for g in self.genes if g not in names]
+        self.attn.gene_dim = len(self.genes)
+        if self.gene_pos_enc is not None:
+            # Update gene position encoding
+            self.pos_encoder.pe = self.pos_encoder.pe[tokeep]
 
     def _encoder(
         self,

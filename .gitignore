@@ -192,3 +192,7 @@ notebooks/data/temp/
 data/main/*.parquet
 !data/main/avg_embedding.parquet
 !data/main/biomart_pos.parquet
+metrics_*.json
+step_*
+data/main/gene_embs/
+data/main/gene_locs/

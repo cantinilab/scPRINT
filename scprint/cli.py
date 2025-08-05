@@ -56,7 +56,9 @@ class MyCLI(LightningCLI):
         parser.link_arguments(
             "data.gene_embeddings", "model.precpt_gene_emb", apply_on="parse"
         )
-        parser.link_arguments("data.organisms", "model.organisms", apply_on="parse")
+        parser.link_arguments(
+            "data.organisms", "model.organisms", apply_on="instantiate"
+        )
         parser.link_arguments(
             "data.num_datasets", "model.num_batch_labels", apply_on="instantiate"
         )
@@ -133,6 +135,7 @@ class MyCLI(LightningCLI):
                 "__call__",
                 skip=set(["model", "adata", "cell_type"]),
             )
+            
             self._subcommand_method_arguments[subcommand] = added
             self._subcommand_parsers[subcommand[0]] = parser
             parser_subcommands.add_subcommand(subcommand[0], parser, help=description)
@@ -155,8 +158,9 @@ class MyCLI(LightningCLI):
             import numpy as np
             import scanpy as sc
             from scdataloader import Preprocessor
-
+            from scdataloader.utils import load_genes 
             from scprint import scPrint
+            import numpy as np
 
             adata = sc.read_h5ad(self.config_init[subcommand]["adata"])
             adata.obs.drop(columns="is_primary_data", inplace=True, errors="ignore")
@@ -169,10 +173,31 @@ class MyCLI(LightningCLI):
             )
             adata = preprocessor(adata)
             conf = dict(self.config_init[subcommand])
-
-            model = scPrint.load_from_checkpoint(
-                self.config_init[subcommand]["ckpt_path"], precpt_gene_emb=None
-            )
+            model_checkpoint_file = self.config_init[subcommand]["ckpt_path"]
+            try:
+                m = torch.load(model_checkpoint_file)
+            except RuntimeError: 
+                m = torch.load(model_checkpoint_file, map_location=torch.device('cpu'))
+            transformer = "flash" if torch.cuda.is_available() else "normal"
+            if "prenorm" in m['hyper_parameters']:
+                m['hyper_parameters'].pop("prenorm")
+                torch.save(m, model_checkpoint_file)
+            if "label_counts" in m['hyper_parameters']:
+                model = scPrint.load_from_checkpoint(model_checkpoint_file, precpt_gene_emb=None, classes=m['hyper_parameters']['label_counts'], transformer=transformer)
+            else:
+                model = scPrint.load_from_checkpoint(model_checkpoint_file, precpt_gene_emb=None, transformer=transformer)
+            missing = set(model.genes) - set(load_genes(model.organisms).index)
+            if len(missing) > 0:
+                print(
+                    "Warning: some genes missmatch exist between model and ontology: solving...",
+                )
+                model._rm_genes(missing)
+            if not torch.cuda.is_available():
+                model = model.to(torch.float32)
+            dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+            conf["dtype"] = dtype
+            
+            model = model.to("cuda" if torch.cuda.is_available() else "cpu")
             for key in [
                 "seed_everything",
                 "config",
@@ -224,7 +249,7 @@ class MyCLI(LightningCLI):
 
             if subcommand == "denoise":
                 dn = Denoiser(**conf)
-                metrics, random_indices, genes, expr_pred = dn(
+                metrics, random_indices, expr_pred = dn(
                     model=model,
                     adata=adata,
                 )
@@ -232,30 +257,11 @@ class MyCLI(LightningCLI):
                 print(metrics)
                 print()
                 # now what we are doing here it to complete the expression profile with the denoised values. this is not done by default for now
-                i = 0
-                adata.X = adata.X.tolil()
-                elems = (
-                    random_indices
-                    if random_indices is not None
-                    else range(adata.shape[0])
-                )
-                for idx in elems[: dn.max_cells]:
-                    adata.X[
-                        idx,
-                        adata.var.index.get_indexer(
-                            np.array(model.genes)[genes[i]]
-                            if self.config_init[subcommand]["how"] != "most var"
-                            else genes
-                        ),
-                    ] = expr_pred[i]
-                    i += 1
-                adata.X = adata.X.tocsr()
                 print(
                     "saving the file under the path: ",
                     self.config_init[subcommand]["output_filename"],
                 )
-                adata.var.drop(columns=["stable_id"], inplace=True)
-                adata.write(
+                expr_pred.write(
                     self.config_init[subcommand]["output_filename"] + "_denoised.h5ad"
                 )
 

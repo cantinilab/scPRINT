@@ -25,6 +25,7 @@ from scdataloader.data import SimpleAnnDataset
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from scdataloader.utils import load_genes
 from scprint.utils.sinkhorn import SinkhornDistance
 
 from .tmfg import tmfg
@@ -145,10 +146,7 @@ class GNInfer:
         if self.layer is None:
             self.layer = list(range(model.nlayers))
         self.n_cell_embs = model.attn.additional_tokens
-
         subadata = self.predict(model, adata, self.layer, cell_type)
-        import pdb
-        pdb.set_trace()
         adjacencies = self.aggregate(model.attn.get(), model.genes)
         if self.head_agg == "none":
             return self.save(
