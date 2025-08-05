@@ -1709,10 +1709,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.expr_pred = None
         gathered_embs = self.all_gather(self.embs)
         # Merge the dictionaries from all processes
-        merged_embs = {}
         for key in self.embs.keys():
             self.embs[key] = gathered_embs[key].view(-1, gathered_embs[key].shape[-1])
-        self.embs = merged_embs
         self.info = self.all_gather(self.info).view(-1, self.info.shape[-1])
         self.pred = (
             self.all_gather(self.pred).view(-1, self.pred.shape[-1])
