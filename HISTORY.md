@@ -4,6 +4,12 @@ Changelog
 
 (unreleased)
 ------------
+- By default umap generation. [jkobject]
+
+
+2.3.4 (2025-08-05)
+------------------
+- Release: version 2.3.4 🚀 [jkobject]
 - Merge branch 'main' of https://github.com/cantinilab/scPRINT.
   [jkobject]
 - Update README.md. [Jérémie Kalfon]
