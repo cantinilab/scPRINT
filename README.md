@@ -19,12 +19,14 @@ scPRINT is a large transformer model built for the inference of gene networks (c
 
 It uses novel encoding and decoding of the cell expression profile and new pre-training methodologies to learn a cell model.
 
-scPRINT can be used to perform the following analyses:
+scPRINT can be used to perform the following analyses in a zero-shot mode:
 
 - __expression denoising__: increase the resolution of your scRNAseq data
 - __cell embedding__: generate a low-dimensional representation of your dataset
 - __label prediction__: predict the cell type, disease, sequencer, sex, and ethnicity of your cells
 - __gene network inference__: generate a gene network from any cell or cell cluster in your scRNAseq dataset
+
+It is a foundation model and can be fine-tuned to perform any other analysis
 
 [Read the manuscript!](https://www.biorxiv.org/content/10.1101/2024.07.29.605556v1) if you would like to know more about scPRINT. Have a look at some of my [X-plainers](https://twitter.com/jkobject). 
 
@@ -88,7 +90,6 @@ If you want to be using flashattention2, know that it only supports triton 2.0 M
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1CacoQDAwJn86tq2sBhUoZ6M-xAqsYFDI#scrollTo=Vj73HINSzKHL)
 
-
 ### To know: lamin.ai
 
 To use scPRINT, you will need to use [lamin.ai](https://lamin.ai/). This is needed to load biological informations like genes, cell types, organisms.. (but also to manage the pre-training datasets if this is something you want to set up)
@@ -96,21 +97,26 @@ To use scPRINT, you will need to use [lamin.ai](https://lamin.ai/). This is need
 ### install
 
 To start you will need to do:
+(I would really push you to use uv as it is so much faster for the installation! [Here, is how to install uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 ```bash
-uv venv -n <env-name> python==3.10 #scprint might work with python >3.10, but it is not tested
+uv venv <env-name> --python 3.10 #scprint might work with python >3.10, but it is not tested
 #one of
-uv pip install scprint # OR
-uv pip install scprint[dev] # for the dev dependencies (building etc..) OR
-uv pip install scprint[flash] # to use flashattention2 with triton: only if you have a compatible gpu (e.g. not available for apple GPUs for now, see https://github.com/triton-lang/triton?tab=readme-ov-file#compatibility)
+uv pip install scprint 
+# OR uv pip install scprint[dev] # for the dev dependencies (building etc..) OR
+# OR uv pip install scprint[flash] # to use flashattention2 with triton: only if you have a compatible gpu (e.g. not available for apple GPUs for now, see https://github.com/triton-lang/triton?tab=readme-ov-file#compatibility)
 #OR pip install scPRINT[dev,flash]
 
-lamin init --storage ./testdb --name test --schema bionty
+lamin init --storage ./testdb --name test --modules bionty
 ```
 
 if you start with lamin and had to do a `lamin init`, you will also need to populate your ontologies. This is because scPRINT is using ontologies to define its cell types, diseases, sexes, ethnicities, etc.
 
-you can do it manually or with our function:
+you can do it via the command 
+
+`scdataloader populate all` 
+
+or with this function:
 
 ```python
 from scdataloader.utils import populate_my_ontology
@@ -129,7 +135,7 @@ organisms: List[str] = ["NCBITaxon:10090", "NCBITaxon:9606"],
 )
 ```
 
-We make use of some additional packages we developed alongside scPRint.
+We make use of some additional packages we developed alongside scPRINT (they are also shipped with scprint already).
 
 Please refer to their documentation for more information:
 
@@ -141,48 +147,54 @@ Please refer to their documentation for more information:
 
 scPRINT can run on machines without GPUs, but it will be slow. It is highly recommended to use a GPU for inference.
 
-Once you have a GPU, and installed the required drivers, you might need to install a specific version of pytorch that is compatible with your drivers (e.g. nvidia 550 drivers will lead to a nvidia toolkit 11.7 or 11.8 which might mean you need to re-install a different flavor of pytorch for things to work. e.g. using the command:
-`pip install torch==2.2.0 torchvision==0.17.0 torchaudio==2.2.0 --index-url https://download.pytorch.org/whl/cu118` on my case on linux
- ).
+Most of the time, everything works out of the box, otherwise please follow up:
+
+#### follow up
+
+If you start fresh in GPU programming, you need to have installed the required drivers, you might need to install a specific version of pytorch that is compatible with your drivers (e.g. nvidia 550 drivers will lead to a nvidia toolkit 11.7 or 11.8 which might mean you need to re-install a different flavor of pytorch for things to work. e.g. using the command:
+`pip install torch==2.2.0 torchvision==0.17.0 torchaudio==2.2.0 --index-url https://download.pytorch.org/whl/cu118` on my case on linux.
 
 I was able to test it with nvidia 11.7, 11.8, 12.2.
 
-### dev install
+If you do not have [triton](https://triton-lang.org/main/python-api/triton.html) installed you will not be able to take advantage of GPU acceleration, but you can still use the model on the CPU.
 
-If you want to use the latest version of scPRINT and work on the code yourself use `git clone` and `pip -e` instead of `pip install`.
+If you do not have gpus and loading from a checkpoint, you will need to specify `transformer="normal"` in the `load_from_checkpoint` function like so:
 
-```bash
-git clone https://github.com/cantinilab/scPRINT
-git clone https://github.com/jkobject/scDataLoader
-git clone https://github.com/cantinilab/GRnnData
-git clone https://github.com/jkobject/benGRN
-pip install -e scPRINT[dev]
-pip install -e scDataLoader[dev]
-pip install -e GRnnData[dev]
-pip install -e benGRN[dev]
+```python
+model = scPrint.load_from_checkpoint(
+    '../data/temp/last.ckpt', precpt_gene_emb=None,
+    transformer="normal")
 ```
 
-## Reproducibility 
-
-__To reproduce the paper please use the version / tag `1.6.4` and you will have to git clone the repo to have access to all the pre-training functionalities!__
-
-⚠️ the `test()` function of the pretraining runs (by default run every N epochs) is using a 2 hardcoded test datasets paths (see https://github.com/cantinilab/scPRINT/issues/12). Replace them with your own if you want to use the test functions. They are also made available on hf.co: https://huggingface.co/jkobject/scPRINT/tree/main
+you will know more by following the [get-started](https://cantinilab.github.io/scPRINT/notebooks/cancer_usecase/) notebook.
 
 ## Usage
 
+To get a sense of how scPRINT works, have a look at our [get-started](https://cantinilab.github.io/scPRINT/notebooks/cancer_usecase/) notebook.
+
+To start you will also need to download a checkpoint of a pretrain model like v2-medium or some others from [hugging face](https://huggingface.co/jkobject/scPRINT/)
+
+```bash
+$ hf download jkobject/scPRINT v2-medium.ckpt --local-dir .
+``` 
+
 ### scPRINT's basic commands
 
-This is the most minimal example of how scPRINT works:
+This is the a template of how you would go and use scPRINT most of the time:
 
 ```py
+# import stuff
 from lightning.pytorch import Trainer
 from scprint import scPrint
 from scdataloader import DataModule
 
+# setup a datamodule to train scprint from scratch
 datamodule = DataModule(...)
+# setup a model parameter
 model = scPrint(...)
-# to train / fit / test the model
+# to train / fit / test the model setup a trainer
 trainer = Trainer(...)
+# call the fit function
 trainer.fit(model, datamodule=datamodule)
 # to do predictions Denoiser, Embedder, GNInfer
 denoiser = Denoiser(...)
@@ -193,25 +205,45 @@ denoiser(model, adata=adata)
 
 or, from a bash command line
 
+then finetune or analyse on your data
 ```bash
 $ scprint fit/train/predict/test/denoise/embed/gninfer --config config/[medium|large|vlarge] ...
+```
+to denoise a dataset:
+```bash
+$ scprint denoise --adata my_human_anndata.h5ad --ckpt_path v2-medium.ckpt --species "NCBITaxon:9606" --output_filename denoised.h5ad
+```
+to do embedding and classification on a dataset:
+(the current version implies doing a PCA and Umap so it might need a lot of RAM if run as is)
+```bash
+$ scprint embed --adata my_human_anndata.h5ad --ckpt_path v2-medium.ckpt --species "NCBITaxon:9606" --output_filename embedded.h5ad
+```
+to do gene network inference on a dataset:
+```bash
+$ scprint gninfer --adata my_human_anndata.h5ad --ckpt_path v2-medium.ckpt --species "NCBITaxon:9606" --cell_type 'cell_type_name_from-cell_type-obs_col' --output_filename grn.h5ad
+```
+to finetune scPRINT on your data:
+```bash
+$ scprint fit --config config/base_v2.yml --config config/pretrain_large.yml --ckpt_path large.ckpt
 ```
 
 find out more about the commands by running `scprint --help` or `scprint [command] --help`.
 
 more examples of using the command line are available in the [docs](./docs/usage.md).
 
-### Notes on GPU/CPU usage with triton
+## Documentation
 
-If you do not have [triton](https://triton-lang.org/main/python-api/triton.html) installed you will not be able to take advantage of GPU acceleration, but you can still use the model on the CPU.
+For more information on usage please see the documentation in [https://www.jkobject.com/scPRINT/](https://cantinilab.github.io/scPRINT)
 
-In that case, if loading from a checkpoint that was trained with flashattention, you will need to specify `transformer="normal"` in the `load_from_checkpoint` function like so:
+## Docker
 
-```python
-model = scPrint.load_from_checkpoint(
-    '../data/temp/last.ckpt', precpt_gene_emb=None,
-    transformer="normal")
-```
+By using the `scPRINT Docker image`, you can bypass the complexities of manual package installation, ensuring a consistent deployment environment. Included in this repository is a Dockerfile that lets you craft a container for the project; you have the choice to either build this image on your own or conveniently pull it from Docker Hub.
+
+Make sure that you have the `docker` command line interface installed on your system.
+
+A recommended way to install docker with the correct nvidia drivers on linux is to use this [script](https://gist.github.com/xueerchen1990/baad7baa545cb547e8633bc9e5b84786)
+
+/!\ A MORE UP TO DATE DOCKER IMAGE is made as part of the open-problems benchmark and available in their github for all tasks where scPRINT is benchmarked
 
 ### Simple tests:
 
@@ -232,6 +264,12 @@ you will need to understand a few things like lamindb, scdataloader and scprint'
 -> start with a quick intro using the [google collab notebook](#try-scprint-on-a-google-colab-notebook)
 
 -> look at the other FAQ element based on your desired use-case
+
+### What does my anndata need to contain to be run with scPRINT
+
+-> your anndata only needs to contain the species ontology id in its obs['organism_ontology_term_id'] (e.g. "NCBITaxon:9606"). It also needs to contain .var_names or .var.index with gene ids defined as ENSEMBL_IDs or HUGO_SYMBOL.
+
+-> That's it. you can then follow the preprocessing steps from various example notebooks to align your anndata to our gene set, make sure that it fits our requirements and then send it to the model!
 
 ### I want to generate gene networks from scRNAseq data:
 
@@ -307,24 +345,29 @@ the file itself is also available on [hugging face](https://huggingface.co/jkobj
 ### I want to extract output gene embeddings from scPRINT
 
 I created a novel task script that should work similarly to the other ones (make sure that you understood how they work by running at least one inference notebook) in [scprint/tasks/gene_emb.py](scprint/tasks/gene_emb.py)
+`
+## Development
 
-## Documentation
+### dev install
 
-For more information on usage please see the documentation in [https://www.jkobject.com/scPRINT/](https://cantinilab.github.io/scPRINT)
+If you want to use the latest version of scPRINT and work on the code yourself use `git clone` and `pip -e` instead of `pip install`.
 
-## Model Weights
+```bash
+git clone https://github.com/cantinilab/scPRINT
+git clone https://github.com/jkobject/scDataLoader
+git clone https://github.com/cantinilab/GRnnData
+git clone https://github.com/jkobject/benGRN
+pip install -e scPRINT[dev]
+pip install -e scDataLoader[dev]
+pip install -e GRnnData[dev]
+pip install -e benGRN[dev]
+```
 
-Model weights are available on [hugging face](https://huggingface.co/jkobject/scPRINT/).
+### Reproducibility 
 
-## Docker
+__To reproduce the paper please use the version / tag `1.6.4` and you will have to git clone the repo to have access to all the pre-training functionalities!__
 
-By using the `scPRINT Docker image`, you can bypass the complexities of manual package installation, ensuring a consistent deployment environment. Included in this repository is a Dockerfile that lets you craft a container for the project; you have the choice to either build this image on your own or conveniently pull it from Docker Hub.
-
-Make sure that you have the `docker` command line interface installed on your system.
-
-A recommended way to install docker with the correct nvidia drivers on linux is to use this [script](https://gist.github.com/xueerchen1990/baad7baa545cb547e8633bc9e5b84786)
-
-/!\ A MORE UP TO DATE DOCKER IMAGE is made as part of the open-problems benchmark and available in their github for all tasks where scPRINT is benchmarked
+⚠️ When re-training scPRINT from scratch, by default, every N epoch, the `test()`  function will be called `. It is using a predownloadedtest datasets paths (see https://github.com/cantinilab/scPRINT/issues/12). Replace them with your own paths you want to use these test functions. They are also made available on hf.co: https://huggingface.co/jkobject/scPRINT/tree/main
 
 ### Building the Docker Image
 
@@ -339,8 +382,8 @@ docker build -t scprint:latest -f Dockerfile .
 If you don't want to build the image yourself, you can pull it directly from Docker Hub:
 
 ```bash
-docker pull jkobject/scprint:1.1.3
-docker tag jkobject/scprint:1.1.3 scprint:latest
+docker pull jkobject/scprint:1.2.0
+docker tag jkobject/scprint:1.2.0 scprint:latest
 ```
 
 ### Running the Docker Container
@@ -352,8 +395,8 @@ docker run --gpus all --rm -it scprint:latest bash
 ```
 
 Please note: When running the Docker container, ensure you mount any necessary folders using the -v option to access them inside the container.
-`
-## Development
+
+### Participate
 
 Read the [CONTRIBUTING.md](CONTRIBUTING.md) file.
 
