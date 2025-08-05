@@ -2,6 +2,19 @@ Changelog
 =========
 
 
+(unreleased)
+------------
+- Merge branch 'main' of https://github.com/cantinilab/scPRINT.
+  [jkobject]
+- Update README.md. [Jérémie Kalfon]
+- Debug. [jkobject]
+
+
+2.3.3 (2025-08-05)
+------------------
+- Release: version 2.3.3 🚀 [jkobject]
+
+
 2.3.2 (2025-08-05)
 ------------------
 - Release: version 2.3.2 🚀 [jkobject]
