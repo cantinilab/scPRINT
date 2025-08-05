@@ -97,6 +97,7 @@ To use scPRINT, you will need to use [lamin.ai](https://lamin.ai/). This is need
 ### install
 
 To start you will need to do:
+(I would really push you to use uv as it is so much faster for the installation! [Here, is how to install uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 ```bash
 uv venv <env-name> --python 3.10 #scprint might work with python >3.10, but it is not tested
