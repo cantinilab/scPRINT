@@ -169,6 +169,37 @@
 
 
 
+
+
+
+
+
+<p><span class="doc-section-title">Classes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="SinkhornDistance (scprint.utils.sinkhorn.SinkhornDistance)" href="#scprint.utils.sinkhorn.SinkhornDistance">SinkhornDistance</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
   <div class="doc doc-children">
 
 
@@ -208,7 +239,7 @@
         <ul class="first simple">
             <li>
               <b><code>eps</code></b>
-                  (<code>float</code>, default:
+                  (<code><span title="float">float</span></code>, default:
                       <code>0.01</code>
 )
               –
@@ -218,7 +249,7 @@
             </li>
             <li>
               <b><code>max_iter</code></b>
-                  (<code>int</code>, default:
+                  (<code><span title="int">int</span></code>, default:
                       <code>100</code>
 )
               –
@@ -228,7 +259,7 @@
             </li>
             <li>
               <b><code>reduction</code></b>
-                  (<code>str</code>, default:
+                  (<code><span title="str">str</span></code>, default:
                       <code>&#39;none&#39;</code>
 )
               –
@@ -241,6 +272,57 @@
     </tr>
   </tbody>
 </table>
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Methods:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="M (scprint.utils.sinkhorn.SinkhornDistance.M)" href="#scprint.utils.sinkhorn.SinkhornDistance.M">M</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Modified cost for logarithmic updates</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="ave
+
+  
+      staticmethod
+   (scprint.utils.sinkhorn.SinkhornDistance.ave)" href="#scprint.utils.sinkhorn.SinkhornDistance.ave">ave</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Barycenter subroutine, used by kinetic acceleration through extrapolation.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="forward (scprint.utils.sinkhorn.SinkhornDistance.forward)" href="#scprint.utils.sinkhorn.SinkhornDistance.forward">forward</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>forward Compute the Sinkhorn distance between two measures with cost matrix c</p>
+                </div>
+              </td>
+            </tr>
+      </tbody>
+    </table>
+
+
+
                   <details class="quote">
                     <summary>Source code in <code>scprint/utils/sinkhorn.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 8</span>
@@ -255,7 +337,7 @@
 <span class="normal">17</span>
 <span class="normal">18</span>
 <span class="normal">19</span>
-<span class="normal">20</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-2</span><span class="p">,</span> <span class="n">max_iter</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">reduction</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;none&quot;</span><span class="p">):</span>
+<span class="normal">20</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-2</span><span class="p">,</span> <span class="n">max_iter</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">reduction</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;none&quot;</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    SinkhornDistance Initialize the SinkhornDistance class</span>
 
@@ -296,12 +378,13 @@
 
         <p>Modified cost for logarithmic updates</p>
 
+
             <details class="quote">
               <summary>Source code in <code>scprint/utils/sinkhorn.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 99</span>
 <span class="normal">100</span>
 <span class="normal">101</span>
-<span class="normal">102</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">M</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+<span class="normal">102</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">M</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
     <span class="s2">&quot;Modified cost for logarithmic updates&quot;</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;$M_{ij} = (-c_{ij} + u_i + v_j) / epsilon$&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="p">(</span><span class="o">-</span><span class="n">C</span> <span class="o">+</span> <span class="n">u</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">v</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">eps</span>
@@ -328,13 +411,14 @@
 
         <p>Barycenter subroutine, used by kinetic acceleration through extrapolation.</p>
 
+
             <details class="quote">
               <summary>Source code in <code>scprint/utils/sinkhorn.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">104</span>
 <span class="normal">105</span>
 <span class="normal">106</span>
 <span class="normal">107</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">ave</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">u1</span><span class="p">,</span> <span class="n">tau</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ave</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">u1</span><span class="p">,</span> <span class="n">tau</span><span class="p">):</span>
     <span class="s2">&quot;Barycenter subroutine, used by kinetic acceleration through extrapolation.&quot;</span>
     <span class="k">return</span> <span class="n">tau</span> <span class="o">*</span> <span class="n">u</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">tau</span><span class="p">)</span> <span class="o">*</span> <span class="n">u1</span>
 </code></pre></div></td></tr></table></div>
@@ -402,6 +486,7 @@
     </tr>
   </tbody>
 </table>
+
             <details class="quote">
               <summary>Source code in <code>scprint/utils/sinkhorn.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
@@ -479,7 +564,7 @@
 <span class="normal">94</span>
 <span class="normal">95</span>
 <span class="normal">96</span>
-<span class="normal">97</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+<span class="normal">97</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    forward Compute the Sinkhorn distance between two measures with cost matrix c</span>
 
@@ -592,6 +677,117 @@
 
 
 
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Functions:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="category_str2int (scprint.utils.utils.category_str2int)" href="#scprint.utils.utils.category_str2int">category_str2int</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>category_str2int converts a list of category strings to a list of category integers.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="createFoldersFor (scprint.utils.utils.createFoldersFor)" href="#scprint.utils.utils.createFoldersFor">createFoldersFor</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>will recursively create folders if needed until having all the folders required to save the file in this filepath</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="fileToList (scprint.utils.utils.fileToList)" href="#scprint.utils.utils.fileToList">fileToList</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>loads an input file with a\n b\n.. into a list [a,b,..]</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="get_free_gpu (scprint.utils.utils.get_free_gpu)" href="#scprint.utils.utils.get_free_gpu">get_free_gpu</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>get_free_gpu finds the GPU with the most free memory using nvidia-smi.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="get_git_commit (scprint.utils.utils.get_git_commit)" href="#scprint.utils.utils.get_git_commit">get_git_commit</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>get_git_commit gets the current git commit hash.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="inf_loop (scprint.utils.utils.inf_loop)" href="#scprint.utils.utils.inf_loop">inf_loop</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>wrapper function for endless data loader.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="isnotebook (scprint.utils.utils.isnotebook)" href="#scprint.utils.utils.isnotebook">isnotebook</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>check whether excuting in jupyter notebook.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="listToFile (scprint.utils.utils.listToFile)" href="#scprint.utils.utils.listToFile">listToFile</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>listToFile loads a list with [a,b,..] into an input file a\n b\n..</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="prepare_device (scprint.utils.utils.prepare_device)" href="#scprint.utils.utils.prepare_device">prepare_device</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>setup GPU device if available. get gpu device indices which are used for DataParallel</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="run_command (scprint.utils.utils.run_command)" href="#scprint.utils.utils.run_command">run_command</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>run_command runs a command in the shell and prints the output.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="set_seed (scprint.utils.utils.set_seed)" href="#scprint.utils.utils.set_seed">set_seed</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>set random seed.</p>
+                </div>
+              </td>
+            </tr>
+      </tbody>
+    </table>
+
+
+
+
+
   <div class="doc doc-children">
 
 
@@ -628,7 +824,7 @@
         <ul class="first simple">
             <li>
               <b><code>category_strs</code></b>
-                  (<code><span title="typing.List">List</span>[str]</code>)
+                  (<code><span title="typing.List">List</span>[<span title="str">str</span>]</code>)
               –
               <div class="doc-md-description">
                 <p>A list of category strings to be converted.</p>
@@ -651,7 +847,7 @@
       <td class="field-body">
         <ul class="first simple">
             <li>
-                  <code><span title="typing.List">List</span>[int]</code>
+                  <code><span title="typing.List">List</span>[<span title="int">int</span>]</code>
               –
               <div class="doc-md-description">
                 <p>List[int]: A list of integers corresponding to the input category strings.</p>
@@ -662,6 +858,7 @@
     </tr>
   </tbody>
 </table>
+
             <details class="quote">
               <summary>Source code in <code>scprint/utils/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 96</span>
@@ -676,7 +873,7 @@
 <span class="normal">105</span>
 <span class="normal">106</span>
 <span class="normal">107</span>
-<span class="normal">108</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">category_str2int</span><span class="p">(</span><span class="n">category_strs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="normal">108</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">category_str2int</span><span class="p">(</span><span class="n">category_strs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    category_str2int converts a list of category strings to a list of category integers.</span>
 
@@ -708,6 +905,7 @@
 
         <p>will recursively create folders if needed until having all the folders required to save the file in this filepath</p>
 
+
             <details class="quote">
               <summary>Source code in <code>scprint/utils/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">85</span>
@@ -718,7 +916,7 @@
 <span class="normal">90</span>
 <span class="normal">91</span>
 <span class="normal">92</span>
-<span class="normal">93</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">createFoldersFor</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
+<span class="normal">93</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">createFoldersFor</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    will recursively create folders if needed until having all the folders required to save the file in this filepath</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -759,7 +957,7 @@
         <ul class="first simple">
             <li>
               <b><code>input_str</code></b>
-                  (<code>str</code>)
+                  (<code><span title="str">str</span></code>)
               –
               <div class="doc-md-description">
                 <p>The input string to be completed.</p>
@@ -782,7 +980,7 @@
       <td class="field-body">
         <ul class="first simple">
             <li>
-<b><code>str</code></b>(                  <code>list</code>
+<b><code>str</code></b>(                  <code><span title="list">list</span></code>
 )              –
               <div class="doc-md-description">
                 <p>The completed string with 'complete' appended.</p>
@@ -793,6 +991,7 @@
     </tr>
   </tbody>
 </table>
+
             <details class="quote">
               <summary>Source code in <code>scprint/utils/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">43</span>
@@ -806,7 +1005,7 @@
 <span class="normal">51</span>
 <span class="normal">52</span>
 <span class="normal">53</span>
-<span class="normal">54</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">fileToList</span><span class="p">(</span><span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">strconv</span><span class="p">:</span> <span class="nb">callable</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="normal">54</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">fileToList</span><span class="p">(</span><span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">strconv</span><span class="p">:</span> <span class="nb">callable</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    loads an input file with a\\n b\\n.. into a list [a,b,..]</span>
 
@@ -859,6 +1058,7 @@
     </tr>
   </tbody>
 </table>
+
             <details class="quote">
               <summary>Source code in <code>scprint/utils/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">125</span>
@@ -890,16 +1090,16 @@
 <span class="normal">151</span>
 <span class="normal">152</span>
 <span class="normal">153</span>
-<span class="normal">154</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_free_gpu</span><span class="p">():</span>
+<span class="normal">154</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_free_gpu</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    get_free_gpu finds the GPU with the most free memory using nvidia-smi.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        int: The index of the GPU with the most free memory.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">import</span> <span class="nn">subprocess</span>
-    <span class="kn">import</span> <span class="nn">sys</span>
-    <span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">StringIO</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">io</span><span class="w"> </span><span class="kn">import</span> <span class="n">StringIO</span>
 
 
     <span class="n">gpu_stats</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span>
@@ -961,6 +1161,7 @@
     </tr>
   </tbody>
 </table>
+
             <details class="quote">
               <summary>Source code in <code>scprint/utils/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">157</span>
@@ -970,7 +1171,7 @@
 <span class="normal">161</span>
 <span class="normal">162</span>
 <span class="normal">163</span>
-<span class="normal">164</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_git_commit</span><span class="p">():</span>
+<span class="normal">164</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_git_commit</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    get_git_commit gets the current git commit hash.</span>
 
@@ -997,12 +1198,13 @@
 
         <p>wrapper function for endless data loader.</p>
 
+
             <details class="quote">
               <summary>Source code in <code>scprint/utils/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">185</span>
 <span class="normal">186</span>
 <span class="normal">187</span>
-<span class="normal">188</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">inf_loop</span><span class="p">(</span><span class="n">data_loader</span><span class="p">):</span>
+<span class="normal">188</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">inf_loop</span><span class="p">(</span><span class="n">data_loader</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;wrapper function for endless data loader.&quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">loader</span> <span class="ow">in</span> <span class="n">repeat</span><span class="p">(</span><span class="n">data_loader</span><span class="p">):</span>
         <span class="k">yield from</span> <span class="n">loader</span>
@@ -1025,6 +1227,7 @@
 
         <p>check whether excuting in jupyter notebook.</p>
 
+
             <details class="quote">
               <summary>Source code in <code>scprint/utils/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">111</span>
@@ -1038,7 +1241,7 @@
 <span class="normal">119</span>
 <span class="normal">120</span>
 <span class="normal">121</span>
-<span class="normal">122</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">isnotebook</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="normal">122</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">isnotebook</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;check whether excuting in jupyter notebook.&quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">shell</span> <span class="o">=</span> <span class="n">get_ipython</span><span class="p">()</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
@@ -1082,7 +1285,7 @@
         <ul class="first simple">
             <li>
               <b><code>l</code></b>
-                  (<code>list</code>)
+                  (<code><span title="list">list</span></code>)
               –
               <div class="doc-md-description">
                 <p>The list of elements to be written to the file.</p>
@@ -1090,7 +1293,7 @@
             </li>
             <li>
               <b><code>filename</code></b>
-                  (<code>str</code>)
+                  (<code><span title="str">str</span></code>)
               –
               <div class="doc-md-description">
                 <p>The name of the file where the list will be written.</p>
@@ -1098,8 +1301,8 @@
             </li>
             <li>
               <b><code>strconv</code></b>
-                  (<code>callable</code>, default:
-                      <code>lambda x: str(x)</code>
+                  (<code><span title="callable">callable</span></code>, default:
+                      <code>lambda x: <span title="str">str</span>(<span title="x">x</span>)</code>
 )
               –
               <div class="doc-md-description">
@@ -1134,6 +1337,7 @@
     </tr>
   </tbody>
 </table>
+
             <details class="quote">
               <summary>Source code in <code>scprint/utils/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">57</span>
@@ -1150,7 +1354,7 @@
 <span class="normal">68</span>
 <span class="normal">69</span>
 <span class="normal">70</span>
-<span class="normal">71</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">listToFile</span><span class="p">(</span><span class="n">li</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">strconv</span><span class="p">:</span> <span class="nb">callable</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">71</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">listToFile</span><span class="p">(</span><span class="n">li</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">strconv</span><span class="p">:</span> <span class="nb">callable</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    listToFile loads a list with [a,b,..] into an input file a\\n b\\n..</span>
 
@@ -1184,6 +1388,7 @@
 
         <p>setup GPU device if available. get gpu device indices which are used for DataParallel</p>
 
+
             <details class="quote">
               <summary>Source code in <code>scprint/utils/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">191</span>
@@ -1205,7 +1410,7 @@
 <span class="normal">207</span>
 <span class="normal">208</span>
 <span class="normal">209</span>
-<span class="normal">210</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_device</span><span class="p">(</span><span class="n">n_gpu_use</span><span class="p">):</span>
+<span class="normal">210</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">prepare_device</span><span class="p">(</span><span class="n">n_gpu_use</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    setup GPU device if available. get gpu device indices which are used for DataParallel</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1257,7 +1462,7 @@
         <ul class="first simple">
             <li>
               <b><code>command</code></b>
-                  (<code>str</code>)
+                  (<code><span title="str">str</span></code>)
               –
               <div class="doc-md-description">
                 <p>The command to be executed in the shell.</p>
@@ -1290,6 +1495,7 @@
     </tr>
   </tbody>
 </table>
+
             <details class="quote">
               <summary>Source code in <code>scprint/utils/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
@@ -1310,7 +1516,7 @@
 <span class="normal">37</span>
 <span class="normal">38</span>
 <span class="normal">39</span>
-<span class="normal">40</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">run_command</span><span class="p">(</span><span class="n">command</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="normal">40</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_command</span><span class="p">(</span><span class="n">command</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    run_command runs a command in the shell and prints the output.</span>
 
@@ -1348,6 +1554,7 @@
 
         <p>set random seed.</p>
 
+
             <details class="quote">
               <summary>Source code in <code>scprint/utils/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">74</span>
@@ -1356,7 +1563,7 @@
 <span class="normal">77</span>
 <span class="normal">78</span>
 <span class="normal">79</span>
-<span class="normal">80</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">set_seed</span><span class="p">(</span><span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">42</span><span class="p">):</span>
+<span class="normal">80</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">set_seed</span><span class="p">(</span><span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">42</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;set random seed.&quot;&quot;&quot;</span>
     <span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
     <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
@@ -1388,6 +1595,53 @@
 </h2>
 
     <div class="doc doc-contents first">
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Functions:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="load_fasta_species (scprint.utils.get_seq.load_fasta_species)" href="#scprint.utils.get_seq.load_fasta_species">load_fasta_species</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Downloads and caches FASTA files for a given species from the Ensembl FTP server.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="seq (scprint.utils.get_seq.seq)" href="#scprint.utils.get_seq.seq">seq</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Fetch nucleotide or amino acid sequence (FASTA) of a gene (and all its isoforms) or transcript by Ensembl, WormBase, or FlyBase ID.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="subset_fasta (scprint.utils.get_seq.subset_fasta)" href="#scprint.utils.get_seq.subset_fasta">subset_fasta</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>subset_fasta: creates a new fasta file with only the sequence which names contain one of gene_names</p>
+                </div>
+              </td>
+            </tr>
+      </tbody>
+    </table>
+
+
 
 
 
@@ -1427,7 +1681,7 @@
         <ul class="first simple">
             <li>
               <b><code>species</code></b>
-                  (<code>str</code>, default:
+                  (<code><span title="str">str</span></code>, default:
                       <code>&#39;homo_sapiens&#39;</code>
 )
               –
@@ -1437,7 +1691,7 @@
             </li>
             <li>
               <b><code>output_path</code></b>
-                  (<code>str</code>, default:
+                  (<code><span title="str">str</span></code>, default:
                       <code>&#39;/tmp/data/fasta/&#39;</code>
 )
               –
@@ -1447,7 +1701,7 @@
             </li>
             <li>
               <b><code>cache</code></b>
-                  (<code>bool</code>, default:
+                  (<code><span title="bool">bool</span></code>, default:
                       <code>True</code>
 )
               –
@@ -1460,10 +1714,10 @@
     </tr>
   </tbody>
 </table>
+
             <details class="quote">
               <summary>Source code in <code>scprint/utils/get_seq.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">31</span>
-<span class="normal">32</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">32</span>
 <span class="normal">33</span>
 <span class="normal">34</span>
 <span class="normal">35</span>
@@ -1490,7 +1744,28 @@
 <span class="normal">56</span>
 <span class="normal">57</span>
 <span class="normal">58</span>
-<span class="normal">59</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">load_fasta_species</span><span class="p">(</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span>
+<span class="normal">69</span>
+<span class="normal">70</span>
+<span class="normal">71</span>
+<span class="normal">72</span>
+<span class="normal">73</span>
+<span class="normal">74</span>
+<span class="normal">75</span>
+<span class="normal">76</span>
+<span class="normal">77</span>
+<span class="normal">78</span>
+<span class="normal">79</span>
+<span class="normal">80</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_fasta_species</span><span class="p">(</span>
     <span class="n">species</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;homo_sapiens&quot;</span><span class="p">,</span>
     <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;/tmp/data/fasta/&quot;</span><span class="p">,</span>
     <span class="n">cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -1505,20 +1780,40 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">ftp</span> <span class="o">=</span> <span class="n">ftplib</span><span class="o">.</span><span class="n">FTP</span><span class="p">(</span><span class="s2">&quot;ftp.ensembl.org&quot;</span><span class="p">)</span>
     <span class="n">ftp</span><span class="o">.</span><span class="n">login</span><span class="p">()</span>
-    <span class="n">ftp</span><span class="o">.</span><span class="n">cwd</span><span class="p">(</span><span class="s2">&quot;/pub/release-110/fasta/&quot;</span> <span class="o">+</span> <span class="n">species</span> <span class="o">+</span> <span class="s2">&quot;/pep/&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ftp</span><span class="o">.</span><span class="n">cwd</span><span class="p">(</span><span class="s2">&quot;/pub/release-110/fasta/&quot;</span> <span class="o">+</span> <span class="n">species</span> <span class="o">+</span> <span class="s2">&quot;/pep/&quot;</span><span class="p">)</span>
+        <span class="n">types</span> <span class="o">=</span> <span class="s2">&quot;animals&quot;</span>
+    <span class="k">except</span> <span class="n">ftplib</span><span class="o">.</span><span class="n">error_perm</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ftp</span> <span class="o">=</span> <span class="n">ftplib</span><span class="o">.</span><span class="n">FTP</span><span class="p">(</span><span class="s2">&quot;ftp.ensemblgenomes.ebi.ac.uk&quot;</span><span class="p">)</span>
+            <span class="n">ftp</span><span class="o">.</span><span class="n">login</span><span class="p">()</span>
+            <span class="n">ftp</span><span class="o">.</span><span class="n">cwd</span><span class="p">(</span><span class="s2">&quot;/pub/plants/release-60/fasta/&quot;</span> <span class="o">+</span> <span class="n">species</span> <span class="o">+</span> <span class="s2">&quot;/pep/&quot;</span><span class="p">)</span>
+            <span class="n">types</span> <span class="o">=</span> <span class="s2">&quot;plants&quot;</span>
+        <span class="k">except</span> <span class="n">ftplib</span><span class="o">.</span><span class="n">error_perm</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">ftp</span><span class="o">.</span><span class="n">cwd</span><span class="p">(</span><span class="s2">&quot;/pub/metazoa/release-60/fasta/&quot;</span> <span class="o">+</span> <span class="n">species</span> <span class="o">+</span> <span class="s2">&quot;/pep/&quot;</span><span class="p">)</span>
+                <span class="n">types</span> <span class="o">=</span> <span class="s2">&quot;metazoa&quot;</span>
+            <span class="k">except</span> <span class="n">ftplib</span><span class="o">.</span><span class="n">error_perm</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Species </span><span class="si">{</span><span class="n">species</span><span class="si">}</span><span class="s2"> not found in Ensembl or Ensembl Genomes.&quot;</span>
+                <span class="p">)</span>
     <span class="n">file</span> <span class="o">=</span> <span class="n">list_files</span><span class="p">(</span><span class="n">ftp</span><span class="p">,</span> <span class="s2">&quot;.all.fa.gz&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">local_file_path</span> <span class="o">=</span> <span class="n">output_path</span> <span class="o">+</span> <span class="n">file</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">local_file_path</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">cache</span><span class="p">:</span>
         <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">local_file_path</span><span class="p">),</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">local_file_path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">local_file</span><span class="p">:</span>
             <span class="n">ftp</span><span class="o">.</span><span class="n">retrbinary</span><span class="p">(</span><span class="s2">&quot;RETR &quot;</span> <span class="o">+</span> <span class="n">file</span><span class="p">,</span> <span class="n">local_file</span><span class="o">.</span><span class="n">write</span><span class="p">)</span>
-    <span class="n">ftp</span><span class="o">.</span><span class="n">cwd</span><span class="p">(</span><span class="s2">&quot;/pub/release-110/fasta/&quot;</span> <span class="o">+</span> <span class="n">species</span> <span class="o">+</span> <span class="s2">&quot;/ncrna/&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">types</span> <span class="o">==</span> <span class="s2">&quot;animals&quot;</span><span class="p">:</span>
+        <span class="n">ftp</span><span class="o">.</span><span class="n">cwd</span><span class="p">(</span><span class="s2">&quot;/pub/release-110/fasta/&quot;</span> <span class="o">+</span> <span class="n">species</span> <span class="o">+</span> <span class="s2">&quot;/ncrna/&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">types</span> <span class="o">==</span> <span class="s2">&quot;plants&quot;</span><span class="p">:</span>
+        <span class="n">ftp</span><span class="o">.</span><span class="n">cwd</span><span class="p">(</span><span class="s2">&quot;/pub/plants/release-60/fasta/&quot;</span> <span class="o">+</span> <span class="n">species</span> <span class="o">+</span> <span class="s2">&quot;/ncrna/&quot;</span><span class="p">)</span>
     <span class="n">file</span> <span class="o">=</span> <span class="n">list_files</span><span class="p">(</span><span class="n">ftp</span><span class="p">,</span> <span class="s2">&quot;.ncrna.fa.gz&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">local_file_path</span> <span class="o">=</span> <span class="n">output_path</span> <span class="o">+</span> <span class="n">file</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">local_file_path</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">cache</span><span class="p">:</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">local_file_path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">local_file</span><span class="p">:</span>
+    <span class="n">local_file_path2</span> <span class="o">=</span> <span class="n">output_path</span> <span class="o">+</span> <span class="n">file</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">local_file_path2</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">cache</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">local_file_path2</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">local_file</span><span class="p">:</span>
             <span class="n">ftp</span><span class="o">.</span><span class="n">retrbinary</span><span class="p">(</span><span class="s2">&quot;RETR &quot;</span> <span class="o">+</span> <span class="n">file</span><span class="p">,</span> <span class="n">local_file</span><span class="o">.</span><span class="n">write</span><span class="p">)</span>
     <span class="n">ftp</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">local_file_path</span><span class="p">,</span> <span class="n">local_file_path2</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -1551,7 +1846,7 @@
         <ul class="first simple">
             <li>
               <b><code>ens_ids</code></b>
-                  (<code><span title="typing.Union">Union</span>[str, <span title="typing.List">List</span>[str]]</code>)
+                  (<code><span title="typing.Union">Union</span>[<span title="str">str</span>, <span title="typing.List">List</span>[<span title="str">str</span>]]</code>)
               –
               <div class="doc-md-description">
                 <p>One or more Ensembl IDs (passed as string or list of strings).
@@ -1560,7 +1855,7 @@
             </li>
             <li>
               <b><code>translate</code></b>
-                  (<code>bool</code>, default:
+                  (<code><span title="bool">bool</span></code>, default:
                       <code>False</code>
 )
               –
@@ -1573,7 +1868,7 @@
             </li>
             <li>
               <b><code>isoforms</code></b>
-                  (<code>bool</code>, default:
+                  (<code><span title="bool">bool</span></code>, default:
                       <code>False</code>
 )
               –
@@ -1584,7 +1879,7 @@
             </li>
             <li>
               <b><code>parallel</code></b>
-                  (<code>bool</code>, default:
+                  (<code><span title="bool">bool</span></code>, default:
                       <code>True</code>
 )
               –
@@ -1594,7 +1889,7 @@
             </li>
             <li>
               <b><code>save</code></b>
-                  (<code>bool</code>, default:
+                  (<code><span title="bool">bool</span></code>, default:
                       <code>False</code>
 )
               –
@@ -1604,7 +1899,7 @@
             </li>
             <li>
               <b><code>transcribe</code></b>
-                  (<code>bool</code>, default:
+                  (<code><span title="bool">bool</span></code>, default:
                       <code>None</code>
 )
               –
@@ -1614,7 +1909,7 @@
             </li>
             <li>
               <b><code>seqtype</code></b>
-                  (<code>str</code>, default:
+                  (<code><span title="str">str</span></code>, default:
                       <code>None</code>
 )
               –
@@ -1624,7 +1919,7 @@
             </li>
             <li>
               <b><code>verbose</code></b>
-                  (<code>bool</code>, default:
+                  (<code><span title="bool">bool</span></code>, default:
                       <code>True</code>
 )
               –
@@ -1649,7 +1944,7 @@
       <td class="field-body">
         <ul class="first simple">
             <li>
-                  <code><span title="typing.List">List</span>[str]</code>
+                  <code><span title="typing.List">List</span>[<span title="str">str</span>]</code>
               –
               <div class="doc-md-description">
                 <p>List[str]: A list containing the requested sequences, or a FASTA file if 'save' is True.</p>
@@ -1672,7 +1967,7 @@
       <td class="field-body">
         <ul class="first simple">
             <li>
-                  <code>ValueError</code>
+                  <code><span title="ValueError">ValueError</span></code>
               –
               <div class="doc-md-description">
                 <p>If an invalid Ensembl ID is provided.</p>
@@ -1683,43 +1978,10 @@
     </tr>
   </tbody>
 </table>
+
             <details class="quote">
               <summary>Source code in <code>scprint/utils/get_seq.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">116</span>
-<span class="normal">117</span>
-<span class="normal">118</span>
-<span class="normal">119</span>
-<span class="normal">120</span>
-<span class="normal">121</span>
-<span class="normal">122</span>
-<span class="normal">123</span>
-<span class="normal">124</span>
-<span class="normal">125</span>
-<span class="normal">126</span>
-<span class="normal">127</span>
-<span class="normal">128</span>
-<span class="normal">129</span>
-<span class="normal">130</span>
-<span class="normal">131</span>
-<span class="normal">132</span>
-<span class="normal">133</span>
-<span class="normal">134</span>
-<span class="normal">135</span>
-<span class="normal">136</span>
-<span class="normal">137</span>
-<span class="normal">138</span>
-<span class="normal">139</span>
-<span class="normal">140</span>
-<span class="normal">141</span>
-<span class="normal">142</span>
-<span class="normal">143</span>
-<span class="normal">144</span>
-<span class="normal">145</span>
-<span class="normal">146</span>
-<span class="normal">147</span>
-<span class="normal">148</span>
-<span class="normal">149</span>
-<span class="normal">150</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">150</span>
 <span class="normal">151</span>
 <span class="normal">152</span>
 <span class="normal">153</span>
@@ -2087,7 +2349,38 @@
 <span class="normal">515</span>
 <span class="normal">516</span>
 <span class="normal">517</span>
-<span class="normal">518</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">seq</span><span class="p">(</span>
+<span class="normal">518</span>
+<span class="normal">519</span>
+<span class="normal">520</span>
+<span class="normal">521</span>
+<span class="normal">522</span>
+<span class="normal">523</span>
+<span class="normal">524</span>
+<span class="normal">525</span>
+<span class="normal">526</span>
+<span class="normal">527</span>
+<span class="normal">528</span>
+<span class="normal">529</span>
+<span class="normal">530</span>
+<span class="normal">531</span>
+<span class="normal">532</span>
+<span class="normal">533</span>
+<span class="normal">534</span>
+<span class="normal">535</span>
+<span class="normal">536</span>
+<span class="normal">537</span>
+<span class="normal">538</span>
+<span class="normal">539</span>
+<span class="normal">540</span>
+<span class="normal">541</span>
+<span class="normal">542</span>
+<span class="normal">543</span>
+<span class="normal">544</span>
+<span class="normal">545</span>
+<span class="normal">546</span>
+<span class="normal">547</span>
+<span class="normal">548</span>
+<span class="normal">549</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">seq</span><span class="p">(</span>
     <span class="n">ens_ids</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
     <span class="n">translate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">isoforms</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -2370,9 +2663,6 @@
             <span class="c1"># Fetch the amino acid sequences of the transcript Ensembl IDs</span>
             <span class="n">df_uniprot</span> <span class="o">=</span> <span class="n">get_uniprot_seqs</span><span class="p">(</span><span class="n">UNIPROT_REST_API</span><span class="p">,</span> <span class="n">trans_ids</span><span class="p">)</span>
             <span class="c1"># Add info_df.loc[ensembl_ID] to df_uniprot by joining on &quot;canonical_transcript&quot; / &quot;gene_name&quot; respectively</span>
-            <span class="kn">import</span> <span class="nn">pdb</span>
-
-            <span class="n">pdb</span><span class="o">.</span><span class="n">set_trace</span><span class="p">()</span>
             <span class="n">info_df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;canonical_transcript&quot;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
             <span class="n">df_uniprot</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="s2">&quot;gene_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">info_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
@@ -2522,7 +2812,9 @@
         <ul class="first simple">
             <li>
               <b><code>gene_tosubset</code></b>
-                  (<code>set</code>)
+                  (<code><span title="set">set</span></code>, default:
+                      <code>None</code>
+)
               –
               <div class="doc-md-description">
                 <p>A set of gene names to subset from the original FASTA file.</p>
@@ -2530,7 +2822,9 @@
             </li>
             <li>
               <b><code>fasta_path</code></b>
-                  (<code>str</code>)
+                  (<code><span title="str">str</span></code>, default:
+                      <code>None</code>
+)
               –
               <div class="doc-md-description">
                 <p>The path to the original FASTA file.</p>
@@ -2538,7 +2832,7 @@
             </li>
             <li>
               <b><code>subfasta_path</code></b>
-                  (<code>str</code>, default:
+                  (<code><span title="str">str</span></code>, default:
                       <code>&#39;./data/fasta/subset.fa&#39;</code>
 )
               –
@@ -2548,7 +2842,7 @@
             </li>
             <li>
               <b><code>drop_unknown_seq</code></b>
-                  (<code>bool</code>, default:
+                  (<code><span title="bool">bool</span></code>, default:
                       <code>True</code>
 )
               –
@@ -2556,34 +2850,23 @@
                 <p>If True, drop sequences containing unknown amino acids (denoted by '*'). Defaults to True.</p>
               </div>
             </li>
-        </ul>
-      </td>
-    </tr>
-  </tbody>
-</table>
-
-<table class="field-list">
-  <colgroup>
-    <col class="field-name" />
-    <col class="field-body" />
-  </colgroup>
-  <tbody valign="top">
-    <tr class="field">
-      <th class="field-name">Returns:</th>
-      <td class="field-body">
-        <ul class="first simple">
             <li>
-<b><code>set</code></b>(                  <code>set</code>
-)              –
+              <b><code>subset_protein_coding</code></b>
+                  (<code><span title="bool">bool</span></code>, default:
+                      <code>True</code>
+)
+              –
               <div class="doc-md-description">
-                <p>A set of gene names that were found and included in the subsetted FASTA file.</p>
+                <p>If True, subset only protein coding genes. Defaults to True.</p>
               </div>
             </li>
         </ul>
       </td>
     </tr>
   </tbody>
-</table>
+</table>        <p>Returns:
+    set: A set of gene names that were found and included in the subsetted FASTA file.</p>
+
 
 <table class="field-list">
   <colgroup>
@@ -2596,7 +2879,7 @@
       <td class="field-body">
         <ul class="first simple">
             <li>
-                  <code>ValueError</code>
+                  <code><span title="ValueError">ValueError</span></code>
               –
               <div class="doc-md-description">
                 <p>If a gene name does not start with "ENS".</p>
@@ -2607,30 +2890,10 @@
     </tr>
   </tbody>
 </table>
+
             <details class="quote">
               <summary>Source code in <code>scprint/utils/get_seq.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 62</span>
-<span class="normal"> 63</span>
-<span class="normal"> 64</span>
-<span class="normal"> 65</span>
-<span class="normal"> 66</span>
-<span class="normal"> 67</span>
-<span class="normal"> 68</span>
-<span class="normal"> 69</span>
-<span class="normal"> 70</span>
-<span class="normal"> 71</span>
-<span class="normal"> 72</span>
-<span class="normal"> 73</span>
-<span class="normal"> 74</span>
-<span class="normal"> 75</span>
-<span class="normal"> 76</span>
-<span class="normal"> 77</span>
-<span class="normal"> 78</span>
-<span class="normal"> 79</span>
-<span class="normal"> 80</span>
-<span class="normal"> 81</span>
-<span class="normal"> 82</span>
-<span class="normal"> 83</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 83</span>
 <span class="normal"> 84</span>
 <span class="normal"> 85</span>
 <span class="normal"> 86</span>
@@ -2660,11 +2923,46 @@
 <span class="normal">110</span>
 <span class="normal">111</span>
 <span class="normal">112</span>
-<span class="normal">113</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">subset_fasta</span><span class="p">(</span>
-    <span class="n">gene_tosubset</span><span class="p">:</span> <span class="nb">set</span><span class="p">,</span>
-    <span class="n">fasta_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">subset_fasta</span><span class="p">(</span>
+    <span class="n">gene_tosubset</span><span class="p">:</span> <span class="nb">set</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">fasta_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">subfasta_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;./data/fasta/subset.fa&quot;</span><span class="p">,</span>
     <span class="n">drop_unknown_seq</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">subset_protein_coding</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    subset_fasta: creates a new fasta file with only the sequence which names contain one of gene_names</span>
@@ -2674,7 +2972,7 @@
 <span class="sd">        fasta_path (str): The path to the original FASTA file.</span>
 <span class="sd">        subfasta_path (str, optional): The path to save the subsetted FASTA file. Defaults to &quot;./data/fasta/subset.fa&quot;.</span>
 <span class="sd">        drop_unknown_seq (bool, optional): If True, drop sequences containing unknown amino acids (denoted by &#39;*&#39;). Defaults to True.</span>
-
+<span class="sd">        subset_protein_coding (bool, optional): If True, subset only protein coding genes. Defaults to True.</span>
 <span class="sd">    Returns:</span>
 <span class="sd">        set: A set of gene names that were found and included in the subsetted FASTA file.</span>
 
@@ -2684,24 +2982,34 @@
     <span class="n">dup</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
     <span class="n">weird</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">genes_found</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-    <span class="n">gene_tosubset</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">gene_tosubset</span><span class="p">)</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">fasta_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">original_fasta</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span>
-        <span class="n">subfasta_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span>
-    <span class="p">)</span> <span class="k">as</span> <span class="n">subset_fasta</span><span class="p">:</span>
+    <span class="n">gene_tosubset</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">gene_tosubset</span><span class="p">)</span> <span class="k">if</span> <span class="n">gene_tosubset</span> <span class="k">else</span> <span class="p">[]</span>
+    <span class="n">names</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">with</span> <span class="p">(</span>
+        <span class="nb">open</span><span class="p">(</span><span class="n">fasta_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">original_fasta</span><span class="p">,</span>
+        <span class="nb">open</span><span class="p">(</span><span class="n">subfasta_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">subset_fasta</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">SeqIO</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">original_fasta</span><span class="p">,</span> <span class="s2">&quot;fasta&quot;</span><span class="p">):</span>
             <span class="n">gene_name</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="n">record</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; gene:&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
-                <span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; transcript&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">record</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; gene:&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
             <span class="p">)</span>
-            <span class="k">if</span> <span class="n">gene_name</span> <span class="ow">in</span> <span class="n">gene_tosubset</span><span class="p">:</span>
+            <span class="n">gene_biotype</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;gene_biotype:&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;gene_symbol:&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">record</span><span class="o">.</span><span class="n">description</span><span class="p">:</span>
+                <span class="n">gene_symbol</span> <span class="o">=</span> <span class="n">gene_name</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">gene_symbol</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;gene_symbol:&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;description:&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">record</span><span class="o">.</span><span class="n">description</span><span class="p">:</span>
+                <span class="n">description</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">description</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;description:&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">gene_name</span><span class="p">,</span> <span class="n">gene_biotype</span><span class="p">,</span> <span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">gene_symbol</span><span class="p">,</span> <span class="n">description</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">subset_protein_coding</span> <span class="ow">and</span> <span class="n">gene_biotype</span> <span class="o">!=</span> <span class="s2">&quot;protein_coding&quot;</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">gene_tosubset</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">gene_name</span> <span class="ow">in</span> <span class="n">gene_tosubset</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">drop_unknown_seq</span><span class="p">:</span>
                     <span class="k">if</span> <span class="s2">&quot;*&quot;</span> <span class="ow">in</span> <span class="n">record</span><span class="o">.</span><span class="n">seq</span><span class="p">:</span>
                         <span class="n">weird</span> <span class="o">+=</span> <span class="mi">1</span>
 
                         <span class="k">continue</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">gene_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;ENS&quot;</span><span class="p">):</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;issue&quot;</span><span class="p">,</span> <span class="n">gene_name</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">gene_name</span> <span class="ow">in</span> <span class="n">genes_found</span><span class="p">:</span>
                     <span class="n">dup</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">gene_name</span><span class="p">)</span>
                     <span class="k">continue</span>
@@ -2711,7 +3019,9 @@
                 <span class="n">genes_found</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">gene_name</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dup</span><span class="p">),</span> <span class="s2">&quot; genes had duplicates&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;dropped&quot;</span><span class="p">,</span> <span class="n">weird</span><span class="p">,</span> <span class="s2">&quot;weird sequences&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">genes_found</span>
+    <span class="k">return</span> <span class="n">genes_found</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+        <span class="n">names</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;biotype&quot;</span><span class="p">,</span> <span class="s2">&quot;ensembl_id&quot;</span><span class="p">,</span> <span class="s2">&quot;gene_symbol&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
