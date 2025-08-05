@@ -10,7 +10,6 @@ from torch.cuda.amp import autocast
 from torch.utils.data import DataLoader
 
 # Adjust these imports to your project structure
-from scprint import scPrint
 
 
 def extract_gene_embeddings(
@@ -19,6 +18,7 @@ def extract_gene_embeddings(
     genelist,
     batch_size: int = 64,
     num_workers: int = 8,
+    
     dtype: torch.dtype = torch.float16,
 ):
     """

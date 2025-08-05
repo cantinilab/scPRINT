@@ -200,3 +200,4 @@ metrics_*.json
 *.lndb
 notebooks/data/xenium/
 notebooks/data/visium/
+notebooks/scPRINT-2-repro-notebooks/normalize_log/
