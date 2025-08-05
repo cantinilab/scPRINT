@@ -1711,13 +1711,19 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             + ".h5ad"
         )
         if self.doplot:
+            logged = False
             try:
                 self.logger.experiment.add_figure(fig)
+                logged = True
             except:
                 print("couldn't log to tensorboard")
             try:
                 self.logger.log_image(key="umaps", images=[fig])
+                logged = True
             except:
                 print("couldn't log to wandb")
+            if not logged:
+                fig.savefig('' + mdir + "/umap_" + self.name +"_"+name + ".png")
+            
 
         return adata
