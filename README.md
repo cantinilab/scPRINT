@@ -90,7 +90,6 @@ If you want to be using flashattention2, know that it only supports triton 2.0 M
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1CacoQDAwJn86tq2sBhUoZ6M-xAqsYFDI#scrollTo=Vj73HINSzKHL)
 
-
 ### To know: lamin.ai
 
 To use scPRINT, you will need to use [lamin.ai](https://lamin.ai/). This is needed to load biological informations like genes, cell types, organisms.. (but also to manage the pre-training datasets if this is something you want to set up)
@@ -100,7 +99,7 @@ To use scPRINT, you will need to use [lamin.ai](https://lamin.ai/). This is need
 To start you will need to do:
 
 ```bash
-uv venv -n <env-name> python==3.10 #scprint might work with python >3.10, but it is not tested
+uv venv <env-name> --python 3.10 #scprint might work with python >3.10, but it is not tested
 #one of
 uv pip install scprint # OR
 uv pip install scprint[dev] # for the dev dependencies (building etc..) OR
@@ -112,7 +111,7 @@ lamin init --storage ./testdb --name test --modules bionty
 
 if you start with lamin and had to do a `lamin init`, you will also need to populate your ontologies. This is because scPRINT is using ontologies to define its cell types, diseases, sexes, ethnicities, etc.
 
-you can do it manually or with our function:
+you can do it via the command `scdataloader populate all` or with this function:
 
 ```python
 from scdataloader.utils import populate_my_ontology
@@ -195,8 +194,32 @@ denoiser(model, adata=adata)
 
 or, from a bash command line
 
+Download a checkpoint pretrain model like v2-medium or some others from hugging face
+
+```bash
+$ hf download jkobject/scPRINT v2-medium.ckpt --local-dir .
+```
+
+then finetune or analyse on your data
 ```bash
 $ scprint fit/train/predict/test/denoise/embed/gninfer --config config/[medium|large|vlarge] ...
+```
+to denoise a dataset:
+```bash
+$ scprint denoise --adata my_human_anndata.h5ad --ckpt_path v2-medium.ckpt --species "NCBITaxon:9606" --output_filename denoised.h5ad
+```
+to do embedding and classification on a dataset:
+(the current version implies doing a PCA and Umap so it might need a lot of RAM if run as is)
+```bash
+$ scprint embed --adata my_human_anndata.h5ad --ckpt_path v2-medium.ckpt --species "NCBITaxon:9606" --output_filename embedded.h5ad
+```
+to do gene network inference on a dataset:
+```bash
+$ scprint gninfer --adata my_human_anndata.h5ad --ckpt_path v2-medium.ckpt --species "NCBITaxon:9606" --cell_type 'cell_type_name_from-cell_type-obs_col' --output_filename grn.h5ad
+```
+to finetune scPRINT on your data:
+```bash
+$ scprint fit --config config/base_v2.yml --config config/pretrain_large.yml --ckpt_path large.ckpt
 ```
 
 find out more about the commands by running `scprint --help` or `scprint [command] --help`.
