@@ -170,6 +170,7 @@ class MyCLI(LightningCLI):
             preprocessor = Preprocessor(
                 do_postp=False,
                 force_preprocess=True,
+                skip_validate=True,
             )
             adata = preprocessor(adata)
             conf = dict(self.config_init[subcommand])
