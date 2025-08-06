@@ -162,17 +162,6 @@ class MyCLI(LightningCLI):
             from scprint import scPrint
             import numpy as np
 
-            adata = sc.read_h5ad(self.config_init[subcommand]["adata"])
-            adata.obs.drop(columns="is_primary_data", inplace=True, errors="ignore")
-            adata.obs["organism_ontology_term_id"] = self.config_init[subcommand][
-                "species"
-            ]
-            preprocessor = Preprocessor(
-                do_postp=False,
-                force_preprocess=True,
-                skip_validate=True,
-            )
-            adata = preprocessor(adata)
             conf = dict(self.config_init[subcommand])
             model_checkpoint_file = self.config_init[subcommand]["ckpt_path"]
             try:
@@ -199,6 +188,19 @@ class MyCLI(LightningCLI):
             conf["dtype"] = dtype
             
             model = model.to("cuda" if torch.cuda.is_available() else "cpu")
+            
+            adata = sc.read_h5ad(self.config_init[subcommand]["adata"])
+            adata.obs.drop(columns="is_primary_data", inplace=True, errors="ignore")
+            adata.obs["organism_ontology_term_id"] = self.config_init[subcommand][
+                "species"
+            ]
+            preprocessor = Preprocessor(
+                do_postp=False,
+                force_preprocess=True,
+                skip_validate=True,
+            )
+            adata = preprocessor(adata)
+            
             for key in [
                 "seed_everything",
                 "config",
