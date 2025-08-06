@@ -6,11 +6,9 @@ import hdbscan
 import joblib
 import networkx as nx
 import numpy as np
-import pandas as pd
 import scanpy as sc
 import scipy.sparse
 import seaborn as sns
-import sparse
 import torch
 import umap
 from anndata import AnnData
@@ -19,11 +17,12 @@ from bengrn import BenGRN, get_perturb_gt, get_sroy_gt
 from bengrn.base import train_classifier
 
 # from bengrn.GeneRNIB_reg2 import run_gene_rnib, NORMAN, OP, ADAMSON
-from grnndata import GRNAnnData, from_anndata, read_h5ad
+from grnndata import GRNAnnData, from_anndata
 from grnndata import utils as grnutils
 from matplotlib import pyplot as plt
 from scdataloader import Collator, Preprocessor
 from scdataloader.data import SimpleAnnDataset
+from simpler_flash import FlashTransformer
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -287,7 +286,12 @@ class GNInfer:
             )
         device = model.device.type
         # this is a debugger line
-        with torch.no_grad(), torch.autocast(device_type=device, dtype=self.dtype):
+        dtype = (
+            torch.float16
+            if isinstance(model.transformer, FlashTransformer)
+            else model.dtype
+        )
+        with torch.no_grad(), torch.autocast(device_type=device, dtype=dtype):
             for batch in tqdm(dataloader):
                 gene_pos, expression, depth = (
                     batch["genes"].to(device),

@@ -201,3 +201,5 @@ metrics_*.json
 notebooks/data/xenium/
 notebooks/data/visium/
 notebooks/scPRINT-2-repro-notebooks/normalize_log/
+notebooks/data/GSE215121/
+notebooks/data/GSE72056/

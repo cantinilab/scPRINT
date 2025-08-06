@@ -6,20 +6,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scanpy as sc
+import seaborn as sns
 import torch
 from anndata import AnnData, concat
-from lightning.pytorch import Trainer
-from networkx import average_node_connectivity
 from scdataloader import Collator, Preprocessor
 from scdataloader.data import SimpleAnnDataset
 from scdataloader.utils import get_descendants
 from scib_metrics.benchmark import Benchmarker
 from scipy.stats import spearmanr
+from simpler_flash import FlashTransformer
 from sklearn.metrics import f1_score
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-
-from scprint.model import utils
 
 FILE_LOC = os.path.dirname(os.path.realpath(__file__))
 
@@ -41,9 +39,7 @@ class Embedder:
         plot_corr_size: int = 64,
         doplot: bool = True,
         keep_all_labels_pred: bool = False,
-        dtype: torch.dtype = torch.float16,
         genelist: List[str] = [],
-        get_gene_emb: bool = False,
         save_every: int = 40_000,
     ):
         """
@@ -56,12 +52,12 @@ class Embedder:
                 - "random expr": random expression
                 - "most var": highly variable genes in the dataset
                 - "some": specific genes (from genelist)
+                - "most expr": most expressed genes in the cell
             max_len (int, optional): The maximum length of the gene sequence given to the model. Defaults to 1000.
             pred_embedding (List[str], optional): The list of labels to be used for plotting embeddings. Defaults to [ "cell_type_ontology_term_id", "disease_ontology_term_id", "self_reported_ethnicity_ontology_term_id", "sex_ontology_term_id", ].
             doclass (bool, optional): Whether to perform classification. Defaults to True.
             doplot (bool, optional): Whether to generate plots. Defaults to True.
             keep_all_labels_pred (bool, optional): Whether to keep all class predictions. Defaults to False, will only keep the most likely class.
-            dtype (torch.dtype, optional): Data type for computations. Defaults to torch.float16.
             genelist (List[str], optional): The list of genes to be used for embedding. Defaults to []: In this case, "how" needs to be "most var" or "random expr".
             save_every (int, optional): The number of cells to save at a time. Defaults to 100_000.
                 This is important to avoid memory issues.
@@ -74,7 +70,6 @@ class Embedder:
         self.keep_all_labels_pred = keep_all_labels_pred
         self.plot_corr_size = plot_corr_size
         self.doplot = doplot
-        self.dtype = dtype
         self.doclass = doclass
         self.genelist = genelist
         self.save_every = save_every
@@ -132,9 +127,14 @@ class Embedder:
         device = model.device.type
         prevplot = model.doplot
         model.doplot = self.doplot and not self.keep_all_labels_pred
+        dtype = (
+            torch.float16
+            if isinstance(model.transformer, FlashTransformer)
+            else model.dtype
+        )
         with (
             torch.no_grad(),
-            torch.autocast(device_type=device, dtype=self.dtype),
+            torch.autocast(device_type=device, dtype=dtype),
         ):
             for batch in tqdm(dataloader):
                 gene_pos, expression, depth = (
@@ -576,6 +576,67 @@ def find_coarser_labels(out, model):
                     if res is not None:
                         relabel[label].update({i: res})
     return relabel
+
+
+def display_confusion_matrix(nadata, on="cell_type"):
+    """
+    Display the confusion matrix for true vs predicted cell types.
+
+    Args:
+        nadata (_type_): _description_
+        on (str, optional): one of ['cell_type', 'disease', 'tissue'...]. Defaults to "cell_type".
+    """
+    counts = None
+    for k, v in nadata.obs[on].value_counts().items():
+        name = k + " - " + str(v)
+        if counts is None:
+            counts = pd.DataFrame(
+                nadata.obs.loc[
+                    nadata.obs[on] == k,
+                    "conv_pred_" + on + "_ontology_term_id",
+                ].value_counts()
+            ).rename(columns={"count": name})
+        else:
+            counts = pd.concat(
+                [
+                    counts,
+                    pd.DataFrame(
+                        nadata.obs.loc[
+                            nadata.obs[on] == k,
+                            "conv_pred_" + on + "_ontology_term_id",
+                        ].value_counts(),
+                    ).rename(columns={"count": name}),
+                ],
+                axis=1,
+            )
+    counts = counts.T
+    # Fill NaN values with 0 for visualization
+    counts_filled = counts.fillna(0)
+
+    # Create the heatmap
+    plt.figure(figsize=(12, 10))
+
+    # Convert to percentages (row-wise normalization)
+    counts_percentage = counts_filled.div(counts_filled.sum(axis=1), axis=0) * 100
+
+    sns.heatmap(
+        counts_percentage,
+        cmap="Blues",
+        cbar_kws={"label": "Percentage (%)"},
+        linewidths=0.5,
+        square=True,
+    )
+    plt.title(
+        "Confusion Matrix: True " + on + " vs Predicted " + on + " (Percentage)",
+        fontsize=16,
+        pad=20,
+    )
+    plt.xlabel("Predicted " + on, fontsize=12)
+    plt.ylabel("True " + on + " (with counts)", fontsize=12)
+    plt.xticks(rotation=45, ha="right", fontsize=10)
+    plt.yticks(rotation=0, fontsize=10)
+    plt.tight_layout()
+    plt.show()
 
 
 FINE = {

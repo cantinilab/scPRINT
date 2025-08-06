@@ -1,7 +1,6 @@
 import os
 from typing import Any, List, Optional, Tuple
 
-import anndata as ad
 import matplotlib.pyplot as plt
 import numpy as np
 import scanpy as sc
@@ -10,8 +9,8 @@ import torch
 from anndata import AnnData, concat
 from scdataloader import Collator, Preprocessor
 from scdataloader.data import SimpleAnnDataset
-from scipy.sparse import issparse
 from scipy.stats import spearmanr
+from simpler_flash import FlashTransformer
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -33,7 +32,6 @@ class Denoiser:
         doplot: bool = False,
         predict_depth_mult: int = 4,
         downsample_expr: Optional[float] = None,
-        dtype: torch.dtype = torch.float16,
         genelist: Optional[List[str]] = None,
         save_every: int = 100_000,
     ):
@@ -70,7 +68,6 @@ class Denoiser:
         self.predict_depth_mult = predict_depth_mult
         self.how = how
         self.downsample_expr = downsample_expr
-        self.dtype = dtype
         self.genelist = genelist
         self.save_every = save_every
 
@@ -133,7 +130,12 @@ class Denoiser:
         model.eval()
         device = model.device.type
         stored_noisy = None
-        with torch.no_grad(), torch.autocast(device_type=device, dtype=self.dtype):
+        dtype = (
+            torch.float16
+            if type(model.transformer) is FlashTransformer
+            else model.dtype
+        )
+        with torch.no_grad(), torch.autocast(device_type=device, dtype=dtype):
             for batch in tqdm(dataloader):
                 gene_pos, expression, depth = (
                     batch["genes"].to(device),
