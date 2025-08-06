@@ -32,11 +32,7 @@ class Embedder:
         doclass: bool = True,
         pred_embedding: List[str] = [
             "cell_type_ontology_term_id",
-            "disease_ontology_term_id",
-            "self_reported_ethnicity_ontology_term_id",
-            "sex_ontology_term_id",
         ],
-        plot_corr_size: int = 64,
         doplot: bool = True,
         keep_all_labels_pred: bool = False,
         genelist: List[str] = [],
@@ -68,7 +64,6 @@ class Embedder:
         self.max_len = max_len
         self.pred_embedding = pred_embedding
         self.keep_all_labels_pred = keep_all_labels_pred
-        self.plot_corr_size = plot_corr_size
         self.doplot = doplot
         self.doclass = doclass
         self.genelist = genelist
