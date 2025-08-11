@@ -515,7 +515,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 self.cls_decoders[name].out_layer = torch.nn.Linear(
                     clss.out_layer.weight.shape[1], size
                 )
-
         # from older model versions
         self.normalization = checkpoints["hyper_parameters"].get("normalization", "sum")
         if (
@@ -617,6 +616,15 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 for k, v in checkpoints["hyper_parameters"]["label_decoders"].items():
                     mencoders[k] = {va: ke for ke, va in v.items()}
                 self.trainer.datamodule.encoders = mencoders
+            es = self.trainer.callbacks.get("EarlyStopping")
+            if es is not None:
+                prev = checkpoints['callbacks'].get("EarlyStopping{'monitor': 'val_loss', 'mode': 'min'}")
+                if prev is not None:
+                    prev = prev['patience']
+                if prev != es['patience']:
+                    print('updating the early stopping parameter to {}'.format(es['patience']))
+                    checkpoints['callbacks']["EarlyStopping{'monitor': 'val_loss', 'mode': 'min'}"]['patience'] = es['patience']
+
         except RuntimeError as e:
             if "scPrint is not attached to a `Trainer`." in str(e):
                 print("FYI: scPrint is not attached to a `Trainer`.")
