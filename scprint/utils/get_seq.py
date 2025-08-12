@@ -32,7 +32,7 @@ def list_files(ftp, match=""):
 def load_fasta_species(
     species: str = "homo_sapiens",
     output_path: str = "/tmp/data/fasta/",
-    load: list[str] = ["pep", "ncrna", "cds"],
+    load: List[str] = ["pep", "ncrna", "cds"],
     cache: bool = True,
 ) -> None:
     """

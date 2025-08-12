@@ -16,8 +16,6 @@ from torch.utils.data import DataLoader
 class GeneEmbeddingExtractor:
     def __init__(
         self,
-        model,
-        adata,
         genelist,
         batch_size: int = 64,
         num_workers: int = 8,
@@ -27,8 +25,6 @@ class GeneEmbeddingExtractor:
     ):
         """
         Args:
-            model (scPrint): A loaded and trained scPrint model.
-            adata (AnnData): AnnData containing cell x gene matrix.
             batch_size (int): Batch size for the DataLoader.
             num_workers (int): Number of workers for DataLoader.
             genelist (list): list of genes to restrict to.
@@ -42,8 +38,6 @@ class GeneEmbeddingExtractor:
         Returns:
             embeddings (np.ndarray): A numpy array of shape (n_cells, n_genes, embedding_dim)
         """
-        self.model = model
-        self.adata = adata
         self.genelist = genelist
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -64,7 +58,7 @@ class GeneEmbeddingExtractor:
                 len(self.genelist) * 100 / prevl
             )
         )
-        if len(self.gene_list) == 0:
+        if len(gene_list) == 0:
             raise ValueError("No overlap between provided gene_list and model.genes")
 
         # Set up dataset and dataloader
@@ -118,8 +112,8 @@ class GeneEmbeddingExtractor:
                     gene_pos=gene_pos,
                     expression=expression,
                     req_depth=depth,
+                    depth_mult=expression.sum(1),
                     get_gene_emb=True,
-                    keep_output=False,
                 )
                 # transformer_output shape: (B, cell_embs_count + num_genes, d_model)
                 # Extract gene embeddings:
@@ -163,8 +157,10 @@ class GeneEmbeddingExtractor:
                 torch.cuda.empty_cache()
         ad = AnnData(
             X=np.concatenate(expr, axis=0),
-            var=pd.DataFrame(index=self.gene_list),
-            varp=np.concatenate(all_embeddings, axis=0) if not self.average else None,
+            var=pd.DataFrame(index=gene_list),
+            uns={"all_embeddings": np.concatenate(all_embeddings, axis=0)}
+            if not self.average
+            else None,
             varm=full_embeddings.cpu().numpy() / count if self.average else None,
         )
         if self.save_dir is not None:

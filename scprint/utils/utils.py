@@ -54,7 +54,9 @@ def fileToList(filename: str, strconv: callable = lambda x: x) -> list:
         return [strconv(val[:-1]) for val in f.readlines()]
 
 
-def listToFile(li: list, filename: str, strconv: callable = lambda x: str(x)) -> None:
+def listToFile(
+    li: List[str], filename: str, strconv: callable = lambda x: str(x)
+) -> None:
     """
     listToFile loads a list with [a,b,..] into an input file a\\n b\\n..
 
@@ -132,7 +134,6 @@ def get_free_gpu():
     import subprocess
     import sys
     from io import StringIO
-
 
     gpu_stats = subprocess.check_output(
         [

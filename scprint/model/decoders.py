@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import torch
 from torch import Tensor, nn
@@ -221,7 +221,7 @@ class ClsDecoder(nn.Module):
         self,
         d_model: int,
         n_cls: int,
-        layers: list[int] = [256, 128],
+        layers: List[int] = [256, 128],
         activation: Callable = nn.ReLU,
         dropout: float = 0.1,
     ):
@@ -231,7 +231,7 @@ class ClsDecoder(nn.Module):
         Args:
             d_model: int, dimension of the input.
             n_cls: int, number of classes.
-            layers: list[int], list of hidden layers.
+            layers: List[int], List of hidden layers.
             activation: nn.Module, activation function.
             dropout: float, dropout rate.
 
@@ -239,7 +239,7 @@ class ClsDecoder(nn.Module):
             Tensor, shape [batch_size, n_cls]
         """
         super(ClsDecoder, self).__init__()
-        # module list
+        # module List
         layers = [d_model] + layers
         self.decoder = nn.Sequential()
         self.n_cls = n_cls
@@ -263,7 +263,7 @@ class VAEDecoder(nn.Module):
     def __init__(
         self,
         d_model: int,
-        layers: list[int] = [64, 64],
+        layers: List[int] = [64, 64],
         activation: Callable = nn.ReLU,
         dropout: float = 0.1,
         return_latent: bool = False,
@@ -273,7 +273,7 @@ class VAEDecoder(nn.Module):
 
         Args:
             d_model (int): Input dimension (original embedding size)
-            layers (list[int]): List of hidden layer sizes for encoder and decoder
+            layers (List[int]): List of hidden layer sizes for encoder and decoder
             activation (Callable): Activation function to use
             dropout (float): Dropout rate
             return_latent (bool): Whether to return the latent vectors

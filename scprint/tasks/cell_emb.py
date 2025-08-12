@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import bionty as bt
 import matplotlib.pyplot as plt
@@ -31,11 +31,11 @@ class Embedder:
         max_len: int = 2000,
         doclass: bool = True,
         pred_embedding: List[str] = [
-            "cell_type_ontology_term_id",
+            "all",
         ],
         doplot: bool = True,
         keep_all_labels_pred: bool = False,
-        genelist: List[str] = [],
+        genelist: Optional[List[str]] = None,
         save_every: int = 40_000,
     ):
         """
@@ -66,7 +66,7 @@ class Embedder:
         self.keep_all_labels_pred = keep_all_labels_pred
         self.doplot = doplot
         self.doclass = doclass
-        self.genelist = genelist
+        self.genelist = genelist if genelist is not None else []
         self.save_every = save_every
 
     def __call__(self, model: torch.nn.Module, adata: AnnData, cache=False):
@@ -144,7 +144,6 @@ class Embedder:
                     knn_cells=batch["knn_cells"].to(device)
                     if model.expr_emb_style == "metacell"
                     else None,
-                    predict_mode="none",
                     pred_embedding=self.pred_embedding,
                     max_size_in_mem=self.save_every,
                 )
