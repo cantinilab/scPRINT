@@ -15,6 +15,7 @@ import pandas as pd
 import torch
 import torch.distributed
 from huggingface_hub import PyTorchModelHubMixin
+from lightning.pytorch.callbacks import EarlyStopping
 from lightning.pytorch.callbacks.lr_finder import LearningRateFinder
 from lightning.pytorch.tuner.lr_finder import _LRCallback
 from numpy import mean
@@ -513,7 +514,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 self.cls_decoders[name].out_layer = torch.nn.Linear(
                     clss.out_layer.weight.shape[1], size
                 )
-
         # from older model versions
         self.normalization = checkpoints["hyper_parameters"].get("normalization", "sum")
         if (
@@ -615,6 +615,31 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 for k, v in checkpoints["hyper_parameters"]["label_decoders"].items():
                     mencoders[k] = {va: ke for ke, va in v.items()}
                 self.trainer.datamodule.encoders = mencoders
+
+            es = None
+            for k in self.trainer.callbacks:
+                if isinstance(k, EarlyStopping):
+                    es = k
+            if es is not None:
+                prev = checkpoints["callbacks"].get(
+                    "EarlyStopping{'monitor': 'val_loss', 'mode': 'min'}"
+                )
+                if prev is not None:
+                    prev = prev["patience"]
+                if prev != es.patience:
+                    print(
+                        "updating the early stopping parameter to {}".format(
+                            es.patience
+                        )
+                    )
+                    checkpoints["callbacks"][
+                        "EarlyStopping{'monitor': 'val_loss', 'mode': 'min'}"
+                    ]["patience"] = es.patience
+                    if prev < es.patience:
+                        checkpoints["callbacks"][
+                            "EarlyStopping{'monitor': 'val_loss', 'mode': 'min'}"
+                        ]["stopped_epoch"] = 0
+
         except RuntimeError as e:
             if "scPrint is not attached to a `Trainer`." in str(e):
                 print("FYI: scPrint is not attached to a `Trainer`.")
@@ -1181,9 +1206,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if type(mask_ratio) is not list:
             mask_ratio = [mask_ratio]
         # dynamically change the context length every 5 steps
-
+        other_expression = None
         if self.var_context_length and torch.rand(1).item() < 0.2:
             context_length = torch.randint(800, batch["x"].shape[1], (1,)).item()
+            other_expression = batch["x"][:, context_length:]
+            other_gene_pos = batch["genes"][:, context_length:]
         else:
             context_length = batch["x"].shape[1]
         expression = batch["x"][:, :context_length]
@@ -1360,13 +1387,15 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 cell_embs=output["output_cell_embs"]
                 if not run_full_forward
                 else full_cell_embs,
-                gene_pos=gene_pos,
-                depth_mult=expression.sum(1),
+                gene_pos=gene_pos if other_expression is None else other_gene_pos,
+                depth_mult=expression.sum(1)
+                if other_expression is None
+                else other_expression.sum(1),
                 req_depth=total_count,
             )
             l, tloss = self._compute_loss(
                 output,
-                expression,
+                expression if other_expression is None else other_expression,
                 clss,
                 batch_idx,
                 False,
@@ -1374,7 +1403,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 do_vae_kl=do_vae_kl,
             )
             losses.update({"gen_" + k: v for k, v in l.items()})
-            total_loss += tloss
+            total_loss += tloss * 0.5
 
         # TASK 7. next time point prediction
         if do_next_tp:
