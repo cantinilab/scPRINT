@@ -131,7 +131,6 @@ def test_base():
         num_workers=1,
         # train_oversampling=2,
         validation_split=0.1,
-        do_gene_pos=False,
         test_split=0.1,
     )
     _ = datamodule.setup()
