@@ -2,7 +2,6 @@ import gc
 import os.path
 from typing import Any, List, Optional
 
-import hdbscan
 import joblib
 import networkx as nx
 import numpy as np
@@ -110,7 +109,6 @@ class GNInfer:
         self.preprocess = preprocess
         self.cell_type_col = cell_type_col
         self.filtration = filtration
-        self.doplot = doplot
         self.genelist = genelist if genelist is not None else None
         self.apc = apc
         self.dtype = dtype
@@ -328,27 +326,6 @@ class GNInfer:
             if self.how == "random expr"
             else [i for i in genes if i in self.curr_genes]
         )
-        if self.doplot:
-            sns.set_theme(
-                style="white", context="poster", rc={"figure.figsize": (14, 10)}
-            )
-            fit = umap.UMAP()
-            mm = fit.fit_transform(attn[0, :, 0, 0, :].detach().cpu().numpy())
-            labels = hdbscan.HDBSCAN(
-                min_samples=10,
-                min_cluster_size=100,
-            ).fit_predict(mm)
-            plt.scatter(mm[:, 0], mm[:, 1], c=labels)
-            plt.title(f"Qs @H{0}")
-            plt.show()
-            mm = fit.fit_transform(attn[0, :, 1, 0, :].detach().cpu().numpy())
-            labels = hdbscan.HDBSCAN(
-                min_samples=10,
-                min_cluster_size=100,
-            ).fit_predict(mm)
-            plt.scatter(mm[:, 0], mm[:, 1], c=labels)
-            plt.title(f"Ks @H{0}")
-            plt.show()
         # attn = attn[:, :, 0, :, :].permute(0, 2, 1, 3) @ attn[:, :, 1, :, :].permute(
         #    0, 2, 3, 1
         # )
