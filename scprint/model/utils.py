@@ -92,7 +92,7 @@ def make_adata(
         # Fill array with values from expr_pred[0]
         for idx in range(n_cells):
             mu_array[idx, pos[idx]] = expr_pred[0][idx].cpu().numpy()
-        exist = mu_array.sum(0)
+        exist = mu_array.sum(0) != 0
         mu_array = mu_array[:, exist]
         layers = {
             "scprint_mu": mu_array,

@@ -194,9 +194,6 @@ class Denoiser:
             pred_adata.append(sc.read_h5ad(file))
             os.remove(file)
         pred_adata = concat(pred_adata)
-        pred_adata = pred_adata[
-            :, pred_adata.layers["scprint_mu"].toarray().any(axis=0)
-        ]
 
         if model.transformer.attn_type == "hyper":
             # seq len must be a multiple of 128
@@ -210,7 +207,9 @@ class Denoiser:
         metrics = None
         model.doplot = prevplot
         if self.downsample_expr is not None:
-            reco = pred_adata.layers["scprint_mu"].data.reshape(pred_adata.shape[0], -1)
+            reco = np.array(pred_adata.layers["scprint_mu"].data).reshape(
+                pred_adata.shape[0], -1
+            )
             adata = (
                 adata[random_indices, adata.var.index.isin(pred_adata.var.index)]
                 if random_indices is not None
@@ -220,9 +219,7 @@ class Denoiser:
                 :,
                 pred_adata.layers["scprint_mu"][
                     :, pred_adata.var.index.isin(adata.var.index)
-                ]
-                .toarray()
-                .any(axis=0),
+                ].any(axis=0),
             ].toarray()
 
             corr_coef, p_value = spearmanr(
