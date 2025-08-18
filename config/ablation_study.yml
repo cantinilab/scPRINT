@@ -42,7 +42,7 @@ scprint_training:
 model:
   dropout: 0.1
   num_heads_kv: 4
-  transformer: flash
+  attention: flash
   mvc_decoder: inner product
   residual_in_fp32: True
   checkpointing: False
@@ -78,7 +78,7 @@ data:
   prefetch_factor: 3
   #  metacell_mode: 0.2
   weight_scaler: 200
-  do_gene_pos: ./data/main/biomart_pos.parquet
+  gene_pos_file: ./data/main/biomart_pos.parquet
   add_zero_genes: 0
   validation_split: 0.05
   n_samples_per_epoch: 1_400_000

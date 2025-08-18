@@ -39,7 +39,7 @@ scprint_early_stopping:
   patience: 3
 model:
   num_heads_kv: 4
-  transformer: flash
+  attention: flash
   residual_in_fp32: True
   cell_specific_blocks: True
   freeze_embeddings: True
@@ -66,7 +66,7 @@ data:
   prefetch_factor: 3
   metacell_mode: 0.2
   weight_scaler: 200
-  do_gene_pos: ./data/main/biomart_pos.parquet
+  gene_pos_file: ./data/main/biomart_pos.parquet
   add_zero_genes: 0
   n_samples_per_epoch: 1_400_000 # {data.batch_size*trainer.limit_train_batches}
   validation_split: 0.05

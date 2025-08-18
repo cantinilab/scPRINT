@@ -46,7 +46,7 @@ scprint_early_stopping:
 model:
   dropout: 0.1
   num_heads_kv: 4
-  transformer: flash
+  attention: flash
   residual_in_fp32: True
   checkpointing: True
   cell_specific_blocks: True

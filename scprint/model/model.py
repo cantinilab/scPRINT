@@ -3,7 +3,6 @@ import copy
 import datetime
 import os
 from functools import partial
-
 # from galore_torch import GaLoreAdamW
 from math import factorial
 from pathlib import Path
@@ -55,7 +54,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         normalization: str = "sum",
         attn_bias: str = "none",
         expr_encoder_layers: int = 3,
-        transformer: str = "flash",  # "performer", "flash", "normal", "crisscross", "hyper", "adasplash"
+        attention: str = "flash",  # "performer", "flash", "normal", "crisscross", "hyper", "adasplash"
         expr_emb_style: str = "continuous",  # "binned_pos", "cont_pos", "metacell", "full_pos"
         n_input_bins: int = 0,
         mvc_decoder: Optional[
@@ -81,6 +80,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         nhead_cell: int = 4,
         nlayers_cell: int = 6,
         num_heads_kv_cell: int = 4,
+        transformer=None,
         **attention_kwargs,
     ):
         """
@@ -99,7 +99,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             organisms (list[str], optional): List of organisms to use for plotting embeddings. Defaults to [].
             labels_hierarchy (Dict[str, Dict[int, list[int]]], optional): Class hierarchy for classes with hierarchical classes. Defaults to {}.
             dropout (float, optional): Dropout value. Defaults to 0.2.
-            transformer (str, optional): Transformer type to use. One of "linear", "flash", "flashsparse", "scprint". Defaults to "fast".
+            attention (str, optional): attention type to use. One of "linear", "flash", "flashsparse", "scprint". Defaults to "fast".
             expr_emb_style (str, optional): Style of input embedding. One of "continuous", "binned_pos", "cont_pos", "metacell", "full_pos". Defaults to "continuous".
                 "metacell" uses a DeepSet multi gene encoder across the KNN cells
                 "full_pos" uses a positional encoding for each gene
@@ -180,7 +180,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.mvc_decoder = mvc_decoder
         # need to store
         self.n_input_bins = n_input_bins
-        self.transformer = transformer
+        self.attention = attention
+
         if classes is None:
             classes = []
         self.label_counts = classes
@@ -301,6 +302,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if self.use_metacell_token:
             self.metacell_encoder = encoders.CategoryValueEncoder(2, d_model)
         # compute tensor for mat_labels_hierarchy
+        # old parameters that can still be passed when loading older models (managed in the _on_load_ckpt function)
         for i in [
             "strict_loading",
             "optim",
@@ -312,18 +314,19 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             "use_flash_attn",
             "cell_emb_style",
             "num_batch_labels",
+            "transformer",
         ]:
             if i in attention_kwargs:
                 attention_kwargs.pop(i)
-        # Transformer
+        # attention
         # Linear
-        if transformer == "linear":
-            # linear transformer using the fast transformer package
-            # self.transformer = FastTransformerEncoder(
+        if attention == "linear":
+            # linear attention using the fast attention package
+            # self.attention = FastattentionEncoder(
             #    d_model, nhead, d_hid, nlayers, dropout, "linear"
             # )
-            raise NotImplementedError("Linear transformer is not implemented")
-        elif transformer == "performer":
+            raise NotImplementedError("Linear attention is not implemented")
+        elif attention == "performer":
             self.transformer = Performer(
                 dim=d_model,
                 depth=nlayers,
@@ -345,7 +348,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 nlayers=nlayers,
                 cross_attn=cell_specific_blocks,
                 cross_dim=d_model_cell,
-                attn_type=transformer,
+                attn_type=attention,
                 num_heads_kv=num_heads_kv,
                 **attention_kwargs,
             )
@@ -359,7 +362,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 dropout=dropout,
                 cross_attn=True,
                 cross_dim=d_model,
-                attn_type="flash" if transformer == "flash" else "normal",
+                attn_type="flash" if attention == "flash" else "normal",
                 **attention_kwargs,
             )
         else:
