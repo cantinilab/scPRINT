@@ -6,7 +6,7 @@ from functools import partial
 # from galore_torch import GaLoreAdamW
 from math import factorial
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import lightning as L
 import numpy as np
@@ -40,8 +40,8 @@ def is_interactive():
 class scPrint(L.LightningModule, PyTorchModelHubMixin):
     def __init__(
         self,
-        genes: list,
-        organisms: list,
+        genes,
+        organisms: list[str],
         d_model: int = 256,
         nhead: int = 4,
         nlayers: int = 8,
@@ -85,7 +85,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         scPRINT transformer for single cell biology and the inference of Gene Regulatory networks
 
         Args:
-            genes (list): List of gene names the model will work with.
+            genes (list|dict): List of gene names the model will work with.
             precpt_gene_emb (np.array, optional): Gene embeddings of size (len(genes), d_model). Should be in the same order as the genes. Defaults to None.
             gene_pos_enc (list, optional): Gene position encoding of the same size as genes. Provides a location value for each gene in genes. Defaults to None.
             d_model (int, optional): Dimension of the model. Defaults to 512.
@@ -186,7 +186,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
         self.label_decoders = label_decoders
         self.pred_embedding = pred_embedding
-        self.genes = genes
+        self._genes = genes
         self.expr_emb_style = expr_emb_style
         if self.expr_emb_style not in [
             "category",
@@ -2117,9 +2117,12 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
         return adata
 
-    #@property
-    #def genes(self):
-    #    genes = []
-    #    for names in self.organisms:
-    #        genes.extend(self._genes[names])
-    #    return genes
+    @property
+    def genes(self):
+        if type(self._genes) is list:
+            return self._genes
+        else:
+            genes = []
+            for names in self.organisms:
+                genes.extend(self._genes[names])
+            return genes
