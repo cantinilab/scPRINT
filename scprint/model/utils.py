@@ -28,11 +28,11 @@ FILEDIR = os.path.dirname(os.path.realpath(__file__))
 
 
 def make_adata(
-    genes: list[str],
+    genes: List[str],
     embs: Tensor,
     pos: Tensor = None,
     expr_pred: Tensor = None,
-    classes: list[str] = None,
+    classes: List[str] = None,
     pred: Tensor = None,
     label_decoders: Optional[Dict] = None,
     labels_hierarchy: Optional[Dict] = None,
@@ -82,9 +82,9 @@ def make_adata(
                 ).T
             obs = np.hstack([obs, nobs])
 
-    size = len(genes)
     n_cells = embs[list(embs.keys())[0]].shape[0]
     layers = None
+    size = len(genes)
     if pos is not None:
         mu_array = np.zeros((n_cells, size), dtype=np.float32)
         pos = pos.cpu().numpy()
@@ -92,8 +92,10 @@ def make_adata(
         # Fill array with values from expr_pred[0]
         for idx in range(n_cells):
             mu_array[idx, pos[idx]] = expr_pred[0][idx].cpu().numpy()
+        exist = mu_array.sum(0)
+        mu_array = mu_array[:, exist]
         layers = {
-            "scprint_mu": csr_matrix(mu_array),
+            "scprint_mu": mu_array,
             #  "used_scprint": csr_matrix(pos),
         }
         if len(expr_pred) > 1:
@@ -101,16 +103,18 @@ def make_adata(
             # Fill array with values from expr_pred[0]
             for idx in range(n_cells):
                 theta_array[idx, pos[idx]] = expr_pred[1][idx].cpu().numpy()
-            layers["scprint_theta"] = csr_matrix(theta_array)
+            layers["scprint_theta"] = theta_array[:, exist]
 
             pi_array = np.zeros((n_cells, size), dtype=np.float32)
             # Fill array with values from expr_pred[0]
             for idx in range(n_cells):
                 pi_array[idx, pos[idx]] = expr_pred[2][idx].cpu().numpy()
-            layers["scprint_pi"] = csr_matrix(pi_array)
-
+            layers["scprint_pi"] = pi_array[:, exist]
+        genes = [n for i, n in enumerate(genes) if exist[i] > 0]
+    else:
+        genes = []
     adata = AnnData(
-        X=csr_matrix((n_cells, size)),
+        X=csr_matrix((n_cells, len(genes))),
         layers=layers,
         obs=pd.DataFrame(
             obs,
@@ -118,13 +122,13 @@ def make_adata(
         )
         if pred is not None
         else None,
+        var=pd.DataFrame(index=genes),
     )
 
     for k, v in embs.items():
         adata.obsm["scprint_emb_" + k] = v.cpu().numpy()
         rep = "scprint_emb_" + k
     del embs
-    adata.var_names = genes
     accuracy = {}
     if labels_hierarchy is None:
         labels_hierarchy = {}
@@ -405,14 +409,14 @@ def downsample_profile(mat: Tensor, dropout: float, method="new", randsamp=False
 
 
 def simple_masker(
-    shape: list[int],
+    shape: List[int],
     mask_ratio: float = 0.15,
 ) -> torch.Tensor:
     """
     Randomly mask a batch of data.
 
     Args:
-        shape (list[int]): The shape of the data.
+        shape (List[int]): The shape of the data.
         mask_ratio (float): The ratio of genes to mask, default to 0.15.
 
     Returns:
@@ -424,16 +428,16 @@ def simple_masker(
 class WeightedMasker:
     def __init__(
         self,
-        genes: list[str],
-        TFs: list[str] = utils.fileToList(FILEDIR + "/../../data/main/TFs.txt"),
+        genes: List[str],
+        TFs: List[str] = utils.fileToList(FILEDIR + "/../../data/main/TFs.txt"),
         inv_weight: float = 10,
     ):
         """
         Randomly mask a batch of data.
 
         Args:
-            genes (list[str]): The list of genes the model might see.
-            TFs (list[str]): The list of TFs the model can drop.
+            genes (List[str]): The list of genes the model might see.
+            TFs (List[str]): The list of TFs the model can drop.
             inv_weight (float): How likely it is to drop a non TF compared to a TF.
 
         Returns:

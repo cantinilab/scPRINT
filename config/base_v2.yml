@@ -40,7 +40,6 @@ scprint_early_stopping:
 model:
   num_heads_kv: 4
   transformer: flash
-  mvc_decoder: inner product
   residual_in_fp32: True
   cell_specific_blocks: True
   freeze_embeddings: True

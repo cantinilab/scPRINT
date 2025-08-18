@@ -11,6 +11,7 @@ from scdataloader import Collator, Preprocessor
 from scdataloader.data import SimpleAnnDataset
 from scipy.stats import spearmanr
 from simpler_flash import FlashTransformer
+from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -34,6 +35,7 @@ class Denoiser:
         downsample_expr: Optional[float] = None,
         genelist: Optional[List[str]] = None,
         save_every: int = 100_000,
+        pred_embedding: List[str] = ["cell_type_ontology_term_id"],
     ):
         """
         Denoiser class for denoising scRNA-seq data using a scPRINT model
@@ -70,6 +72,7 @@ class Denoiser:
         self.downsample_expr = downsample_expr
         self.genelist = genelist
         self.save_every = save_every
+        self.pred_embedding = pred_embedding
 
     def __call__(self, model: torch.nn.Module, adata: AnnData):
         """
@@ -135,6 +138,7 @@ class Denoiser:
             if type(model.transformer) is FlashTransformer
             else model.dtype
         )
+        torch.cuda.empty_cache()
         with torch.no_grad(), torch.autocast(device_type=device, dtype=dtype):
             for batch in tqdm(dataloader):
                 gene_pos, expression, depth = (
@@ -160,8 +164,9 @@ class Denoiser:
                     knn_cells=batch["knn_cells"].to(device)
                     if model.expr_emb_style == "metacell"
                     else None,
-                    predict_mode="denoise",
+                    do_generate=False,
                     depth_mult=self.predict_depth_mult,
+                    pred_embedding=self.pred_embedding,
                     max_size_in_mem=self.save_every,
                 )
         torch.cuda.empty_cache()
@@ -189,17 +194,22 @@ class Denoiser:
             pred_adata.append(sc.read_h5ad(file))
             os.remove(file)
         pred_adata = concat(pred_adata)
+        pred_adata = pred_adata[
+            :, pred_adata.layers["scprint_mu"].toarray().any(axis=0)
+        ]
+
+        if model.transformer.attn_type == "hyper":
+            # seq len must be a multiple of 128
+            num = model.cell_embs_count if not model.cell_transformer else 0
+            if (stored_noisy.shape[1] + num) % 128 != 0:
+                stored_noisy = stored_noisy[
+                    :, : ((stored_noisy.shape[1]) // 128 * 128) - num
+                ]
+        pred_adata.X = stored_noisy
+
         metrics = None
         model.doplot = prevplot
         if self.downsample_expr is not None:
-            pred_adata.layers["scprint_mu"]
-            if model.transformer.attn_type == "hyper":
-                # seq len must be a multiple of 128
-                num = model.cell_embs_count if not model.cell_transformer else 0
-                if (stored_noisy.shape[1] + num) % 128 != 0:
-                    stored_noisy = stored_noisy[
-                        :, : ((stored_noisy.shape[1]) // 128 * 128) - num
-                    ]
             reco = pred_adata.layers["scprint_mu"].data.reshape(pred_adata.shape[0], -1)
             adata = (
                 adata[random_indices, adata.var.index.isin(pred_adata.var.index)]

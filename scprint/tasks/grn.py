@@ -22,11 +22,11 @@ from grnndata import utils as grnutils
 from matplotlib import pyplot as plt
 from scdataloader import Collator, Preprocessor
 from scdataloader.data import SimpleAnnDataset
+from scdataloader.utils import load_genes
 from simpler_flash import FlashTransformer
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from scdataloader.utils import load_genes
 from scprint.utils.sinkhorn import SinkhornDistance
 
 from .tmfg import tmfg
@@ -44,8 +44,7 @@ class GNInfer:
         max_cells: int = 0,
         cell_type_col: str = "cell_type",
         how: str = "random expr",  # random expr, most var within, most var across, given
-        forward_mode: str = "none",
-        genelist: List[str] = [],
+        genelist: Optional[List[str]] = None,
         ### GRN inference parameters
         layer: Optional[List[int]] = None,
         preprocess: str = "softmax",  # sinkhorn, softmax, none
@@ -53,7 +52,7 @@ class GNInfer:
         filtration: str = "thresh",  # thresh, top-k, mst, known, none
         k: int = 10,
         apc: bool = False,
-        known_grn: Optional[any] = None,
+        known_grn: Optional[Any] = None,
         comp_attn: bool = True,
         symmetrize: bool = False,
         doplot: bool = True,
@@ -64,7 +63,7 @@ class GNInfer:
         GNInfer a class to infer gene regulatory networks from a dataset using a scPRINT model.
 
         Args:
-            layer (Optional[list[int]], optional): List of layers to use for the inference. Defaults to None.
+            layer (Optional[List[int]], optional): List of layers to use for the inference. Defaults to None.
             batch_size (int, optional): Batch size for processing. Defaults to 64.
             num_workers (int, optional): Number of workers for data loading. Defaults to 8.
             drop_unexpressed (bool, optional): Whether to drop unexpressed genes. Defaults to True.
@@ -89,7 +88,6 @@ class GNInfer:
             doplot (bool, optional): Whether to generate plots. Defaults to True.
             max_cells (int, optional): Maximum number of cells to consider. Defaults to 0.
                 if less than total number of cells, only the top `max_cells` cells with the most counts will be considered.
-            forward_mode (str, optional): Mode for forward pass. Defaults to "none".
             genelist (list, optional): List of genes to consider. Defaults to an empty list.
             loc (str, optional): Location to save results. Defaults to "./".
             dtype (torch.dtype, optional): Data type for computations. Defaults to torch.float16.
@@ -113,10 +111,9 @@ class GNInfer:
         self.cell_type_col = cell_type_col
         self.filtration = filtration
         self.doplot = doplot
-        self.genelist = genelist
+        self.genelist = genelist if genelist is not None else None
         self.apc = apc
         self.dtype = dtype
-        self.forward_mode = forward_mode
         self.k = k
         self.symmetrize = symmetrize
         self.known_grn = known_grn
@@ -305,7 +302,6 @@ class GNInfer:
                     knn_cells=batch["knn_cells"].to(device)
                     if model.expr_emb_style == "metacell"
                     else None,
-                    predict_mode=self.forward_mode,
                     keep_output=False,
                     get_attention_layer=layer if type(layer) is list else [layer],
                 )

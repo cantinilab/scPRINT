@@ -39,7 +39,7 @@ class TrainingMode(Callback):
         var_context_length: bool = False,
         vae_kl_warmup_steps: int = 80_000,
         vae_kl_scale: float = 0.001,
-        name="",
+        name: str = "",
         set_step: Optional[int] = None,
         mask_zeros: bool = False,
     ):
