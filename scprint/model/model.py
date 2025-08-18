@@ -3,6 +3,7 @@ import copy
 import datetime
 import os
 from functools import partial
+
 # from galore_torch import GaLoreAdamW
 from math import factorial
 from pathlib import Path
@@ -19,6 +20,7 @@ from lightning.pytorch.callbacks.lr_finder import LearningRateFinder
 from lightning.pytorch.tuner.lr_finder import _LRCallback
 from numpy import mean
 from performer_pytorch import Performer
+from scdataloader.utils import load_genes
 from scipy.sparse import load_npz
 from simpler_flash import FlashTransformer
 from torch import Tensor, nn, optim
@@ -610,6 +612,22 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                         self.d_model, max_len=max_len, token_to_pos=token_to_pos
                     )
         mencoders = {}
+        if type(checkpoints["hyper_parameters"]["genes"]) is list:
+            genedf = load_genes(checkpoints["hyper_parameters"]["organisms"])
+            checkpoints["hyper_parameters"]["genes"] = {
+                i: genedf.index[
+                    (genedf.organism == i)
+                    & genedf.index.isin(checkpoints["hyper_parameters"]["genes"])
+                ].tolist()
+                for i in checkpoints["hyper_parameters"]["organisms"]
+            }
+        if "precpt_gene_emb" in checkpoints["hyper_parameters"]:
+            checkpoints["hyper_parameters"].pop("precpt_gene_emb")
+
+        if "transformer" in checkpoints["hyper_parameters"]:
+            checkpoints["hyper_parameters"]["attention"] = checkpoints[
+                "hyper_parameters"
+            ].pop("transformer")
         try:
             if self.trainer.datamodule.decoders != self.label_decoders:
                 print("label decoders have changed, be careful")
@@ -617,28 +635,38 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 for k, v in checkpoints["hyper_parameters"]["label_decoders"].items():
                     mencoders[k] = {va: ke for ke, va in v.items()}
                 self.trainer.datamodule.encoders = mencoders
-            
+
             es = None
-            for k in self.trainer.callbacks: 
+            for k in self.trainer.callbacks:
                 if isinstance(k, EarlyStopping):
                     es = k
             if es is not None:
-                prev = checkpoints['callbacks'].get("EarlyStopping{'monitor': 'val_loss', 'mode': 'min'}")
+                prev = checkpoints["callbacks"].get(
+                    "EarlyStopping{'monitor': 'val_loss', 'mode': 'min'}"
+                )
                 if prev is not None:
-                    prev = prev['patience']
+                    prev = prev["patience"]
                 if prev != es.patience:
-                    print('updating the early stopping parameter to {}'.format(es.patience))
-                    checkpoints['callbacks']["EarlyStopping{'monitor': 'val_loss', 'mode': 'min'}"]['patience'] = es.patience
+                    print(
+                        "updating the early stopping parameter to {}".format(
+                            es.patience
+                        )
+                    )
+                    checkpoints["callbacks"][
+                        "EarlyStopping{'monitor': 'val_loss', 'mode': 'min'}"
+                    ]["patience"] = es.patience
                     if prev < es.patience:
-                        checkpoints['callbacks']["EarlyStopping{'monitor': 'val_loss', 'mode': 'min'}"]['stopped_epoch'] = 0
+                        checkpoints["callbacks"][
+                            "EarlyStopping{'monitor': 'val_loss', 'mode': 'min'}"
+                        ]["stopped_epoch"] = 0
 
         except RuntimeError as e:
             if "scPrint is not attached to a `Trainer`." in str(e):
                 print("FYI: scPrint is not attached to a `Trainer`.")
             else:
                 raise e
-            if self.genes != checkpoints["hyper_parameters"]["genes"]:
-                self.genes = checkpoints["hyper_parameters"]["genes"]
+            if self._genes != checkpoints["hyper_parameters"]["genes"]:
+                self._genes = checkpoints["hyper_parameters"]["genes"]
                 try:
                     self.trainer.datamodule.genes = self.genes
                 except RuntimeError as e:
@@ -1380,7 +1408,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 if not run_full_forward
                 else full_cell_embs,
                 gene_pos=gene_pos if other_expression is None else other_gene_pos,
-                depth_mult=expression.sum(1) if other_expression is None else other_expression.sum(1),
+                depth_mult=expression.sum(1)
+                if other_expression is None
+                else other_expression.sum(1),
                 req_depth=total_count,
             )
             l, tloss = self._compute_loss(
@@ -1393,7 +1423,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 do_vae_kl=do_vae_kl,
             )
             losses.update({"gen_" + k: v for k, v in l.items()})
-            total_loss += tloss*0.5
+            total_loss += tloss * 0.5
 
         # TASK 7. next time point prediction
         if do_next_tp:
