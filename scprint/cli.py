@@ -1,11 +1,8 @@
 import torch
 from jsonargparse import class_from_function
-from lightning.pytorch.callbacks import (
-    EarlyStopping,
-    LearningRateMonitor,
-    ModelCheckpoint,
-    StochasticWeightAveraging,
-)
+from lightning.pytorch.callbacks import (EarlyStopping, LearningRateMonitor,
+                                         ModelCheckpoint,
+                                         StochasticWeightAveraging)
 from lightning.pytorch.cli import LightningCLI, _get_short_description
 from lightning.pytorch.trainer import Trainer
 
@@ -42,7 +39,7 @@ class MyCLI(LightningCLI):
         parser.link_arguments(
             "data.gene_pos", "model.gene_pos_enc", apply_on="instantiate"
         )
-        parser.link_arguments("data.genes", "model.genes", apply_on="instantiate")
+        parser.link_arguments("data.genes_dict", "model.genes", apply_on="instantiate")
         parser.link_arguments(
             "data.decoders", "model.label_decoders", apply_on="instantiate"
         )
@@ -134,7 +131,7 @@ class MyCLI(LightningCLI):
                 "__call__",
                 skip=set(["model", "adata", "cell_type"]),
             )
-            
+
             self._subcommand_method_arguments[subcommand] = added
             self._subcommand_parsers[subcommand[0]] = parser
             parser_subcommands.add_subcommand(subcommand[0], parser, help=description)
@@ -157,9 +154,9 @@ class MyCLI(LightningCLI):
             import numpy as np
             import scanpy as sc
             from scdataloader import Preprocessor
-            from scdataloader.utils import load_genes 
+            from scdataloader.utils import load_genes
+
             from scprint import scPrint
-            import numpy as np
 
             adata = sc.read_h5ad(self.config_init[subcommand]["adata"])
             adata.obs.drop(columns="is_primary_data", inplace=True, errors="ignore")
@@ -179,16 +176,23 @@ class MyCLI(LightningCLI):
             model_checkpoint_file = self.config_init[subcommand]["ckpt_path"]
             try:
                 m = torch.load(model_checkpoint_file)
-            except RuntimeError: 
-                m = torch.load(model_checkpoint_file, map_location=torch.device('cpu'))
+            except RuntimeError:
+                m = torch.load(model_checkpoint_file, map_location=torch.device("cpu"))
             transformer = "flash" if torch.cuda.is_available() else "normal"
-            if "prenorm" in m['hyper_parameters']:
-                m['hyper_parameters'].pop("prenorm")
+            if "prenorm" in m["hyper_parameters"]:
+                m["hyper_parameters"].pop("prenorm")
                 torch.save(m, model_checkpoint_file)
-            if "label_counts" in m['hyper_parameters']:
-                model = scPrint.load_from_checkpoint(model_checkpoint_file, precpt_gene_emb=None, classes=m['hyper_parameters']['label_counts'], transformer=transformer)
+            if "label_counts" in m["hyper_parameters"]:
+                model = scPrint.load_from_checkpoint(
+                    model_checkpoint_file,
+                    precpt_gene_emb=None,
+                    classes=m["hyper_parameters"]["label_counts"],
+                    transformer=transformer,
+                )
             else:
-                model = scPrint.load_from_checkpoint(model_checkpoint_file, precpt_gene_emb=None, transformer=transformer)
+                model = scPrint.load_from_checkpoint(
+                    model_checkpoint_file, precpt_gene_emb=None, transformer=transformer
+                )
             missing = set(model.genes) - set(load_genes(model.organisms).index)
             if len(missing) > 0:
                 print(
@@ -199,7 +203,7 @@ class MyCLI(LightningCLI):
                 model = model.to(torch.float32)
             dtype = torch.float16 if torch.cuda.is_available() else torch.float32
             conf["dtype"] = dtype
-            
+
             model = model.to("cuda" if torch.cuda.is_available() else "cpu")
             for key in [
                 "seed_everything",
