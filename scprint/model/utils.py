@@ -35,7 +35,7 @@ def make_adata(
     classes: list[str] = None,
     pred: Tensor = None,
     label_decoders: Optional[Dict] = None,
-    labels_hierarchy: Dict = {},
+    labels_hierarchy: Optional[Dict] = None,
     gtclass: Optional[Tensor] = None,
     doplot: bool = True,
 ):
@@ -126,6 +126,8 @@ def make_adata(
     del embs
     adata.var_names = genes
     accuracy = {}
+    if labels_hierarchy is None:
+        labels_hierarchy = {}
     if pred is not None:
         for clss in classes:
             if gtclass is not None:

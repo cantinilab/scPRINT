@@ -3,25 +3,24 @@ import copy
 import datetime
 import os
 from functools import partial
-
 # from galore_torch import GaLoreAdamW
 from math import factorial
 from pathlib import Path
 from typing import Dict, Optional
-import numpy as np
+
 import lightning as L
 import numpy as np
 import pandas as pd
 import torch
 import torch.distributed
 from huggingface_hub import PyTorchModelHubMixin
+from lightning.pytorch.callbacks import EarlyStopping
 from lightning.pytorch.callbacks.lr_finder import LearningRateFinder
 from lightning.pytorch.tuner.lr_finder import _LRCallback
 from numpy import mean
 from performer_pytorch import Performer
 from scipy.sparse import load_npz
 from simpler_flash import FlashTransformer
-from lightning.pytorch.callbacks import EarlyStopping
 from torch import Tensor, nn, optim
 
 # from .linear_transformer import FastTransformerEncoderWrapper as FastTransformer
@@ -41,6 +40,7 @@ def is_interactive():
 class scPrint(L.LightningModule, PyTorchModelHubMixin):
     def __init__(
         self,
+        organisms: list,
         genes: list,
         d_model: int = 256,
         nhead: int = 4,
@@ -59,10 +59,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         mvc_decoder: Optional[
             str
         ] = None,  # "inner product", "concat query", "sum query"
-        pred_embedding: list[str] = [],
-        organisms: list[str] = [],
-        layers_cls: list[int] = [],
-        classes: Dict[str, int] = {},
+        pred_embedding: Optional[list[str]] = None,
+        layers_cls: list[int] = [256, 128],
+        classes: Optional[Dict[str, int]] = None,
         labels_hierarchy: Dict[str, Dict[int, list[int]]] = {},
         label_decoders: Optional[Dict[str, Dict[int, str]]] = None,
         compress_class_dim: Optional[Dict[str, int]] = None,
@@ -158,7 +157,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.set_step = None
         self.lrfinder_steps = 0
         self.doplot = True
-        self.get_attention_layer = []
+        self.get_attention_layer = None
         self.embs = None
         self.pred_log_adata = True
         self.predict_depth_mult = 3
@@ -181,6 +180,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # need to store
         self.n_input_bins = n_input_bins
         self.transformer = transformer
+        if classes is None:
+            classes = []
         self.label_counts = classes
         self.classes = list(classes.keys())
 
@@ -198,8 +199,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 f"expr_emb_style should be one of category, continuous, scaling, "
                 f"got {expr_emb_style}"
             )
+        if labels_hierarchy is not None:
+            labels_hierarchy = {}
         self.labels_hierarchy = labels_hierarchy
-        self.hparams["labels_hierarchy"] = labels_hierarchy
         self.hparams["classes"] = classes
         self.hparams["label_decoders"] = label_decoders
         self.hparams["gene_pos_enc"] = gene_pos_enc
@@ -850,7 +852,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         do_sample: bool = False,
         do_mvc: bool = False,
         do_class: bool = False,
-        get_attention_layer: list = [],
+        get_attention_layer: Optional[list] = None,
     ):
         """
         forward also called on self(), a full forward pass on the model
@@ -956,7 +958,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             transformer_output = self.transformer(encoding)
         else:
             raise ValueError(f"Unknown transformer: {type(self.transformer)}")
-        if len(get_attention_layer) > 0:
+        if get_attention_layer is not None:
             transformer_output, qkvs = transformer_output
         if self.cell_transformer:
             cell_embs = self.cell_transformer(cell_embs, x_kv=transformer_output)
@@ -985,7 +987,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 req_depth,
             )
         )
-        return (res, qkvs) if len(get_attention_layer) > 0 else res
+        return (res, qkvs) if get_attention_layer is not None else res
 
     def _generate(
         self,
@@ -1158,7 +1160,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self,
         batch: Dict[str, Tensor],
         do_denoise: bool = False,
-        noise: list[float] = [],
+        noise: list[float] = [0.4],
         do_next_tp: bool = False,
         do_cce: bool = False,
         cce_temp: float = 0.5,
@@ -1871,10 +1873,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         expression,
         depth,
         knn_cells=None,
-        predict_mode="none",
-        pred_embedding=[],
-        get_attention_layer=[],
-        depth_mult=6,
+        do_generate=False,
+        pred_embedding=None,
+        get_attention_layer=None,
+        depth_mult=1,
         keep_output=True,
         max_size_in_mem=100_000,
         get_gene_emb=False,
@@ -1917,8 +1919,21 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     knn_cells = knn_cells[
                         :, :, : ((knn_cells.shape[2]) // 128 * 128) - num
                     ]
-        if predict_mode == "none":
-            output = self.forward(
+        output = self.forward(
+            gene_pos,
+            expression,
+            depth_mult=expression.sum(1) * depth_mult,
+            neighbors=knn_cells,
+            req_depth=depth * depth_mult,
+            get_attention_layer=get_attention_layer,
+            do_class=True,
+            get_gene_emb=get_gene_emb,
+            metacell_token=metacell_token,
+        )
+        if get_attention_layer is not None:
+            # only first 2 (QK)
+            self.attn.add(
+                [i[:, :, :2, :] for i in output[1]],
                 gene_pos,
                 expression,
                 depth_mult=expression.sum(1),
@@ -1937,49 +1952,14 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     expression if self.mask_zeros else None,
                 )
                 output = output[0]
-        elif predict_mode == "denoise":
-            output = self.forward(
-                gene_pos,
-                expression,
-                depth_mult=expression.sum(1) * depth_mult,
-                neighbors=knn_cells,
-                req_depth=depth * depth_mult,
-                get_attention_layer=get_attention_layer,
-                do_class=True,
-                get_gene_emb=get_gene_emb,
-                metacell_token=metacell_token,
-            )
-            if len(get_attention_layer) > 0:
-                # only first 2 (QK)
-                self.attn.add(
-                    [i[:, :, :2, :] for i in output[1]],
-                    gene_pos,
-                    expression if self.mask_zeros else None,
-                )
-                output = output[0]
-        elif predict_mode == "generate":
-            output = self.forward(
-                gene_pos,
-                expression,
-                neighbors=knn_cells,
-                req_depth=depth,
-                do_mvc=False,
-                do_class=False,
-                get_gene_emb=get_gene_emb,
-                metacell_token=metacell_token,
-            )
-            output = self._generate(
-                output["output_cell_embs"],
-                gene_pos,
-                req_depth=None,  # otherwise we have 2 depths passed
-                depth_mult=expression.sum(1),
-            )
-        else:
-            raise ValueError(
-                "predict_mode needs to be one of ['none', 'denoise', 'generate']"
-            )
-
-        if len(pred_embedding) == 0:
+        ind = {}
+        if (
+            pred_embedding is None
+            or "other" in pred_embedding
+            or ["all"] == pred_embedding
+        ):
+            ind = {"other": 0}
+        if ["all"] == pred_embedding:
             pred_embedding = self.classes
         ind = {i: self.classes.index(i) + 1 for i in pred_embedding}
         if not keep_output:
@@ -2154,3 +2134,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             
 
         return adata
+
+    #@property
+    #def genes(self):
+    #    genes = []
+    #    for names in self.organisms:
+    #        genes.extend(self._genes[names])
+    #    return genes
