@@ -3,6 +3,7 @@ import copy
 import datetime
 import os
 from functools import partial
+
 # from galore_torch import GaLoreAdamW
 from math import factorial
 from pathlib import Path
@@ -201,7 +202,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 f"expr_emb_style should be one of category, continuous, scaling, "
                 f"got {expr_emb_style}"
             )
-        if labels_hierarchy is not None:
+        if labels_hierarchy is None:
             labels_hierarchy = {}
         self.labels_hierarchy = labels_hierarchy
         self.hparams["classes"] = classes
