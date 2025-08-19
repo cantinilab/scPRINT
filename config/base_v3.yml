@@ -75,7 +75,7 @@ model:
 data:
   gene_position_tolerance: 10_000
   gene_embeddings: ./data/main/gene_embs/
-  collection_name: scPRINT-V2 (all+tahoe+scbase) #scPRINT-V2 (good quality) # scPRINT-V2 (some)
+  collection_name: scPRINT-V2 (all+tahoe+scbase) filtered #scPRINT-V2 (good quality) # scPRINT-V2 (some)
   how: random expr
   max_len: 2600
   pin_memory: True

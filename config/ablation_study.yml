@@ -72,7 +72,7 @@ model:
 data:
   gene_position_tolerance: 10_000
   gene_embeddings: ./data/main/gene_embs/ #./data/main/gene_embeddings.parquet # /lustre/fswork/projects/rech/xeg/uat95fg/gene_embeddings.parquet
-  collection_name: scPRINT-V2 (good quality) #scPRINT-V2 (full)
+  collection_name: scPRINT-V2 (good quality) filtered #scPRINT-V2 (full)
   how: random expr
   max_len: 2200
   pin_memory: True
