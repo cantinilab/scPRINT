@@ -1233,8 +1233,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         other_expression = None
         if self.var_context_length and torch.rand(1).item() < 0.2:
             context_length = torch.randint(800, batch["x"].shape[1], (1,)).item()
-            other_expression = batch["x"][:, context_length:]
-            other_gene_pos = batch["genes"][:, context_length:]
+        #  other_expression = batch["x"][:, context_length:]
+        # other_gene_pos = batch["genes"][:, context_length:]
         else:
             context_length = batch["x"].shape[1]
         expression = batch["x"][:, :context_length]
