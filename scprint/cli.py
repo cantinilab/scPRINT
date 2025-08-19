@@ -1,11 +1,8 @@
 import torch
 from jsonargparse import class_from_function
-from lightning.pytorch.callbacks import (
-    EarlyStopping,
-    LearningRateMonitor,
-    ModelCheckpoint,
-    StochasticWeightAveraging,
-)
+from lightning.pytorch.callbacks import (EarlyStopping, LearningRateMonitor,
+                                         ModelCheckpoint,
+                                         StochasticWeightAveraging)
 from lightning.pytorch.cli import LightningCLI, _get_short_description
 from lightning.pytorch.trainer import Trainer
 

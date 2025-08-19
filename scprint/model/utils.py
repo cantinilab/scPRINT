@@ -35,7 +35,7 @@ def make_adata(
     classes: List[str] = None,
     pred: Tensor = None,
     label_decoders: Optional[Dict] = None,
-    labels_hierarchy: Dict = {},
+    labels_hierarchy: Optional[Dict] = None,
     gtclass: Optional[Tensor] = None,
     doplot: bool = True,
 ):
@@ -92,7 +92,7 @@ def make_adata(
         # Fill array with values from expr_pred[0]
         for idx in range(n_cells):
             mu_array[idx, pos[idx]] = expr_pred[0][idx].cpu().numpy()
-        exist = mu_array.sum(0)
+        exist = mu_array.sum(0) != 0
         mu_array = mu_array[:, exist]
         layers = {
             "scprint_mu": mu_array,
@@ -130,6 +130,8 @@ def make_adata(
         rep = "scprint_emb_" + k
     del embs
     accuracy = {}
+    if labels_hierarchy is None:
+        labels_hierarchy = {}
     if pred is not None:
         for clss in classes:
             if gtclass is not None:

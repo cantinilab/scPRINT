@@ -6,7 +6,7 @@ from functools import partial
 # from galore_torch import GaLoreAdamW
 from math import factorial
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional, Union
 
 import lightning as L
 import numpy as np
@@ -19,6 +19,7 @@ from lightning.pytorch.callbacks.lr_finder import LearningRateFinder
 from lightning.pytorch.tuner.lr_finder import _LRCallback
 from numpy import mean
 from performer_pytorch import Performer
+from scdataloader.utils import load_genes
 from scipy.sparse import load_npz
 from simpler_flash import FlashTransformer
 from torch import Tensor, nn, optim
@@ -40,7 +41,8 @@ def is_interactive():
 class scPrint(L.LightningModule, PyTorchModelHubMixin):
     def __init__(
         self,
-        genes: Dict[str, List[str]],
+        genes,
+        organisms: list[str],
         d_model: int = 256,
         nhead: int = 4,
         nlayers: int = 8,
@@ -48,7 +50,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         memmap_gene_emb: bool = False,
         finetune_gene_emb: bool = False,
         freeze_embeddings: bool = True,
-        gene_pos_enc: Optional[List[int]] = None,
+        gene_pos_enc: Optional[list] = None,
         normalization: str = "sum",
         attn_bias: str = "none",
         expr_encoder_layers: int = 3,
@@ -58,11 +60,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         mvc_decoder: Optional[
             str
         ] = None,  # "inner product", "concat query", "sum query"
-        pred_embedding: List[str] = [],
-        organisms: List[str] = [],
-        layers_cls: List[int] = [],
-        classes: Dict[str, int] = {},
-        labels_hierarchy: Dict[str, Dict[int, List[int]]] = {},
+        pred_embedding: Optional[list[str]] = None,
+        layers_cls: list[int] = [256, 128],
+        classes: Optional[Dict[str, int]] = None,
+        labels_hierarchy: Dict[str, Dict[int, list[int]]] = {},
         label_decoders: Optional[Dict[str, Dict[int, str]]] = None,
         compress_class_dim: Optional[Dict[str, int]] = None,
         cell_specific_blocks: bool = False,
@@ -79,23 +80,24 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         nhead_cell: int = 4,
         nlayers_cell: int = 6,
         num_heads_kv_cell: int = 4,
+        transformer=None,
         **attention_kwargs,
     ):
         """
         scPRINT transformer for single cell biology and the inference of Gene Regulatory networks
 
         Args:
-            genes (Dict[str, List[str]]): Dictionary of genes per organism to use for the model. The keys are organism names and the values are Lists of gene names.
+            genes (list|dict): List of gene names the model will work with.
             precpt_gene_emb (np.array, optional): Gene embeddings of size (len(genes), d_model). Should be in the same order as the genes. Defaults to None.
-            gene_pos_enc (List, optional): Gene position encoding of the same size as genes. Provides a location value for each gene in genes. Defaults to None.
+            gene_pos_enc (list, optional): Gene position encoding of the same size as genes. Provides a location value for each gene in genes. Defaults to None.
             d_model (int, optional): Dimension of the model. Defaults to 512.
             nhead (int, optional): Number of heads in the multihead attention models. Defaults to 8.
             nlayers (int, optional): Number of layers in the transformer model. Defaults to 6.
             expr_encoder_layers (int, optional): Number of layers in the expression encoder. Defaults to 2.
-            layers_cls (List[int], optional): List specifying the number of layers in the classifier. Defaults to [].
+            layers_cls (list[int], optional): List specifying the number of layers in the classifier. Defaults to [].
             classes (Dict[str, int], optional): Classes to predict with the number of classes for each. Defaults to {}.
-            organisms (List[str], optional): List of organisms to use for plotting embeddings. Defaults to [].
-            labels_hierarchy (Dict[str, Dict[int, List[int]]], optional): Class hierarchy for classes with hierarchical classes. Defaults to {}.
+            organisms (list[str], optional): List of organisms to use for plotting embeddings. Defaults to [].
+            labels_hierarchy (Dict[str, Dict[int, list[int]]], optional): Class hierarchy for classes with hierarchical classes. Defaults to {}.
             dropout (float, optional): Dropout value. Defaults to 0.2.
             attention (str, optional): attention type to use. One of "linear", "flash", "flashsparse", "scprint". Defaults to "fast".
             expr_emb_style (str, optional): Style of input embedding. One of "continuous", "binned_pos", "cont_pos", "metacell", "full_pos". Defaults to "continuous".
@@ -104,7 +106,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 "binned_pos" uses a binned expr embedding for each gene
                 "continuous" uses a continuous embedding for each gene with an MLP
             mvc_decoder (str, optional): Style of MVC decoder. One of "None", "inner product", "concat query", "sum query". Defaults to "None".
-            pred_embedding (List[str], optional): List of classes to use for plotting embeddings. Defaults to [].
+            pred_embedding (list[str], optional): List of classes to use for plotting embeddings. Defaults to [].
             freeze_embeddings (bool, optional): Whether to freeze the embeddings during training. Defaults to True.
             label_decoders (Optional[Dict[str, Dict[int, str]]], optional): Label decoders to use for plotting the UMAP during validations. Defaults to None.
             zinb (bool, optional): Whet her to use Zero-Inflated Negative Binomial distribution. Defaults to True.
@@ -157,7 +159,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.set_step = None
         self.lrfinder_steps = 0
         self.doplot = True
-        self.get_attention_layer = []
+        self.get_attention_layer = None
         self.embs = None
         self.pred_log_adata = True
         self.predict_depth_mult = 3
@@ -179,6 +181,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # need to store
         self.n_input_bins = n_input_bins
         self.attention = attention
+
+        if classes is None:
+            classes = []
         self.label_counts = classes
         self.classes = list(classes.keys())
 
@@ -196,14 +201,16 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 f"expr_emb_style should be one of category, continuous, scaling, "
                 f"got {expr_emb_style}"
             )
+        if labels_hierarchy is not None:
+            labels_hierarchy = {}
         self.labels_hierarchy = labels_hierarchy
-        self.hparams["labels_hierarchy"] = labels_hierarchy
         self.hparams["classes"] = classes
         self.hparams["label_decoders"] = label_decoders
         self.hparams["gene_pos_enc"] = gene_pos_enc
         self.hparams["genes"] = genes
         self.hparams["organisms"] = organisms
         self.hparams["use_metacell_token"] = use_metacell_token
+        self.tf_masker = WeightedMasker(self.genes, inv_weight=0.05)
         self.attn = utils.Attention(
             len(self.genes),
             additional_tokens=(
@@ -221,8 +228,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
         # encoder
         # gene encoder
-        self.tf_masker = WeightedMasker(self.genes, inv_weight=0.05)
-        
         if precpt_gene_emb is not None:
             embeddings = pd.read_parquet(precpt_gene_emb).loc[self.genes]
             if len(embeddings) == 0:
@@ -297,6 +302,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if self.use_metacell_token:
             self.metacell_encoder = encoders.CategoryValueEncoder(2, d_model)
         # compute tensor for mat_labels_hierarchy
+        # old parameters that can still be passed when loading older models (managed in the _on_load_ckpt function)
         for i in [
             "strict_loading",
             "optim",
@@ -308,6 +314,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             "use_flash_attn",
             "cell_emb_style",
             "num_batch_labels",
+            "transformer",
         ]:
             if i in attention_kwargs:
                 attention_kwargs.pop(i)
@@ -608,6 +615,22 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                         self.d_model, max_len=max_len, token_to_pos=token_to_pos
                     )
         mencoders = {}
+        if type(checkpoints["hyper_parameters"]["genes"]) is list:
+            genedf = load_genes(checkpoints["hyper_parameters"]["organisms"])
+            checkpoints["hyper_parameters"]["genes"] = {
+                i: genedf.index[
+                    (genedf.organism == i)
+                    & genedf.index.isin(checkpoints["hyper_parameters"]["genes"])
+                ].tolist()
+                for i in checkpoints["hyper_parameters"]["organisms"]
+            }
+        if "precpt_gene_emb" in checkpoints["hyper_parameters"]:
+            checkpoints["hyper_parameters"].pop("precpt_gene_emb")
+
+        if "transformer" in checkpoints["hyper_parameters"]:
+            checkpoints["hyper_parameters"]["attention"] = checkpoints[
+                "hyper_parameters"
+            ].pop("transformer")
         try:
             if self.trainer.datamodule.decoders != self.label_decoders:
                 print("label decoders have changed, be careful")
@@ -645,8 +668,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 print("FYI: scPrint is not attached to a `Trainer`.")
             else:
                 raise e
-            if self.genes != checkpoints["hyper_parameters"]["genes"]:
-                self.genes = checkpoints["hyper_parameters"]["genes"]
+            if self._genes != checkpoints["hyper_parameters"]["genes"]:
+                self._genes = checkpoints["hyper_parameters"]["genes"]
                 try:
                     self.trainer.datamodule.genes = self.genes
                 except RuntimeError as e:
@@ -858,7 +881,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         do_sample: bool = False,
         do_mvc: bool = False,
         do_class: bool = False,
-        get_attention_layer: List = [],
+        get_attention_layer: Optional[list] = None,
     ):
         """
         forward also called on self(), a full forward pass on the model
@@ -884,7 +907,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 If True, the multi-view coding is performed during the forward pass. Defaults to False.
             do_class (bool, optional): A flag indicating whether to perform classification.
                 If True, the classification is performed during the forward pass. Defaults to False.
-            get_attention_layer (List, optional): A List indicating which attention layers to return.
+            get_attention_layer (list, optional): A list indicating which attention layers to return.
                 If not empty, the specified attention layers are included in the output. Defaults to [].
 
         Returns:
@@ -964,7 +987,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             transformer_output = self.transformer(encoding)
         else:
             raise ValueError(f"Unknown transformer: {type(self.transformer)}")
-        if len(get_attention_layer) > 0:
+        if get_attention_layer is not None:
             transformer_output, qkvs = transformer_output
         if self.cell_transformer:
             cell_embs = self.cell_transformer(cell_embs, x_kv=transformer_output)
@@ -993,7 +1016,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 req_depth,
             )
         )
-        return (res, qkvs) if len(get_attention_layer) > 0 else res
+        return (res, qkvs) if get_attention_layer is not None else res
 
     def _generate(
         self,
@@ -1165,7 +1188,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self,
         batch: Dict[str, Tensor],
         do_denoise: bool = False,
-        noise: List[float] = [],
+        noise: list[float] = [0.4],
         do_next_tp: bool = False,
         do_cce: bool = False,
         cce_temp: float = 0.5,
@@ -1175,7 +1198,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         do_cls: bool = False,
         do_generate: bool = False,
         run_full_forward: bool = True,
-        mask_ratio: List[float] = [0.15],
+        mask_ratio: list[float] = [0.15],
         do_vae_kl: bool = True,
     ):
         """
@@ -1674,7 +1697,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         @see pl.LightningModule
 
         Args:
-            batch (List[Tensor]): @see training_step
+            batch (list[Tensor]): @see training_step
         """
         val_loss, losses = self._full_training(
             batch=batch,
@@ -1871,8 +1894,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         depth,
         knn_cells=None,
         do_generate=False,
-        pred_embedding=[],
-        get_attention_layer=[],
+        pred_embedding=None,
+        get_attention_layer=None,
         depth_mult=1,
         keep_output=True,
         max_size_in_mem=100_000,
@@ -1894,8 +1917,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             @see training_step
             other important arguments:
             keep_output (bool, optional): whether to keep the output in memory. Defaults to True.
-            self.get_attention_layer (List, optional): the layers to get the attention from. Defaults to [].
-            self.pred_embedding (List, optional): the classes to predict. Defaults to [].
+            self.get_attention_layer (list, optional): the layers to get the attention from. Defaults to [].
+            self.pred_embedding (list, optional): the classes to predict. Defaults to [].
 
         """
         if self.mask_zeros and knn_cells is None:
@@ -1927,7 +1950,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             get_gene_emb=get_gene_emb,
             metacell_token=metacell_token,
         )
-        if len(get_attention_layer) > 0:
+        if get_attention_layer is not None:
             # only first 2 (QK)
             self.attn.add(
                 [i[:, :, :2, :] for i in output[1]],
@@ -1946,8 +1969,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             )
         ind = {}
         if (
-            "other" in pred_embedding
-            or len(pred_embedding) == 0
+            pred_embedding is None
+            or "other" in pred_embedding
             or ["all"] == pred_embedding
         ):
             ind = {"other": 0}
@@ -2128,7 +2151,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
     @property
     def genes(self):
-        genes = []
-        for names in self.organisms:
-            genes.extend(self._genes[names])
-        return genes
+        if type(self._genes) is list:
+            return self._genes
+        else:
+            genes = []
+            for names in self.organisms:
+                genes.extend(self._genes[names])
+            return genes
