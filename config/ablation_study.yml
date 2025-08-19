@@ -46,6 +46,7 @@ model:
   mvc_decoder: inner product
   residual_in_fp32: True
   checkpointing: False
+  layers_cls: []
   cell_specific_blocks: False
   fused_dropout_add_ln: False
   fused_mlp: False
