@@ -9,6 +9,7 @@ import torch
 from anndata import AnnData, concat
 from scdataloader import Collator, Preprocessor
 from scdataloader.data import SimpleAnnDataset
+from scdataloader.utils import get_descendants, random_str
 from scipy.stats import spearmanr
 from simpler_flash import FlashTransformer
 from torch.nn import functional as F
@@ -36,6 +37,7 @@ class Denoiser:
         genelist: Optional[List[str]] = None,
         save_every: int = 100_000,
         pred_embedding: List[str] = ["cell_type_ontology_term_id"],
+        additional_info: bool = False,
     ):
         """
         Denoiser class for denoising scRNA-seq data using a scPRINT model
@@ -73,6 +75,7 @@ class Denoiser:
         self.genelist = genelist
         self.save_every = save_every
         self.pred_embedding = pred_embedding
+        self.additional_info = additional_info
 
     def __call__(self, model: torch.nn.Module, adata: AnnData):
         """
@@ -133,6 +136,7 @@ class Denoiser:
         model.eval()
         device = model.device.type
         stored_noisy = None
+        rand = random_str()
         dtype = (
             torch.float16
             if type(model.transformer) is FlashTransformer
@@ -168,9 +172,10 @@ class Denoiser:
                     depth_mult=self.predict_depth_mult,
                     pred_embedding=self.pred_embedding,
                     max_size_in_mem=self.save_every,
+                    name="denoise_" + rand + "_",
                 )
         torch.cuda.empty_cache()
-        model.log_adata(name="predict_part_" + str(model.counter))
+        model.log_adata(name="denoise_" + rand + "_" + str(model.counter))
         try:
             mdir = (
                 model.logger.save_dir if model.logger.save_dir is not None else "data"
@@ -185,7 +190,9 @@ class Denoiser:
                 + str(model.global_step)
                 + "_"
                 + model.name
-                + "_predict_part_"
+                + "_denoise_"
+                + rand
+                + "_"
                 + str(i)
                 + "_"
                 + str(model.global_rank)
@@ -210,6 +217,10 @@ class Denoiser:
             reco = np.array(pred_adata.layers["scprint_mu"].data).reshape(
                 pred_adata.shape[0], -1
             )
+            # reco = reco * F.sigmoid(
+            #    torch.Tensor(np.array(pred_adata.layers["scprint_pi"].data).reshape(pred_adata.shape[0], -1)) < 0.5
+            # ).numpy()
+
             adata = (
                 adata[random_indices, adata.var.index.isin(pred_adata.var.index)]
                 if random_indices is not None
@@ -230,6 +241,54 @@ class Denoiser:
                 "reco2full": corr_coef[0, 2],
                 "noisy2full": corr_coef[1, 2],
             }
+            if self.additional_info:
+                reco_pi = (
+                    reco
+                    * F.sigmoid(
+                        torch.Tensor(
+                            np.array(pred_adata.layers["scprint_pi"].data).reshape(
+                                pred_adata.shape[0], -1
+                            )
+                        )
+                        < 0.5
+                    ).numpy()
+                )
+                # Sample only 3000 elements for correlation calculation
+                if reco_pi.shape[0] <= 3000:
+                    indices = np.random.choice(reco_pi.shape[0], 3000, replace=False)
+                    reco = reco[indices]
+                    reco_pi = reco_pi[indices]
+                    stored_noisy = stored_noisy[indices]
+                    true = true[indices]
+                corr_coef, p_value = spearmanr(
+                    np.vstack(
+                        [
+                            reco.flatten(),
+                            reco_pi.flatten(),
+                            stored_noisy.flatten(),
+                            true.flatten(),
+                        ]
+                    ).T
+                )
+                m = {
+                    "reco2full": corr_coef[0, 3],
+                    "reco+pi2full": corr_coef[1, 3],
+                }
+                print("corr with zeros: ")
+                print(m)
+                corr_coef, p_value = spearmanr(
+                    np.vstack([reco_pi, stored_noisy, true]).T
+                )
+                N = reco.shape[0]
+                print("cell_wise self corr (reco, noisy, true)")
+                print(
+                    corr_coef[:N, :N].mean(),
+                    corr_coef[N : N * 2, N : N * 2].mean(),
+                    corr_coef[N * 2 :, N * 2 :].mean(),
+                )
+                print("depth-wise plot")
+                plot_cell_depth_wise_corr_improvement(corr_coef, true)
+
             if self.doplot and self.max_cells < 100:
                 corr_coef[p_value > 0.05] = 0
                 plt.figure(figsize=(10, 5))
@@ -355,3 +414,36 @@ def split_molecules(
     umis_Y = umis_Y_disjoint + overlap_factor
 
     return umis_X, umis_Y
+
+
+from scipy.optimize import curve_fit
+
+
+def plot_cell_depth_wise_corr_improvement(corr_coef, true):
+    N = true.shape[0]
+    x = np.diag(corr_coef[:N, N * 2 : N * 3]) - np.diag(corr_coef[:N, N : N * 2])
+    y = true.sum(1)
+
+    def linear_func(x, a, b):
+        return a * np.log(x) + b
+
+    # Fit the linear curve
+    ppot, _ = curve_fit(linear_func, y, x)
+
+    # Plot the data points
+    plt.scatter(y, x, label="denoising increase as depth increase", color="blue")
+
+    # Plot the fitted linear curve
+    x_values = np.linspace(min(y), max(y), 100)
+    plt.plot(
+        x_values,
+        linear_func(x_values, *ppot),
+        label="Linear Fit",
+        color="red",
+        linestyle="--",
+    )
+
+    plt.xlabel("True sum (depth)")
+    plt.ylabel("Denoising improvement")
+    plt.legend()
+    plt.show()

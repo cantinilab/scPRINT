@@ -109,7 +109,7 @@ class GNInfer:
         self.preprocess = preprocess
         self.cell_type_col = cell_type_col
         self.filtration = filtration
-        self.genelist = genelist if genelist is not None else None
+        self.genelist = genelist if genelist is not None else []
         self.apc = apc
         self.dtype = dtype
         self.k = k

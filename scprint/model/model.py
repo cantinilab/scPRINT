@@ -57,7 +57,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         expr_encoder_layers: int = 3,
         attention: str = "flash",  # "performer", "flash", "normal", "crisscross", "hyper", "adasplash"
         expr_emb_style: str = "continuous",  # "binned_pos", "cont_pos", "metacell", "full_pos"
-        n_input_bins: int = 0,
+        n_input_bins: int = 60,
         mvc_decoder: Optional[
             str
         ] = None,  # "inner product", "concat query", "sum query"
@@ -1902,6 +1902,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         max_size_in_mem=100_000,
         get_gene_emb=False,
         metacell_token=None,
+        name="predict_part_",
     ):
         """
         @see predict_step will save output of predict in multiple self variables
@@ -2076,7 +2077,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             if self.pos.shape[0] > max_size_in_mem:
                 if self.pred_log_adata:
                     print("logging")
-                    self.log_adata(name="predict_part_" + str(self.counter))
+                    self.log_adata(name=name + str(self.counter))
                     self.counter += 1
                 else:
                     print(

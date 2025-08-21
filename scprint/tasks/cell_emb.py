@@ -11,7 +11,7 @@ import torch
 from anndata import AnnData, concat
 from scdataloader import Collator, Preprocessor
 from scdataloader.data import SimpleAnnDataset
-from scdataloader.utils import get_descendants
+from scdataloader.utils import get_descendants, random_str
 from scib_metrics.benchmark import Benchmarker
 from scipy.stats import spearmanr
 from simpler_flash import FlashTransformer
@@ -69,7 +69,7 @@ class Embedder:
         self.genelist = genelist if genelist is not None else []
         self.save_every = save_every
 
-    def __call__(self, model: torch.nn.Module, adata: AnnData, cache=False):
+    def __call__(self, model: torch.nn.Module, adata: AnnData):
         """
         __call__ function to call the embedding
 
@@ -122,6 +122,7 @@ class Embedder:
         device = model.device.type
         prevplot = model.doplot
         model.doplot = self.doplot and not self.keep_all_labels_pred
+        rand = random_str()
         dtype = (
             torch.float16
             if isinstance(model.transformer, FlashTransformer)
@@ -146,9 +147,10 @@ class Embedder:
                     else None,
                     pred_embedding=self.pred_embedding,
                     max_size_in_mem=self.save_every,
+                    name="embed_" + rand + "_",
                 )
                 torch.cuda.empty_cache()
-        model.log_adata(name="predict_part_" + str(model.counter))
+        model.log_adata(name="embed_" + rand + "_" + str(model.counter))
         try:
             mdir = (
                 model.logger.save_dir if model.logger.save_dir is not None else "data"
@@ -164,7 +166,9 @@ class Embedder:
                 + str(model.global_step)
                 + "_"
                 + model.name
-                + "_predict_part_"
+                + "_embed_"
+                + rand
+                + "_"
                 + str(i)
                 + "_"
                 + str(model.global_rank)
@@ -184,21 +188,35 @@ class Embedder:
         except:
             print("too few cells to compute a clustering")
 
-        if len(self.pred_embedding) == 1:
+        if self.pred_embedding == ["all"]:
+            pred_embedding = ["other"] + model.classes
+        else:
+            pred_embedding = self.pred_embedding
+        if len(pred_embedding) == 1:
             adata.obsm["scprint_emb"] = pred_adata.obsm[
-                "scprint_emb_" + self.pred_embedding[0]
+                "scprint_emb_" + pred_embedding[0]
             ].astype(np.float32)
+
         else:
             adata.obsm["scprint_emb"] = np.zeros(
-                pred_adata.obsm["scprint_emb_" + self.pred_embedding[0]].shape,
+                pred_adata.obsm["scprint_emb_" + pred_embedding[0]].shape,
                 dtype=np.float32,
             )
             i = 0
             for k, v in pred_adata.obsm.items():
                 adata.obsm[k] = v.astype(np.float32)
-                adata.obsm["scprint_emb"] += v.astype(np.float32)
+                if model.compressor is not None:
+                    if i == 0:
+                        adata.obsm["scprint_emb"] = v.astype(np.float32)
+                    else:
+                        adata.obsm["scprint_emb"] = np.hstack(
+                            [adata.obsm["scprint_emb"], v.astype(np.float32)]
+                        )
+                else:
+                    adata.obsm["scprint_emb"] += v.astype(np.float32)
                 i += 1
-            adata.obsm["scprint_emb"] = adata.obsm["scprint_emb"] / i
+            if model.compressor is None:
+                adata.obsm["scprint_emb"] = adata.obsm["scprint_emb"] / i
 
         for key, value in pred_adata.uns.items():
             adata.uns[key] = value
@@ -572,7 +590,7 @@ def find_coarser_labels(out, model):
     return relabel
 
 
-def display_confusion_matrix(nadata, on="cell_type"):
+def display_confusion_matrix(nadata, pred="conv_pred_cell_type_ontology_term_id", true="cell_type"):
     """
     Display the confusion matrix for true vs predicted cell types.
 
@@ -581,13 +599,13 @@ def display_confusion_matrix(nadata, on="cell_type"):
         on (str, optional): one of ['cell_type', 'disease', 'tissue'...]. Defaults to "cell_type".
     """
     counts = None
-    for k, v in nadata.obs[on].value_counts().items():
+    for k, v in nadata.obs[true].value_counts().items():
         name = k + " - " + str(v)
         if counts is None:
             counts = pd.DataFrame(
                 nadata.obs.loc[
-                    nadata.obs[on] == k,
-                    "conv_pred_" + on + "_ontology_term_id",
+                    nadata.obs[true] == k,
+                    pred,
                 ].value_counts()
             ).rename(columns={"count": name})
         else:
@@ -596,8 +614,8 @@ def display_confusion_matrix(nadata, on="cell_type"):
                     counts,
                     pd.DataFrame(
                         nadata.obs.loc[
-                            nadata.obs[on] == k,
-                            "conv_pred_" + on + "_ontology_term_id",
+                            nadata.obs[true] == k,
+                            pred,
                         ].value_counts(),
                     ).rename(columns={"count": name}),
                 ],
@@ -621,12 +639,12 @@ def display_confusion_matrix(nadata, on="cell_type"):
         square=True,
     )
     plt.title(
-        "Confusion Matrix: True " + on + " vs Predicted " + on + " (Percentage)",
+        "Confusion Matrix: "+ true + " vs " + pred + " (Percentage)",
         fontsize=16,
         pad=20,
     )
-    plt.xlabel("Predicted " + on, fontsize=12)
-    plt.ylabel("True " + on + " (with counts)", fontsize=12)
+    plt.xlabel(pred, fontsize=12)
+    plt.ylabel(true + " (with counts)", fontsize=12)
     plt.xticks(rotation=45, ha="right", fontsize=10)
     plt.yticks(rotation=0, fontsize=10)
     plt.tight_layout()

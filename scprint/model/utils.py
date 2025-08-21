@@ -259,11 +259,16 @@ def make_adata(
                         acc = " (accuracy: {:.2f})".format(
                             accuracy[col.split("conv_")[-1]]
                         )
-                    axs[i].set_title(col + " UMAP" + acc)
+                    axs[i].set_title(col + " UMAP of " + rep + " embedding " + acc)
                     axs[i].set_xlabel("UMAP1")
                     axs[i].set_ylabel("UMAP2")
             else:
-                fig = sc.pl.umap(adata, color=color, show=False, return_fig=True)
+                fig = sc.pl.umap(
+                    adata,
+                    color=color,
+                    show=False,
+                    return_fig=True,
+                )
         plt.show()
     else:
         fig = None
