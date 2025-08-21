@@ -28,11 +28,11 @@ trainer:
         save_top_k: 5
         save_last: True
 scprint_training:
-  run_full_forward: True
+  # run_full_forward: True
   noise: [0.7]
   do_ecs: True
   do_cce: True
-  mask_ratio: ["TF"]
+  # mask_ratio: ["TF"]
   do_generate: True
   test_every: 5
   zinb_and_mse: True
@@ -45,14 +45,23 @@ scprint_early_stopping:
   patience: 4
 model:
   dropout: 0.1
+  nhead: 4
   num_heads_kv: 4
+  nlayers: 8
+  d_model: 256
+  expr_encoder_layers: 3
+  expr_emb_style: continuous
   attention: flash
   residual_in_fp32: True
   checkpointing: True
   cell_specific_blocks: True
+  d_model_cell: 128
+  nhead_cell: 4
+  nlayers_cell: 6
+  num_heads_kv_cell: 4
   fused_dropout_add_ln: False
   fused_mlp: False
-  layers_cls: []
+  layers_cls: [256, 128]
   fused_bias_fc: False
   drop_path_rate: 0
   freeze_embeddings: True
@@ -60,8 +69,7 @@ model:
   normalization: log
   pred_embedding:
     - cell_type_ontology_term_id
-  #compress_class_dim: #{'default':64,'cell_type_ontology_term_id':64,'tissue_ontology_term_id':32,'disease_ontology_term_id':16,'age_group':8,'assay_ontology_term_id':8,'self_reported_ethnicity_ontology_term_id':8,'sex_ontology_term_id':2,'organism_ontology_term_id':8,'cell_culture':2}
-  #  default: 64
+  #compress_class_dim: #{'cell_type_ontology_term_id':64,'tissue_ontology_term_id':32,'disease_ontology_term_id':16,'age_group':8,'assay_ontology_term_id':8,'self_reported_ethnicity_ontology_term_id':8,'sex_ontology_term_id':2,'organism_ontology_term_id':8,'cell_culture':2}
   #  cell_type_ontology_term_id: 64
   #  tissue_ontology_term_id: 32
   #  disease_ontology_term_id: 16
@@ -75,20 +83,20 @@ model:
 data:
   gene_position_tolerance: 10_000
   gene_embeddings: ./data/main/gene_embs/
-  collection_name: scPRINT-V2 (all+tahoe+scbase) #scPRINT-V2 (good quality) # scPRINT-V2 (some)
+  collection_name: scPRINT-V2 (all+tahoe+scbase) filtered #scPRINT-V2 (good quality) # scPRINT-V2 (some)
   how: random expr
   max_len: 2600
   pin_memory: True
   # persistent_workers: True
   prefetch_factor: 3
-  metacell_mode: 0.2
-  weight_scaler: 100
+  metacell_mode: 0.1
+  weight_scaler: 300
   add_zero_genes: 0
   n_samples_per_epoch: 1300000 # {data.batch_size*trainer.limit_train_batches}
   validation_split: 0.05
   test_split: 0.02
   batch_size: 32
-  num_workers: 10
+  num_workers: 8
   hierarchical_clss:
     - cell_type_ontology_term_id
     - tissue_ontology_term_id
