@@ -29,6 +29,36 @@ def list_files(ftp, match=""):
     return [file for file in files if file.endswith(match)]
 
 
+def get_locs(file):
+    locs = []
+    dup = set()
+    noloc = 0
+    for record in SeqIO.parse(file[:-3], "fasta"):
+        name = record.description.split(" gene:")[1].split(" ")[0].split(".")[0]
+        if "chromosome:" in record.description:
+            val = record.description.split(" chromosome:")[1].split(" ")[0]
+            ref, chrom, start, end, _ = val.split(":")
+        elif "primary_assembly" in record.description:
+            val = record.description.split(" primary_assembly:")[1].split(" ")[0]
+            ref, chrom, start, end, _ = val.split(":")
+        elif "scaffold" in record.description:
+            val = record.description.split(" scaffold:")[1].split(" ")[0]
+            ref, chrom, start, end, _ = val.split(":")
+        else:
+            noloc += 1
+            continue
+        if name in dup:
+            continue
+        dup.add(name)
+        locs.append([name, chrom, start, end])
+    print(len(dup), " genes had duplicates")
+    print(noloc, " genes had no location")
+    df = pd.DataFrame(locs, columns=["name", "chrom", "start", "end"])
+    df = df.astype({"start": "int32", "end": "int32"})
+    df = df.sort_values(by=["chrom", "start"]).reset_index(drop=True)
+    return df
+
+
 def load_fasta_species(
     species: str = "homo_sapiens",
     output_path: str = "/tmp/data/fasta/",

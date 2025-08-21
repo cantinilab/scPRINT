@@ -46,7 +46,7 @@ dependencies = [
     "scikit-learn==1.6.0",
     "attridict>=0.0.9",
     "fair-esm>=0.5.0",
-    "esm==3.1.2",
+    "esm==3.1.4",
     "hydra-core>=1.1.0",
     "pynndescent>=0.5.11",
     "einops>=0.3.0",
