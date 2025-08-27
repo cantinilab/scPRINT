@@ -55,6 +55,8 @@ model:
   freeze_embeddings: True
   # finetune_gene_emb: False
   normalization: log
+  gene_pos_file: ./data/main/biomart_pos.parquet
+  precpt_gene_emb: ./data/main/gene_embs/ #./data/main/gene_embeddings.parquet # /lustre/fswork/projects/rech/xeg/uat95fg/gene_embeddings.parquet
   pred_embedding:
     - cell_type_ontology_term_id
   #compress_class_dim:
@@ -70,8 +72,6 @@ model:
     # cell_culture: 2
     # total: 164
 data:
-  gene_position_tolerance: 10_000
-  gene_embeddings: ./data/main/gene_embs/ #./data/main/gene_embeddings.parquet # /lustre/fswork/projects/rech/xeg/uat95fg/gene_embeddings.parquet
   collection_name: scPRINT-V2 (good quality) filtered #scPRINT-V2 (full)
   how: random expr
   max_len: 2200
@@ -79,8 +79,6 @@ data:
   prefetch_factor: 3
   #  metacell_mode: 0.2
   weight_scaler: 200
-  gene_pos_file: ./data/main/biomart_pos.parquet
-  add_zero_genes: 0
   validation_split: 0.05
   n_samples_per_epoch: 1_400_000
   test_split: 0.02
