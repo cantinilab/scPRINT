@@ -36,9 +36,6 @@ class MyCLI(LightningCLI):
         )
         parser.set_defaults({"scprint_learning_rate_monitor.logging_interval": "epoch"})
         parser.add_lightning_class_args(TrainingMode, "scprint_training")
-        parser.link_arguments(
-            "data.gene_pos", "model.gene_pos_enc", apply_on="instantiate"
-        )
         parser.link_arguments("data.genes_dict", "model.genes", apply_on="instantiate")
         parser.link_arguments(
             "data.decoders", "model.label_decoders", apply_on="instantiate"
@@ -50,9 +47,6 @@ class MyCLI(LightningCLI):
             "data.metacell_mode", "model.use_metacell_token", apply_on="instantiate"
         )
         parser.link_arguments("data.classes", "model.classes", apply_on="instantiate")
-        parser.link_arguments(
-            "data.gene_embeddings", "model.precpt_gene_emb", apply_on="parse"
-        )
         parser.link_arguments(
             "data.organisms", "model.organisms", apply_on="instantiate"
         )

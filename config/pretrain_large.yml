@@ -1,8 +1,5 @@
 trainer:
   strategy: ddp_find_unused_parameters_true
-  log_every_n_steps: 300
-  limit_train_batches: 40000
-  limit_val_batches: 10000
   gradient_clip_val: 2
 model:
   nhead: 16
@@ -11,8 +8,12 @@ model:
   nlayers: 30
   d_model: 1024
   dropout: 0.1
+  d_model_cell: 256
+  nlayers_cell: 6
+  nhead_cell: 8
 data:
-  batch_size: 4
-  max_len: 2400
-  n_samples_per_epoch: 200_000
+  batch_size: 16
+  test_every: 10
+  max_len: 2600
+  warmup_duration: 4000
 # model is 400M params

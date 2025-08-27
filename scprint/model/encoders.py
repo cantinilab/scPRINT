@@ -126,9 +126,8 @@ class PositionalEncoding(nn.Module):
     def __init__(
         self,
         d_model: int,
-        max_len: int,
-        token_to_pos: dict[str, int],  # [token, pos]
-        maxval=10000.0,
+        gene_pos_enc: list[str],
+        maxval=30_000,
     ):
         """
         The PositionalEncoding module applies a positional encoding to a sequence of vectors.
@@ -138,18 +137,21 @@ class PositionalEncoding(nn.Module):
 
         Args:
             d_model (int): The dimension of the input vectors.
-            dropout (float, optional): The dropout rate to apply to the output of the positional encoding.
             max_len (int, optional): The maximum length of a sequence that this module can handle.
 
         Note: not used in the current version of scprint.
         """
         super(PositionalEncoding, self).__init__()
+        self.gene_pos_enc = gene_pos_enc
+        self.maxval = maxval
+        max_len = max(gene_pos_enc)
         position = torch.arange(max_len).unsqueeze(1)
+        token_to_pos = {token: pos for token, pos in enumerate(gene_pos_enc)}
 
         # Create a dictionary to convert token to position
 
         div_term = torch.exp(
-            torch.arange(0, d_model, 2) * (-math.log(maxval) / d_model)
+            torch.arange(0, d_model, 2) * (-math.log(float(maxval)) / d_model)
         )
         pe = torch.zeros(max_len, 1, d_model)
         pe[:, 0, 0::2] = torch.sin(position * div_term)

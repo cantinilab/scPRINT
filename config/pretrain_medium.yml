@@ -4,7 +4,6 @@ model:
   nhead: 8
   num_heads_kv: 4
   nlayers: 16 #used to be 12
-  layers_cls: []
   d_model: 512
   dropout: 0.1
   d_model_cell: 256
@@ -12,9 +11,9 @@ model:
   nlayers_cell: 6
 data:
   batch_size: 16
-  n_samples_per_epoch: 1_500_000
 # model is 90M params
 scprint_training:
   test_every: 10
   weight_decay: 0.1
   warmup_duration: 2000
+  lr_reduce_factor: 0.3

@@ -3,7 +3,6 @@ import copy
 import datetime
 import os
 from functools import partial
-
 # from galore_torch import GaLoreAdamW
 from math import factorial
 from pathlib import Path
@@ -51,13 +50,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         memmap_gene_emb: bool = False,
         finetune_gene_emb: bool = False,
         freeze_embeddings: bool = True,
-        gene_pos_enc: Optional[list] = None,
+        gene_pos_file: Optional[str] = None,
         normalization: str = "sum",
         attn_bias: str = "none",
         expr_encoder_layers: int = 3,
         attention: str = "flash",  # "performer", "flash", "normal", "crisscross", "hyper", "adasplash"
         expr_emb_style: str = "continuous",  # "binned_pos", "cont_pos", "metacell", "full_pos"
-        n_input_bins: int = 0,
+        n_input_bins: int = 60,
         mvc_decoder: Optional[
             str
         ] = None,  # "inner product", "concat query", "sum query"
@@ -81,7 +80,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         nhead_cell: int = 4,
         nlayers_cell: int = 6,
         num_heads_kv_cell: int = 4,
+        max_cont_len: int = 30_000,
         transformer=None,
+        gene_pos_enc=None,
         **attention_kwargs,
     ):
         """
@@ -90,7 +91,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         Args:
             genes (list|dict): List of gene names the model will work with.
             precpt_gene_emb (np.array, optional): Gene embeddings of size (len(genes), d_model). Should be in the same order as the genes. Defaults to None.
-            gene_pos_enc (list, optional): Gene position encoding of the same size as genes. Provides a location value for each gene in genes. Defaults to None.
+            gene_pos_file (str, optional): parquet file containing the position information of each gene as an integer in the "pos" column. Defaults to None.
             d_model (int, optional): Dimension of the model. Defaults to 512.
             nhead (int, optional): Number of heads in the multihead attention models. Defaults to 8.
             nlayers (int, optional): Number of layers in the transformer model. Defaults to 6.
@@ -176,12 +177,12 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.attn_bias = attn_bias
         self.organisms = organisms
         self.nlayers = nlayers
-        self.gene_pos_enc = gene_pos_enc
         self.use_metacell_token = use_metacell_token
         self.mvc_decoder = mvc_decoder
         # need to store
         self.n_input_bins = n_input_bins
         self.attention = attention
+        self.max_cont_len = max_cont_len
 
         if classes is None:
             classes = []
@@ -207,8 +208,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.labels_hierarchy = labels_hierarchy
         self.hparams["classes"] = classes
         self.hparams["label_decoders"] = label_decoders
-        self.hparams["gene_pos_enc"] = gene_pos_enc
-        self.hparams["genes"] = genes
         self.hparams["organisms"] = organisms
         self.hparams["use_metacell_token"] = use_metacell_token
         self.tf_masker = WeightedMasker(self.genes, inv_weight=0.05)
@@ -229,16 +228,35 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
         # encoder
         # gene encoder
-        if precpt_gene_emb is not None:
-            embeddings = pd.read_parquet(precpt_gene_emb).loc[self.genes]
-            if len(embeddings) == 0:
-                raise ValueError(
-                    f"the gene embeddings file {precpt_gene_emb} does not contain any of the genes given to the model"
+        if gene_pos_file is not None:
+            gene_pos_enc = pd.read_parquet(gene_pos_file)
+            if len(gene_pos_enc) < len(self.genes):
+                print(
+                    "Warning: only a subset of the genes available in the loc file."
                 )
-            elif len(embeddings) < len(self.genes):
+            for k, v in self._genes.items():
+                tokeep = set(gene_pos_enc.index.tolist())
+                self._genes[k] = [u for u in v if u in tokeep]
+                if len(self._genes[k]) < 100:
+                    raise ValueError(
+                        f"the gene pos file {gene_pos_file} does not match most of the genes given to the model for species {k}"
+                    )
+            gene_pos_enc = gene_pos_enc.loc[self.genes, ["pos"]]
+
+        if precpt_gene_emb is not None:
+            embeddings = pd.read_parquet(precpt_gene_emb)
+            if len(embeddings) < len(self.genes):
                 print(
                     "Warning: only a subset of the genes available in the embeddings file."
                 )
+            for k, v in self._genes.items():
+                tokeep = set(embeddings.index.tolist())
+                self._genes[k] = [u for u in v if u in tokeep]
+                if len(self._genes[k]) < 100:
+                    raise ValueError(
+                        f"the gene embeddings file {precpt_gene_emb} does not match most of the genes given to the model for species {k}"
+                    )
+            embeddings = embeddings.loc[self.genes]
             print("number of genes: ", len(embeddings))
             if not memmap_gene_emb:
                 sembeddings = torch.nn.AdaptiveAvgPool1d(d_model)(
@@ -286,12 +304,14 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             )
 
         # Positional Encoding
-        if self.gene_pos_enc is not None:
-            max_len = max(gene_pos_enc)
-            token_to_pos = {token: pos for token, pos in enumerate(self.gene_pos_enc)}
+        if gene_pos_file is not None:
+            # redoing it just in case some were dropped with embbeding file step
+            gene_pos_enc = gene_pos_enc.loc[self.genes, "pos"].astype(int).tolist()
             self.pos_encoder = encoders.PositionalEncoding(
-                d_model, max_len=max_len, token_to_pos=token_to_pos
+                d_model, gene_pos_enc=gene_pos_enc, maxval=max_cont_len
             )
+        else:
+            self.pos_encoder = None
         # Class Encoder
         # always have [base_cell_emb, time_embedding, depth_embedding] + any other class info
         # base cell embedding will store other cell specific information
@@ -316,6 +336,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             "cell_emb_style",
             "num_batch_labels",
             "transformer",
+            "residual_in_fp32",
         ]:
             if i in attention_kwargs:
                 attention_kwargs.pop(i)
@@ -460,8 +481,23 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         else:
             self.compressor = None
 
-    def add_organism(self, organism, genes, emb, locs=None):
-        if self.gene_pos_enc is not None and locs is None:
+    def add_organism(
+        self, organism: str, genes: pd.Index, emb: pd.DataFrame, locs=None
+    ):
+        """
+        Add a new organism to the model.
+
+        Args:
+            organism (str): The name of the organism.
+            genes (pd.Index): The genes associated with the organism.
+            emb (pd.DataFrame): The embeddings for the genes.
+            locs (pd.DataFrame, optional): The locations of the genes. Defaults to None.
+
+        Raises:
+            ValueError: If the model requires gene locations and none are provided.
+            ValueError: If the number of gene locations exceeds the model's capacity.
+        """
+        if self.pos_encoder is not None and locs is None:
             raise ValueError("this model needs gene locations to add a new organism")
 
         self.organisms.append(organism)
@@ -487,7 +523,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             genes = genes[genes.index.isin(overlap)]
 
         emb = emb.loc[genes.index]
-        self.genes.extend(genes.index.tolist())
+        self._genes[organism] = genes.index.tolist()
         if type(self.gene_encoder) is torch.nn.Sequential:
             enc = self.gene_encoder[0]
         else:
@@ -507,7 +543,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         )
         enc.embeddings.weight.data.copy_(embs)
         enc.embeddings.weight.data = enc.embeddings.weight.data.to(self.device)
-        if type(self.gene_encoder) == torch.nn.Sequential:
+        if type(self.gene_encoder) is torch.nn.Sequential:
             self.gene_encoder[0] = enc
         else:
             self.gene_encoder = enc
@@ -598,23 +634,24 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     tens[k2 - self.label_counts[k], v2] = 1
                 self.mat_labels_hierarchy[k] = tens.to(bool)
 
-        if "gene_pos_enc" in checkpoints["hyper_parameters"]:
-            if self.gene_pos_enc != checkpoints["hyper_parameters"]["gene_pos_enc"]:
+        if (
+            "gene_pos_enc" in checkpoints["hyper_parameters"]
+            and checkpoints["hyper_parameters"]["gene_pos_enc"] is not None
+        ):
+            if (
+                self.pos_encoder is None
+                or self.pos_encoder.gene_pos_enc
+                != checkpoints["hyper_parameters"]["gene_pos_enc"]
+            ):
                 print(
                     "Gene position encoding has changed in the dataloader compared to last time, trying to revert"
                 )
-                self.gene_pos_enc = checkpoints["hyper_parameters"]["gene_pos_enc"]
-                if self.gene_pos_enc is None:
-                    self.pos_encoder = None
-                    print("the model had no gene position, removing..")
-                else:
-                    max_len = max(self.gene_pos_enc)
-                    token_to_pos = {
-                        token: pos for token, pos in enumerate(self.gene_pos_enc)
-                    }
-                    self.pos_encoder = encoders.PositionalEncoding(
-                        self.d_model, max_len=max_len, token_to_pos=token_to_pos
-                    )
+                self.pos_encoder = encoders.PositionalEncoding(
+                    self.d_model,
+                    gene_pos_enc=checkpoints["hyper_parameters"]["gene_pos_enc"],
+                    maxval=self.max_cont_len,
+                )
+                checkpoints["hyper_parameters"].pop("gene_pos_enc")
         mencoders = {}
         if type(checkpoints["hyper_parameters"]["genes"]) is list:
             genedf = load_genes(checkpoints["hyper_parameters"]["organisms"])
@@ -669,20 +706,20 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 print("FYI: scPrint is not attached to a `Trainer`.")
             else:
                 raise e
-            if self._genes != checkpoints["hyper_parameters"]["genes"]:
-                self._genes = checkpoints["hyper_parameters"]["genes"]
-                try:
-                    self.trainer.datamodule.genes = self.genes
-                except RuntimeError as e:
-                    if "scPrint is not attached to a `Trainer`." not in str(e):
-                        raise e
-            if self.organisms != checkpoints["hyper_parameters"]["organisms"]:
-                self.organisms = checkpoints["hyper_parameters"]["organisms"]
-                try:
-                    self.trainer.datamodule.organisms = self.organisms
-                except RuntimeError as e:
-                    if "scPrint is not attached to a `Trainer`." not in str(e):
-                        raise e
+        if self._genes != checkpoints["hyper_parameters"]["genes"]:
+            self._genes = checkpoints["hyper_parameters"]["genes"]
+            try:
+                self.trainer.datamodule.set_valid_genes_collator(self.genes)
+            except RuntimeError as e:
+                if "scPrint is not attached to a `Trainer`." not in str(e):
+                    raise e
+        if self.organisms != checkpoints["hyper_parameters"]["organisms"]:
+            self.organisms = checkpoints["hyper_parameters"]["organisms"]
+            try:
+                self.trainer.datamodule.organisms = self.organisms
+            except RuntimeError as e:
+                if "scPrint is not attached to a `Trainer`." not in str(e):
+                    raise e
 
         if not is_interactive():
             self.save_hyperparameters()
@@ -703,7 +740,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.vocab = {i: n for i, n in enumerate(self.genes)}
         self.genes = [g for g in self.genes if g not in names]
         self.attn.gene_dim = len(self.genes)
-        if self.gene_pos_enc is not None:
+        if self.pos_encoder is not None:
             # Update gene position encoding
             self.pos_encoder.pe = self.pos_encoder.pe[tokeep]
 
@@ -743,7 +780,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             else:
                 expr_emb = self.expr_encoder(expression, mask=mask)
             enc.add_(expr_emb)
-        if self.gene_pos_enc:
+        if self.pos_encoder is not None:
             enc.add_(self.pos_encoder(gene_pos))
         if cell_embs is None:
             cell_embs = self.class_encoder(
@@ -1148,6 +1185,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 encoder_layers.set_seq_parallel(True)
         for k, v in self.mat_labels_hierarchy.items():
             self.mat_labels_hierarchy[k] = v.to(self.device)
+        if self.trainer is not None and self.trainer.datamodule is not None:
+            self.trainer.datamodule.set_valid_genes_collator(self.genes)
 
     def training_step(
         self,
@@ -1528,13 +1567,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 )
         elif "mean" in output:
             loss_expr = loss.mse(
-                input=output["mean"],
-                target=expression,
+                input=torch.log(output["mean"] + 1),
+                target=torch.log(expression + 1),
             )
             if self.splicing_head is not None:
                 loss_nov_expr = loss.mse(
-                    input=output["spl_mean"],
-                    target=spl_expression,
+                    input=torch.log(output["spl_mean"] + 1),
+                    target=torch.log(spl_expression + 1),
                 )
         else:
             loss_expr = 0
@@ -1679,6 +1718,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
     def on_validation_start(self):
         for k, v in self.mat_labels_hierarchy.items():
             self.mat_labels_hierarchy[k] = v.to(self.device)
+        if self.trainer is not None and self.trainer.datamodule is not None:
+            self.trainer.datamodule.set_valid_genes_collator(self.genes)
 
     def on_validation_epoch_start(self):
         try:
@@ -1749,7 +1790,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.log("val_loss", val_loss, sync_dist=True)
         expr_loss = mean(
             [
-                v.cpu().item() if type(v) == Tensor else v
+                v.cpu().item() if type(v) is Tensor else v
                 for k, v in losses.items()
                 if "expr" in k
             ]
@@ -1757,7 +1798,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.log("val_loss_expr", expr_loss, sync_dist=True)
         cls_loss = mean(
             [
-                v.cpu().item() if type(v) == Tensor else v
+                v.cpu().item() if type(v) is Tensor else v
                 for k, v in losses.items()
                 if "cls" in k
             ]
@@ -1811,10 +1852,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 # Write rank to file for debugging
                 self.trainer.strategy.barrier()
 
+    
     def test_step(self, *args, **kwargs):
         pass
 
     def on_test_epoch_end(self):
+        if self.trainer is not None and self.trainer.datamodule is not None:
+            self.trainer.datamodule.set_valid_genes_collator(self.genes)
         try:
             self.name = self.trainer._loggers[0].version
         except:
@@ -1866,6 +1910,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if type(self.transformer) is FlashTransformer:
             for encoder_layers in self.transformer.blocks:
                 encoder_layers.set_seq_parallel(False)
+        if self.trainer is not None and self.trainer.datamodule is not None:
+            self.trainer.datamodule.set_valid_genes_collator(self.genes)
 
     def predict_step(self, batch, batch_idx):
         """
@@ -1902,6 +1948,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         max_size_in_mem=100_000,
         get_gene_emb=False,
         metacell_token=None,
+        name="predict_part_",
     ):
         """
         @see predict_step will save output of predict in multiple self variables
@@ -2076,7 +2123,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             if self.pos.shape[0] > max_size_in_mem:
                 if self.pred_log_adata:
                     print("logging")
-                    self.log_adata(name="predict_part_" + str(self.counter))
+                    self.log_adata(name=name + str(self.counter))
                     self.counter += 1
                 else:
                     print(
