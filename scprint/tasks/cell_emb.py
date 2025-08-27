@@ -471,7 +471,7 @@ def compute_classification(
         if label in labels_hierarchy:
             parentdf = (
                 bt.CellType.filter()
-                .df(include=["parents__ontology_id"])
+                .df(include=["parents__ontology_id", "ontology_id"])
                 .set_index("ontology_id")[["parents__ontology_id"]]
             )
             parentdf.parents__ontology_id = parentdf.parents__ontology_id.astype(str)
