@@ -42,10 +42,12 @@ scprint_training:
   ecs_scale: 0.2
   vae_kl_scale: 0.001
 scprint_early_stopping:
-  patience: 4
+  patience: 6
 model:
   dropout: 0.1
   nhead: 4
+  precpt_gene_emb: ./data/main/gene_embs/
+  gene_pos_file: ./data/main/gene_locs/
   num_heads_kv: 4
   nlayers: 8
   d_model: 256
@@ -81,8 +83,6 @@ model:
   #  cell_culture: 2
   #  # total: 148
 data:
-  gene_position_tolerance: 10_000
-  gene_embeddings: ./data/main/gene_embs/
   collection_name: scPRINT-V2 (all+tahoe+scbase) filtered #scPRINT-V2 (good quality) # scPRINT-V2 (some)
   how: random expr
   max_len: 2600
@@ -91,7 +91,6 @@ data:
   prefetch_factor: 3
   metacell_mode: 0.1
   weight_scaler: 300
-  add_zero_genes: 0
   n_samples_per_epoch: 1300000 # {data.batch_size*trainer.limit_train_batches}
   validation_split: 0.05
   test_split: 0.02

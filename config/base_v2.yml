@@ -42,6 +42,8 @@ model:
   attention: flash
   residual_in_fp32: True
   cell_specific_blocks: True
+  precpt_gene_emb: ./data/main/gene_embeddings.parquet
+  gene_pos_file: ./data/main/biomart_pos.parquet
   freeze_embeddings: True
   normalization: log
   pred_embedding:
@@ -57,8 +59,6 @@ model:
   #  organism_ontology_term_id: 8
   # class_compression: vae
 data:
-  gene_position_tolerance: 10_000
-  gene_embeddings: ./data/main/gene_embeddings.parquet
   collection_name: scPRINT-V2 full #scPRINT-V2 (good quality) # scPRINT-V2 (some)
   how: random expr
   max_len: 2600
@@ -66,8 +66,6 @@ data:
   prefetch_factor: 3
   metacell_mode: 0.2
   weight_scaler: 200
-  gene_pos_file: ./data/main/biomart_pos.parquet
-  add_zero_genes: 0
   n_samples_per_epoch: 1_400_000 # {data.batch_size*trainer.limit_train_batches}
   validation_split: 0.05
   test_split: 0.02
