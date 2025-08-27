@@ -471,7 +471,7 @@ def compute_classification(
         if label in labels_hierarchy:
             parentdf = (
                 bt.CellType.filter()
-                .df(include=["parents__ontology_id", "ontology_id"])
+                .df(include=["parents__ontology_id"])
                 .set_index("ontology_id")[["parents__ontology_id"]]
             )
             parentdf.parents__ontology_id = parentdf.parents__ontology_id.astype(str)
@@ -590,7 +590,9 @@ def find_coarser_labels(out, model):
     return relabel
 
 
-def display_confusion_matrix(nadata, pred="conv_pred_cell_type_ontology_term_id", true="cell_type"):
+def display_confusion_matrix(
+    nadata, pred="conv_pred_cell_type_ontology_term_id", true="cell_type"
+):
     """
     Display the confusion matrix for true vs predicted cell types.
 
@@ -630,6 +632,7 @@ def display_confusion_matrix(nadata, pred="conv_pred_cell_type_ontology_term_id"
 
     # Convert to percentages (row-wise normalization)
     counts_percentage = counts_filled.div(counts_filled.sum(axis=1), axis=0) * 100
+    counts_percentage = counts_percentage.iloc[:, counts_percentage.values.max(0) > 5]
 
     sns.heatmap(
         counts_percentage,
@@ -639,7 +642,7 @@ def display_confusion_matrix(nadata, pred="conv_pred_cell_type_ontology_term_id"
         square=True,
     )
     plt.title(
-        "Confusion Matrix: "+ true + " vs " + pred + " (Percentage)",
+        "Confusion Matrix: " + true + " vs " + pred + " (Percentage)",
         fontsize=16,
         pad=20,
     )

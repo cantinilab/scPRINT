@@ -260,7 +260,7 @@ class Denoiser:
                     reco_pi = reco_pi[indices]
                     stored_noisy = stored_noisy[indices]
                     true = true[indices]
-                corr_coef, p_value = spearmanr(
+                corr, p_value = spearmanr(
                     np.vstack(
                         [
                             reco.flatten(),
@@ -271,23 +271,39 @@ class Denoiser:
                     ).T
                 )
                 m = {
-                    "reco2full": corr_coef[0, 3],
-                    "reco+pi2full": corr_coef[1, 3],
+                    "reco2full": corr[0, 3],
+                    "reco+pi2full": corr[1, 3],
+                    "noisy2full": corr[2, 3],
                 }
                 print("corr with zeros: ")
                 print(m)
-                corr_coef, p_value = spearmanr(
-                    np.vstack([reco_pi, stored_noisy, true]).T
+                cell_wise = np.array(
+                    [
+                        spearmanr(reco[i, true[i] != 0], true[i, true[i] != 0])[0]
+                        for i in range(reco.shape[0])
+                    ]
                 )
-                N = reco.shape[0]
+                torm = np.array(
+                    [
+                        spearmanr(stored_noisy[i, true[i] != 0], true[i, true[i] != 0])[
+                            0
+                        ]
+                        for i in range(reco.shape[0])
+                    ]
+                )
+                cell_wise -= torm
+                cell_wise_zero = np.mean(
+                    [spearmanr(reco[i], true[i])[0] for i in range(reco.shape[0])]
+                )
                 print("cell_wise self corr (reco, noisy, true)")
                 print(
-                    corr_coef[:N, :N].mean(),
-                    corr_coef[N : N * 2, N : N * 2].mean(),
-                    corr_coef[N * 2 :, N * 2 :].mean(),
+                    {
+                        "cell_wise_w_zero": cell_wise_zero,
+                        "cell_wise_to_noisy": np.mean(cell_wise),
+                    }
                 )
                 print("depth-wise plot")
-                plot_cell_depth_wise_corr_improvement(corr_coef, true)
+                plot_cell_depth_wise_corr_improvement(cell_wise, true)
 
             if self.doplot and self.max_cells < 100:
                 corr_coef[p_value > 0.05] = 0
@@ -420,18 +436,18 @@ from scipy.optimize import curve_fit
 
 
 def plot_cell_depth_wise_corr_improvement(corr_coef, true):
-    N = true.shape[0]
-    x = np.diag(corr_coef[:N, N * 2 : N * 3]) - np.diag(corr_coef[:N, N : N * 2])
     y = true.sum(1)
 
     def linear_func(x, a, b):
         return a * np.log(x) + b
 
     # Fit the linear curve
-    ppot, _ = curve_fit(linear_func, y, x)
+    ppot, _ = curve_fit(linear_func, y, corr_coef)
 
     # Plot the data points
-    plt.scatter(y, x, label="denoising increase as depth increase", color="blue")
+    plt.scatter(
+        y, corr_coef, label="denoising increase as depth increase", color="blue"
+    )
 
     # Plot the fitted linear curve
     x_values = np.linspace(min(y), max(y), 100)
