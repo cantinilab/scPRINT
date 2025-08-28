@@ -3,6 +3,7 @@ import copy
 import datetime
 import os
 from functools import partial
+
 # from galore_torch import GaLoreAdamW
 from math import factorial
 from pathlib import Path
@@ -231,9 +232,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if gene_pos_file is not None:
             gene_pos_enc = pd.read_parquet(gene_pos_file)
             if len(gene_pos_enc) < len(self.genes):
-                print(
-                    "Warning: only a subset of the genes available in the loc file."
-                )
+                print("Warning: only a subset of the genes available in the loc file.")
             for k, v in self._genes.items():
                 tokeep = set(gene_pos_enc.index.tolist())
                 self._genes[k] = [u for u in v if u in tokeep]
@@ -1185,8 +1184,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 encoder_layers.set_seq_parallel(True)
         for k, v in self.mat_labels_hierarchy.items():
             self.mat_labels_hierarchy[k] = v.to(self.device)
-        if self.trainer is not None and self.trainer.datamodule is not None:
-            self.trainer.datamodule.set_valid_genes_collator(self.genes)
+        try:
+            if self.trainer.datamodule is not None:
+                self.trainer.datamodule.set_valid_genes_collator(self.genes)
+        except RuntimeError:
+            pass
 
     def training_step(
         self,
@@ -1718,8 +1720,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
     def on_validation_start(self):
         for k, v in self.mat_labels_hierarchy.items():
             self.mat_labels_hierarchy[k] = v.to(self.device)
-        if self.trainer is not None and self.trainer.datamodule is not None:
-            self.trainer.datamodule.set_valid_genes_collator(self.genes)
+        try:
+            if self.trainer.datamodule is not None:
+                self.trainer.datamodule.set_valid_genes_collator(self.genes)
+        except RuntimeError:
+            pass
 
     def on_validation_epoch_start(self):
         try:
@@ -1852,13 +1857,15 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 # Write rank to file for debugging
                 self.trainer.strategy.barrier()
 
-    
     def test_step(self, *args, **kwargs):
         pass
 
     def on_test_epoch_end(self):
-        if self.trainer is not None and self.trainer.datamodule is not None:
-            self.trainer.datamodule.set_valid_genes_collator(self.genes)
+        try:
+            if self.trainer.datamodule is not None:
+                self.trainer.datamodule.set_valid_genes_collator(self.genes)
+        except RuntimeError:
+            pass
         try:
             self.name = self.trainer._loggers[0].version
         except:
@@ -1910,8 +1917,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if type(self.transformer) is FlashTransformer:
             for encoder_layers in self.transformer.blocks:
                 encoder_layers.set_seq_parallel(False)
-        if self.trainer is not None and self.trainer.datamodule is not None:
-            self.trainer.datamodule.set_valid_genes_collator(self.genes)
+        try:
+            if self.trainer.datamodule is not None:
+                self.trainer.datamodule.set_valid_genes_collator(self.genes)
+        except RuntimeError:
+            pass
 
     def predict_step(self, batch, batch_idx):
         """
@@ -2024,6 +2034,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             ind = {"other": 0}
         if ["all"] == pred_embedding:
             pred_embedding = self.classes
+        if pred_embedding is None:
+            pred_embedding = []
         ind.update({i: self.classes.index(i) + 1 for i in pred_embedding})
         if not keep_output:
             return {

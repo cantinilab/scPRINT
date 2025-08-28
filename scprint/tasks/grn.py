@@ -54,7 +54,6 @@ class GNInfer:
         known_grn: Optional[Any] = None,
         comp_attn: bool = True,
         symmetrize: bool = False,
-        doplot: bool = True,
         loc: str = "./",
         dtype: torch.dtype = torch.float16,
     ):
@@ -84,7 +83,6 @@ class GNInfer:
             known_grn (optional): Known gene regulatory network to use as a reference. Defaults to None.
                 - We will only keep the genes that are present in the known GRN.
             symmetrize (bool, optional): Whether to GRN. Defaults to False.
-            doplot (bool, optional): Whether to generate plots. Defaults to True.
             max_cells (int, optional): Maximum number of cells to consider. Defaults to 0.
                 if less than total number of cells, only the top `max_cells` cells with the most counts will be considered.
             genelist (list, optional): List of genes to consider. Defaults to an empty list.
@@ -243,7 +241,7 @@ class GNInfer:
         if self.head_agg == "mean_full" and not self.comp_attn:
             raise ValueError("mean_full is only supported for comp_attn")
 
-        model.doplot = self.doplot
+        model.doplot = False
         model.on_predict_epoch_start()
         model.eval()
         model.attn.data = None
@@ -514,7 +512,6 @@ def default_benchmark(
                 num_genes=maxgenes,
                 num_workers=8,
                 max_cells=maxcells,
-                doplot=False,
                 batch_size=batch_size,
             )
             grn = grn_inferer(model, adata)
@@ -635,7 +632,6 @@ def default_benchmark(
             filtration="none",
             num_genes=maxgenes,
             max_cells=maxcells,
-            doplot=False,
             num_workers=8,
             batch_size=batch_size,
         )
@@ -727,7 +723,6 @@ def default_benchmark(
         #      forward_mode="none",
         #      num_genes=3_000,
         #      max_cells=3000,
-        #      doplot=False,
         #      batch_size=10,
         #      cell_type_col="perturbation",
         #      layer=list(range(model.nlayers))[:],
@@ -778,7 +773,6 @@ def default_benchmark(
             #    num_workers=8,
             #    num_genes=2200,
             #    max_cells=maxcells,
-            #    doplot=False,
             #    batch_size=batch_size,
             # )
             #
@@ -798,7 +792,6 @@ def default_benchmark(
                 num_workers=8,
                 num_genes=maxgenes,
                 max_cells=maxcells,
-                doplot=False,
                 batch_size=batch_size,
             )
             grn = grn_inferer(model, adata[adata.X.sum(1) > 500], cell_type=celltype)
