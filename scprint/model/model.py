@@ -127,21 +127,16 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         super().__init__()
         self.save_hyperparameters()
         # training flags
-        self.do_denoise = True
         self.noise = [0.6]
-        self.do_cce = False
         self.cce_temp = 0.3
         self.lr = lr
         self.cce_scale = 0.2
-        self.do_ecs = False
         self.ecs_threshold = 0.4
         self.ecs_scale = 0.2
-        self.do_mvc = False
         self.mvc_scale = 1.0
         self.class_embd_diss_scale = 0.3
-        self.do_adv_cls = do_adv_cls
         self.adv_class_scale = 1.0
-        self.do_cls = False
+        self.do_adv_cls = do_adv_cls
         self.run_full_forward = True
         self.class_scale = 1
         self.zinb_and_mse = False
@@ -1205,15 +1200,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         """
         total_loss, losses = self._full_training(
             batch=batch,
-            do_denoise=self.do_denoise,
             noise=self.noise,
             do_next_tp=self.do_next_tp,
-            do_cce=self.do_cce,
             cce_temp=self.cce_temp,
-            do_ecs=self.do_ecs,
-            do_mvc=self.do_mvc,
-            do_adv_cls=self.do_adv_cls,
-            do_cls=self.do_cls,
             do_generate=self.do_generate,
             run_full_forward=self.run_full_forward,
             mask_ratio=self.mask_ratio,
@@ -1229,15 +1218,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
     def _full_training(
         self,
         batch: Dict[str, Tensor],
-        do_denoise: bool = False,
         noise: list[float] = [0.4],
         do_next_tp: bool = False,
-        do_cce: bool = False,
         cce_temp: float = 0.5,
-        do_ecs: bool = False,
-        do_mvc: bool = False,
-        do_adv_cls: bool = False,
-        do_cls: bool = False,
         do_generate: bool = False,
         run_full_forward: bool = True,
         mask_ratio: list[float] = [0.15],
@@ -1255,9 +1238,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             do_denoise (bool, optional): A flag to indicate whether to perform denoising. Defaults to False.
             noise (List[float], optional): A List of noise levels to be used in denoising. Defaults to [].
             do_next_tp (bool, optional): A flag to indicate whether to perform next time point prediction. Defaults to False.
-            do_cce (bool, optional): A flag to indicate whether to perform cross-categorical entropy. Defaults to False.
             cce_temp (float, optional): The similarity threshold for cross-categorical entropy. Defaults to 0.5.
-            do_ecs (bool, optional): A flag to indicate whether to perform elastic cell similarity. Defaults to False.
             do_mvc (bool, optional): A flag to indicate whether to perform multi-view coding. Defaults to False.
             do_adv_cls (bool, optional): A flag to indicate whether to perform adversarial classification. Defaults to False.
             do_generate (bool, optional): A flag to indicate whether to perform data generation. Defaults to False.
@@ -1316,6 +1297,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         total_loss = 0
         losses = {}
         cell_embs = []
+        do_cls = self.class_scale > 0
+        do_mvc = self.mvc_decoder is not None
         if run_full_forward:
             output = self.forward(
                 gene_pos,
@@ -1338,8 +1321,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 expression,
                 clss,
                 batch_idx,
-                do_ecs,
-                do_adv_cls and do_cls,
+                do_cls,
                 do_vae_kl=do_vae_kl,
             )
             cell_embs.append(output["input_cell_emb"].clone())
@@ -1351,7 +1333,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
         for i in mask_ratio:
             # do noise and mask
-            if do_denoise and False:
+            if False:
                 if knn_cells is not None:
                     knn_cells = utils.downsample_profile(
                         knn_cells, dropout=0.5, randsamp=self.randsamp
@@ -1388,8 +1370,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 expr,
                 clss,
                 batch_idx,
-                do_ecs,
-                do_adv_cls and do_cls,
+                do_cls,
                 do_mse=self.zinb_and_mse,
                 do_vae_kl=do_vae_kl,
             )
@@ -1402,49 +1383,47 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             pct = str(int(i * 100)) + "%_" if i != "TF" else "TF_"
             losses.update({"mask_" + pct + k: v for k, v in l.items()})
         # TASK 3. denoising
-        if do_denoise:
-            for i in noise:
-                if i == 1.0:
-                    expr = torch.zeros_like(expression)
-                else:
-                    expr = utils.downsample_profile(
-                        expression, dropout=i, randsamp=self.randsamp
-                    )
-                if knn_cells is not None:
-                    # knn_cells = utils.downsample_profile(
-                    #    knn_cells, dropout=i, randsamp=self.randsamp
-                    # )
-                    pass
-                output = self.forward(
-                    gene_pos,
-                    expression=expr,
-                    neighbors=knn_cells,
-                    mask=None,
-                    depth_mult=expression.sum(1),
-                    req_depth=total_count,
-                    do_mvc=do_mvc,
-                    do_class=do_cls,
-                    metacell_token=metacell_token,
+        for i in noise:
+            if i == 1.0:
+                expr = torch.zeros_like(expression)
+            else:
+                expr = utils.downsample_profile(
+                    expression, dropout=i, randsamp=self.randsamp
                 )
-                l, tot = self._compute_loss(
-                    output,
-                    expression,
-                    clss,
-                    batch_idx,
-                    do_ecs,
-                    do_adv_cls and do_cls,
-                    do_mse=self.zinb_and_mse,
-                    do_vae_kl=do_vae_kl,
-                )
-                do_mvc = False
-                do_cls = False
+            if knn_cells is not None:
+                # knn_cells = utils.downsample_profile(
+                #    knn_cells, dropout=i, randsamp=self.randsamp
+                # )
+                pass
+            output = self.forward(
+                gene_pos,
+                expression=expr,
+                neighbors=knn_cells,
+                mask=None,
+                depth_mult=expression.sum(1),
+                req_depth=total_count,
+                do_mvc=do_mvc,
+                do_class=do_cls,
+                metacell_token=metacell_token,
+            )
+            l, tot = self._compute_loss(
+                output,
+                expression,
+                clss,
+                batch_idx,
+                do_cls,
+                do_mse=self.zinb_and_mse,
+                do_vae_kl=do_vae_kl,
+            )
+            do_mvc = False
+            do_cls = False
 
-                cell_embs.append(output["input_cell_emb"].clone())
-                total_loss += tot
-                losses.update(
-                    {"denoise_" + str(int(i * 100)) + "%_" + k: v for k, v in l.items()}
-                )
-                # make sure that the cell embedding stay the same even if the expression is decreased
+            cell_embs.append(output["input_cell_emb"].clone())
+            total_loss += tot
+            losses.update(
+                {"denoise_" + str(int(i * 100)) + "%_" + k: v for k, v in l.items()}
+            )
+            # make sure that the cell embedding stay the same even if the expression is decreased
 
         # TASK 6. expression generation
         if do_generate:
@@ -1473,12 +1452,29 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # TASK 7. next time point prediction
         if do_next_tp:
             pass
+        # Gather cell embeddings from all devices
+        if self.trainer.world_size > 1:
+            gathered_cell_embs_list = []
+            for cell_emb in cell_embs:
+                gathered_emb = self.all_gather(cell_emb)
+                # Reshape to combine all devices
+                gathered_emb = gathered_emb.view(-1, gathered_emb.shape[-1])
+                gathered_cell_embs_list.append(gathered_emb)
+        else:
+            gathered_cell_embs_list = cell_embs
         # TASK 4. contrastive cell embedding
-        if do_cce:
+        if self.ecs_scale > 0:
+            loss_ecs = loss.ecs(
+                gathered_cell_embs_list[0], ecs_threshold=self.ecs_threshold
+            )
+            total_loss += self.ecs_scale * loss_ecs
+            losses.update({"ecs": loss_ecs})
+        # TASK 5. elastic cell similarity
+        if self.cce_scale > 0:
             loss_cce = 0
             n_pairs = 0
-            for i, cell_emb1 in enumerate(cell_embs[:-1]):
-                for cell_emb2 in cell_embs[(i + 1) :]:
+            for i, cell_emb1 in enumerate(gathered_cell_embs_list[:-1]):
+                for cell_emb2 in gathered_cell_embs_list[(i + 1) :]:
                     loss_cce += loss.contrastive_loss(
                         cell_emb1, cell_emb2, cce_temp
                     )  # (nlabels, minibatch, minibatch)
@@ -1499,8 +1495,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         expression,
         clss,
         batch_idx,
-        do_ecs=False,
-        do_adv_cls=False,
+        do_cls=False,
         do_mse=0,
         do_vae_kl=False,
         spl_expression=None,
@@ -1513,8 +1508,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             expression (Tensor): A tensor containing the expression levels of genes.
             mask (Tensor): A tensor indicating the masked positions in the input data.
             clss (Tensor): A tensor containing the class classes for each cell.
-            do_ecs (bool, optional): A flag to indicate whether to perform elastic cell similarity.
-                Defaults to False.
             do_adv_cls (bool, optional): A flag to indicate whether to perform adversarial classification.
                 Defaults to False.
             do_mse (float, optional): A scaling factor to indicate whether and how much to weight mean
@@ -1586,9 +1579,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             total_loss += loss_nov_expr
 
         # TASK 2. predict classes
-        if len(self.classes) > 0 and "input_cell_embs" in output:
+        if len(self.classes) > 0 and "input_cell_embs" in output and do_cls:
             # Calculate pairwise cosine similarity for the embeddings
-            if do_ecs:
+            if self.class_embd_diss_scale > 0:
                 loss_emb_indep = loss.within_sample(output["input_cell_embs"])
                 losses.update({"emb_independence": loss_emb_indep})
                 total_loss += self.class_embd_diss_scale * loss_emb_indep
@@ -1607,7 +1600,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 )
 
                 # Adversarial part for 'assay_ontology_term_id'
-                if do_adv_cls and clsname in [
+                if self.do_adv_cls and clsname in [
                     "assay_ontology_term_id",
                     "organism_ontology_term_id",
                 ]:
@@ -1661,13 +1654,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             )
             total_loss += loss_expr_mvc * self.mvc_scale
             losses.update({"expr_mvc": loss_expr_mvc})
-        # TASK 5. elastic cell similarity
-        if do_ecs and "input_cell_emb" in output:
-            loss_ecs = loss.ecs(
-                output["input_cell_emb"], ecs_threshold=self.ecs_threshold
-            )
-            total_loss += self.ecs_scale * loss_ecs
-            losses.update({"ecs": loss_ecs})
 
         # Add VAE KL loss if present
         if do_vae_kl and "vae_kl_loss" in output:
@@ -1748,16 +1734,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         """
         val_loss, losses = self._full_training(
             batch=batch,
-            do_denoise=self.do_denoise,
             noise=self.noise,
             do_next_tp=self.do_next_tp,
-            do_cce=False,
             cce_temp=self.cce_temp,
-            do_ecs=False,
-            do_mvc=self.do_mvc,
-            do_adv_cls=self.do_adv_cls,
             do_vae_kl=False,
-            do_cls=self.do_cls,
             do_generate=self.do_generate,
             run_full_forward=self.run_full_forward,
             mask_ratio=self.mask_ratio,
@@ -1878,7 +1858,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             metrics, tot = utils.test(
                 self,
                 filedir=str(FILEDIR),
-                do_class=self.do_cls,
+                do_class=self.class_scale > 0,
             )
             print(metrics)
             print("done test")
