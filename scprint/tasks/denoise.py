@@ -279,13 +279,13 @@ class Denoiser:
                 print(m)
                 cell_wise = np.array(
                     [
-                        spearmanr(reco[i, true[i] != 0], true[i, true[i] != 0])[0]
+                        spearmanr(reco[i], true[i])[0]
                         for i in range(reco.shape[0])
                     ]
                 )
                 torm = np.array(
                     [
-                        spearmanr(stored_noisy[i, true[i] != 0], true[i, true[i] != 0])[
+                        spearmanr(stored_noisy[i], true[i])[
                             0
                         ]
                         for i in range(reco.shape[0])
