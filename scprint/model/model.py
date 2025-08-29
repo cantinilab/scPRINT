@@ -771,8 +771,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 raise ValueError(f"Unknown normalization: {self.normalization}")
             if neighbors is not None:
                 expr_emb = self.expr_encoder(expression, mask=mask, neighbors=neighbors)
-            elif type(self.expr_encoder) is encoders.CategoryValueEncoder:
-                expr_emb = self.expr_encoder(expression, mask=mask)
             else:
                 expr_emb = self.expr_encoder(expression, mask=mask)
             enc.add_(expr_emb)

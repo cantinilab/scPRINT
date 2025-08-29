@@ -4,7 +4,7 @@ set_float32_matmul_precision: True
 trainer:
   precision: 16-mixed
   strategy: ddp_find_unused_parameters_true
-  use_distributed_sampler: True
+  use_distributed_sampler: False
   gradient_clip_val: 10
   log_every_n_steps: 100
   limit_train_batches: 20000
