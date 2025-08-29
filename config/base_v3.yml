@@ -30,8 +30,6 @@ trainer:
 scprint_training:
   # run_full_forward: True
   noise: [0.7]
-  do_ecs: True
-  do_cce: True
   # mask_ratio: ["TF"]
   do_generate: True
   test_every: 5

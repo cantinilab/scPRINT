@@ -31,8 +31,8 @@ trainer:
 scprint_training:
   run_full_forward: True
   noise: [0.7]
-  do_ecs: True
-  do_cce: True
+  ecs_scale: 0.2
+  cce_scale: 0.2
   zinb_and_mse: True
   var_context_length: True
 scprint_early_stopping:
