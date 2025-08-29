@@ -32,12 +32,12 @@ trainer:
 scprint_training:
   run_full_forward: False
   # noise: [0.6]
-  do_ecs: False
-  do_denoise: False
+  ecs_scale: 0
+  noise: []
   class_embd_diss_scale: 0.1
   do_generate: True
   test_every: 5
-  do_cce: False
+  cce_scale: 0
   mask_ratio: [0.3] #["TF"]
 model:
   dropout: 0.1

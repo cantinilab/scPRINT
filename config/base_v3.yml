@@ -30,8 +30,6 @@ trainer:
 scprint_training:
   # run_full_forward: True
   noise: [0.7]
-  do_ecs: True
-  do_cce: True
   # mask_ratio: ["TF"]
   do_generate: True
   test_every: 5
@@ -105,14 +103,14 @@ data:
     - self_reported_ethnicity_ontology_term_id
   clss_to_weight: #['clust_cell_type','tissue_ontology_term_id','disease_ontology_term_id','assay_ontology_term_id','self_reported_ethnicity_ontology_term_id', 'sex_ontology_term_id', 'organism_ontology_term_id', 'cell_culture', 'nnz']
     - clust_cell_type
-    #- tissue_ontology_term_id
+    - tissue_ontology_term_id
     - disease_ontology_term_id
-    #- age_group
+    - age_group
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id
     - sex_ontology_term_id
     - organism_ontology_term_id
-    #- cell_culture
+    - cell_culture
     - nnz
   clss_to_predict:
     - cell_type_ontology_term_id
