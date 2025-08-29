@@ -311,8 +311,11 @@ class CategoryValueEncoder(nn.Module):
             num_embeddings, embedding_dim, padding_idx=padding_idx
         )
 
-    def forward(self, x: Tensor) -> Tensor:
-        return self.embedding(x.long())  # (batch, seq_len, embsize)
+    def forward(self, x: Tensor, mask: Tensor = None) -> Tensor:
+        x = self.embedding(x.long())  # (batch, seq_len, embsize)
+        if mask is not None:
+            x = x.masked_fill(mask.unsqueeze(-1), 0)
+        return x
 
 
 class GNN(nn.Module):

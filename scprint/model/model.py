@@ -3,7 +3,6 @@ import copy
 import datetime
 import os
 from functools import partial
-
 # from galore_torch import GaLoreAdamW
 from math import factorial
 from pathlib import Path
@@ -56,7 +55,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         attn_bias: str = "none",
         expr_encoder_layers: int = 3,
         attention: str = "flash",  # "performer", "flash", "normal", "crisscross", "hyper", "adasplash"
-        expr_emb_style: str = "continuous",  # "binned_pos", "cont_pos", "metacell", "full_pos"
+        expr_emb_style: str = "continuous",  # "binned", "continuous", "metacell"
         n_input_bins: int = 60,
         mvc_decoder: Optional[
             str
@@ -105,8 +104,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             attention (str, optional): attention type to use. One of "linear", "flash", "flashsparse", "scprint". Defaults to "fast".
             expr_emb_style (str, optional): Style of input embedding. One of "continuous", "binned_pos", "cont_pos", "metacell", "full_pos". Defaults to "continuous".
                 "metacell" uses a DeepSet multi gene encoder across the KNN cells
-                "full_pos" uses a positional encoding for each gene
-                "binned_pos" uses a binned expr embedding for each gene
+                "binned" uses a binned expr embedding for each gene
                 "continuous" uses a continuous embedding for each gene with an MLP
             mvc_decoder (str, optional): Style of MVC decoder. One of "None", "inner product", "concat query", "sum query". Defaults to "None".
             pred_embedding (list[str], optional): List of classes to use for plotting embeddings. Defaults to [].
@@ -195,13 +193,12 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self._genes = genes
         self.expr_emb_style = expr_emb_style
         if self.expr_emb_style not in [
-            "category",
+            "binned",
             "continuous",
             "metacell",
-            "full_pos",
         ]:
             raise ValueError(
-                f"expr_emb_style should be one of category, continuous, scaling, "
+                f"expr_emb_style should be one of binned, continuous, metacell, "
                 f"got {expr_emb_style}"
             )
         if labels_hierarchy is None:
@@ -290,12 +287,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         else:
             self.gene_encoder = gene_encoder
         # Value Encoder, NOTE: the scaling style is also handled in _encode method
-        if expr_emb_style in ["continuous", "full_pos"]:
+        if expr_emb_style in "continuous":
             self.expr_encoder = encoders.ContinuousValueEncoder(
                 d_model, dropout, layers=expr_encoder_layers
             )
-        elif expr_emb_style == "binned_pos":
+        elif expr_emb_style == "binned":
             assert n_input_bins > 0
+            assert normalization == "no", "shouldn't use normalization"
             self.expr_encoder = encoders.CategoryValueEncoder(n_input_bins, d_model)
         elif expr_emb_style == "metacell":
             self.expr_encoder = encoders.GNN(
@@ -768,6 +766,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 expression = expression / expression.sum(1).unsqueeze(1)
                 if neighbors is not None:
                     neighbors = neighbors / neighbors.sum(2).unsqueeze(1)
+            elif self.normalization == "raw":
+                pass
             elif self.normalization == "log":
                 expression = torch.log2(1 + expression)
                 if neighbors is not None:
@@ -776,6 +776,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 raise ValueError(f"Unknown normalization: {self.normalization}")
             if neighbors is not None:
                 expr_emb = self.expr_encoder(expression, mask=mask, neighbors=neighbors)
+            elif type(self.expr_encoder) is encoders.CategoryValueEncoder:
+                expr_emb = self.expr_encoder(expression, mask=mask)
             else:
                 expr_emb = self.expr_encoder(expression, mask=mask)
             enc.add_(expr_emb)
@@ -818,7 +820,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         Returns:
             dict: the output of the model
         """
-        req_depth = torch.log2(1 + req_depth)
         output = self.expr_decoder(transformer_output, req_depth)
 
         output["mean"] = depth_mult.unsqueeze(1) * output["mean"]
@@ -1038,6 +1039,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             )
         # if not provided we will mult by the current expression sum
         depth_mult = expression.sum(1) if depth_mult is None else depth_mult
+        req_depth = torch.log2(1 + req_depth)
         res = self._expr_decoder(
             transformer_output[:, (1 if self.use_metacell_token else 0) :, :],
             depth_mult,
@@ -1095,6 +1097,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 ],
                 dim=1,
             )
+        req_depth = torch.log2(1 + req_depth)
         output = self._expr_decoder(
             transformer_output[:, (1 if self.use_metacell_token else 0) :, :],
             req_depth=req_depth,
