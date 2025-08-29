@@ -4,7 +4,7 @@ set_float32_matmul_precision: True
 trainer:
   precision: 16-mixed
   strategy: ddp_find_unused_parameters_true
-  use_distributed_sampler: True
+  use_distributed_sampler: False
   gradient_clip_val: 10
   log_every_n_steps: 100
   limit_train_batches: 20000
@@ -103,14 +103,14 @@ data:
     - self_reported_ethnicity_ontology_term_id
   clss_to_weight: #['clust_cell_type','tissue_ontology_term_id','disease_ontology_term_id','assay_ontology_term_id','self_reported_ethnicity_ontology_term_id', 'sex_ontology_term_id', 'organism_ontology_term_id', 'cell_culture', 'nnz']
     - clust_cell_type
-    #- tissue_ontology_term_id
+    - tissue_ontology_term_id
     - disease_ontology_term_id
-    #- age_group
+    - age_group
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id
     - sex_ontology_term_id
     - organism_ontology_term_id
-    #- cell_culture
+    - cell_culture
     - nnz
   clss_to_predict:
     - cell_type_ontology_term_id
