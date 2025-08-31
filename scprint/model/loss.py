@@ -254,7 +254,7 @@ def hierarchical_classification(
     """
     maxsize = pred.shape[1]
     newcl = torch.zeros(
-        (cl.shape[0], maxsize), device=cl.device
+        (pred.shape[0], maxsize), device=cl.device
     )  # batchsize * n_labels
     # if we don't know the label we set the weight to 0 else to 1
     valid_indices = (cl != -1) & (cl < maxsize)
@@ -267,18 +267,18 @@ def hierarchical_classification(
     # and add labels that won't be counted but so that we can still use them
     if labels_hierarchy is not None and (cl >= maxsize).any():
         is_parent = cl >= maxsize
-        parent_weight = weight[is_parent]
+        subset_parent_weight = weight[is_parent]
         # we set the weight of the elements that are not leaf to 0
         # i.e. the elements where we will compute the max
         # in cl, parents are values past the maxsize
         # (if there is 10 leafs labels, the label 10,14, or 15 is a parent at position
         # row 0, 4, or 5 in the hierarchy matrix
-        parent_weight[labels_hierarchy[cl[is_parent] - maxsize]] = 0
-        weight[is_parent] = parent_weight
+        subset_parent_weight[labels_hierarchy[cl[is_parent] - maxsize]] = 0
+        weight[is_parent] = subset_parent_weight
 
-        parent_newcl = newcl[is_parent]
-        parent_newcl[labels_hierarchy[cl[is_parent] - maxsize]] = 1
-        newcl[is_parent] = parent_newcl
+        subset_parent_newcl = newcl[is_parent]
+        subset_parent_newcl[labels_hierarchy[cl[is_parent] - maxsize]] = 1
+        newcl[is_parent] = subset_parent_newcl
 
         # for each parent label / row in labels_hierarchy matrix, the addnewcl is
         # the max of the newcl values where the parent label is 1
@@ -287,9 +287,14 @@ def hierarchical_classification(
 
         # it is the same here as for parental labels, we don't want to compute
         # gradients when they are 0 meaning not parents of the true leaf label.
-        # for now we weight them the same as the main label (maybe we want less??)
+        # for now we weight related to how many labels they contain.
         addweight = addnewcl.clone() / (labels_hierarchy.sum(1) ** 0.5)
-
+        
+        # except if it is the cl label we know about ?
+        subset_parent_weight = addweight[is_parent]
+        subset_parent_weight[:, cl[is_parent] - maxsize] = 1
+        addweight[is_parent] = subset_parent_weight
+        
         # we apply the same mask to the pred but now we want to compute
         # logsumexp instead of max since we want to keep the gradients
         # we also set to -inf since it is a more neutral element for logsumexp

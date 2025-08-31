@@ -665,7 +665,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             if self.trainer.datamodule.decoders != self.label_decoders:
                 print("label decoders have changed, be careful")
                 # if we don't have the same decoders, we need to update the one on the datamodule side
-                for k, v in checkpoints["hyper_parameters"]["label_decoders"].items():
+                for k, v in self.label_decoders.items():
                     mencoders[k] = {va: ke for ke, va in v.items()}
                 self.trainer.datamodule.encoders = mencoders
 
@@ -771,8 +771,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 raise ValueError(f"Unknown normalization: {self.normalization}")
             if neighbors is not None:
                 expr_emb = self.expr_encoder(expression, mask=mask, neighbors=neighbors)
-            elif type(self.expr_encoder) is encoders.CategoryValueEncoder:
-                expr_emb = self.expr_encoder(expression, mask=mask)
             else:
                 expr_emb = self.expr_encoder(expression, mask=mask)
             enc.add_(expr_emb)
@@ -840,18 +838,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         output = {}
         output["input_cell_embs"] = cell_embs
         output["input_cell_emb"] = torch.mean(output["input_cell_embs"], dim=1)
-        if do_mvc:
-            output.update(
-                self.mvc_decoder(
-                    output["input_cell_emb"],
-                    self.cur_gene_token_embs,
-                    req_depth=req_depth,
-                )
-            )
-            output["mvc_mean"] = (
-                depth_mult.unsqueeze(1) * output["mvc_mean"]
-            )  # (minibatch, seq_len)
-
+    
         if self.compressor is not None:
             # Apply VAE to cell embeddings
             output["vae_kl_loss"] = 0
@@ -887,18 +874,26 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             output["output_cell_embs"] = cell_embs
             # shape (minibatch, embsize)
             output["output_cell_emb"] = torch.mean(output["output_cell_embs"], dim=1)
-
         if len(self.classes) > 0 and do_class:
             for i, clsname in enumerate(self.classes):
                 output.update(
                     {
                         "cls_output_" + clsname: self.cls_decoders[clsname](
-                            output["compressed_cell_embs"][i + 1]
-                            if self.compressor is not None
-                            else output["output_cell_embs"][:, i + 1, :]
+                            output["compressed_cell_embs"][i + 1] if self.compressor is not None else output["input_cell_embs"][:, i + 1, :]
                         )
                     }
                 )
+        if do_mvc:
+            output.update(
+                self.mvc_decoder(
+                    output["output_cell_emb"],
+                    self.cur_gene_token_embs,
+                    req_depth=req_depth,
+                )
+            )
+            output["mvc_mean"] = (
+                depth_mult.unsqueeze(1) * output["mvc_mean"]
+            )  # (minibatch, seq_len)
         return output
 
     def forward(
