@@ -19,7 +19,7 @@ trainer:
       init_args:
         project: ${project}
         offline: True
-        save_dir: /lustre/fswork/projects/rech/xeg/uat95fg/ #/pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/data/log/
+        save_dir: /pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/lustre/fswork/projects/rech/xeg/uat95fg/ #/pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/data/log/
   callbacks:
     #- class_path: lightning.pytorch.callbacks.StochasticWeightAveraging
     #  init_args:
@@ -42,8 +42,7 @@ scprint_training:
 model:
   dropout: 0.1
   num_heads_kv: 4
-  attention: flash
-  mvc_decoder: inner product
+  attention: normal
   residual_in_fp32: True
   checkpointing: False
   layers_cls: []
@@ -53,7 +52,7 @@ model:
   fused_bias_fc: False
   drop_path_rate: 0
   freeze_embeddings: True
-  # finetune_gene_emb: False
+  finetune_gene_emb: False
   normalization: log
   gene_pos_file: ./data/main/biomart_pos.parquet
   precpt_gene_emb: ./data/main/gene_embs/ #./data/main/gene_embeddings.parquet # /lustre/fswork/projects/rech/xeg/uat95fg/gene_embeddings.parquet

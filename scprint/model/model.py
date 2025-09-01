@@ -54,7 +54,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         normalization: str = "sum",
         attn_bias: str = "none",
         expr_encoder_layers: int = 3,
-        attention: str = "flash",  # "performer", "flash", "normal", "crisscross", "hyper", "adasplash"
+        attention: str = "normal",  # "performer", "legacy-flash", "normal", "crisscross", "hyper", "adasplash"
         expr_emb_style: str = "continuous",  # "binned", "continuous", "metacell"
         n_input_bins: int = 60,
         mvc_decoder: Optional[
@@ -101,7 +101,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             organisms (list[str], optional): List of organisms to use for plotting embeddings. Defaults to [].
             labels_hierarchy (Dict[str, Dict[int, list[int]]], optional): Class hierarchy for classes with hierarchical classes. Defaults to {}.
             dropout (float, optional): Dropout value. Defaults to 0.2.
-            attention (str, optional): attention type to use. One of "linear", "flash", "flashsparse", "scprint". Defaults to "fast".
+            attention (str, optional): attention type to use. One of "linear", "legacy-flash", "flashsparse", "scprint". Defaults to "fast".
             expr_emb_style (str, optional): Style of input embedding. One of "continuous", "binned_pos", "cont_pos", "metacell", "full_pos". Defaults to "continuous".
                 "metacell" uses a DeepSet multi gene encoder across the KNN cells
                 "binned" uses a binned expr embedding for each gene
@@ -376,7 +376,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 dropout=dropout,
                 cross_attn=True,
                 cross_dim=d_model,
-                attn_type="flash" if attention == "flash" else "normal",
+                attn_type="legacy-flash" if attention == "legacy-flash" else "normal",
                 **attention_kwargs,
             )
         else:

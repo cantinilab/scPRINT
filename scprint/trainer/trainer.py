@@ -12,7 +12,7 @@ class TrainingMode(Callback):
         ecs_threshold: float = 0.4,
         class_embd_diss_scale: float = 0.3,
         ecs_scale: float = 0.2,  # .1
-        mvc_scale: float = 1.0,
+        mvc_scale: float = 0.0,
         do_next_tp: bool = False,
         do_generate: bool = True,
         class_scale: float = 1,

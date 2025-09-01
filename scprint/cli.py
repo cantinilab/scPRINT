@@ -1,11 +1,8 @@
 import torch
 from jsonargparse import class_from_function
-from lightning.pytorch.callbacks import (
-    EarlyStopping,
-    LearningRateMonitor,
-    ModelCheckpoint,
-    StochasticWeightAveraging,
-)
+from lightning.pytorch.callbacks import (EarlyStopping, LearningRateMonitor,
+                                         ModelCheckpoint,
+                                         StochasticWeightAveraging)
 from lightning.pytorch.cli import LightningCLI, _get_short_description
 from lightning.pytorch.trainer import Trainer
 
@@ -274,6 +271,11 @@ class MyCLI(LightningCLI):
             if "set_float32_matmul_precision" in k:
                 if v:
                     torch.set_float32_matmul_precision("medium")
+        import os
+        simpler_f_hash = os.system("cd ../simpler_flash && git rev-parse HEAD")
+        scdata_v = os.system("cd ../scdataloader && git rev-parse HEAD")
+        print("scdata_v:", scdata_v)
+        print("simpler_f_hash:", simpler_f_hash)
         if "fit" in self.config and self.config["fit"]["trainer"]["strategy"] in [
             "ddp",
             "ddp_find_unused_parameters_true",
