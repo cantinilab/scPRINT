@@ -781,3 +781,47 @@ def test(
         print(metrics)
         gc.collect()
     return metrics, tot
+
+
+def relabel_assay_for_adv(label_decoders, labels_hierarchy):
+    topred = [
+        "EFO:0700011",
+        "EFO:0008953",
+        "EFO:0030003",
+        "EFO:0700016",
+        "EFO:0700010",
+        "EFO:0022490",
+        "EFO:0008722",
+        "EFO:0010961",
+        "EFO:0008720",
+        "EFO:0010550",
+        "EFO:0030004",
+        "EFO:0008931",
+        "EFO:0010010",
+        "EFO:0008780",
+        "EFO:0009919",
+        "EFO:0010713",
+        "EFO:0030059",
+        "EFO:0008796",
+        "EFO:0030002",
+        "EFO:0030062",
+        "EFO:0008919",
+        "EFO:0008930",
+        "EFO:0010184",
+        "EFO:0008995",
+        "EFO:0030080",
+        "EFO:0700003",
+    ]
+    relab = {}
+    enc = {v: k for k, v in label_decoders["assay_ontology_term_id"].items()}
+    for i in enc.keys():
+        if i in topred:
+            relab[enc[i]] = topred.index(i)
+        else:
+            relab[enc[i]] = -1
+            prevlen = 10000
+            for val in topred:
+                li = labels_hierarchy["assay_ontology_term_id"].get(enc[val], [])
+                if enc[i] in li and prevlen > len(li):
+                    relab[enc[i]] = topred.index(val)
+                    prevlen = len(li)

@@ -3,6 +3,7 @@ import copy
 import datetime
 import os
 from functools import partial
+
 # from galore_torch import GaLoreAdamW
 from math import factorial
 from pathlib import Path
@@ -359,6 +360,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 d_model=d_model,
                 nhead=nhead,
                 dropout=dropout,
+                attn_dropout=dropout,
                 nlayers=nlayers,
                 cross_attn=cell_specific_blocks,
                 cross_dim=d_model_cell,
@@ -376,7 +378,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 dropout=dropout,
                 cross_attn=True,
                 cross_dim=d_model,
-                attn_type="legacy-flash" if attention == "legacy-flash" else "normal",
+                attn_type="flash" if attention == "legacy-flash" else "normal",
                 **attention_kwargs,
             )
         else:
@@ -420,9 +422,12 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 else mdim
             )
             if "assay_ontology_term_id" in classes:
+                self.assay_relab = utils.relabel_assay_for_adv(
+                    self.label_decoders, self.labels_hierarchy
+                )
                 self.adv_assay_decoder = decoders.ClsDecoder(
                     dim,
-                    classes["assay_ontology_term_id"],
+                    len(set(self.assay_relab.values())),
                     layers=layers_cls,
                     dropout=dropout,
                 )
@@ -838,7 +843,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         output = {}
         output["input_cell_embs"] = cell_embs
         output["input_cell_emb"] = torch.mean(output["input_cell_embs"], dim=1)
-    
+
         if self.compressor is not None:
             # Apply VAE to cell embeddings
             output["vae_kl_loss"] = 0
@@ -879,7 +884,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 output.update(
                     {
                         "cls_output_" + clsname: self.cls_decoders[clsname](
-                            output["compressed_cell_embs"][i + 1] if self.compressor is not None else output["input_cell_embs"][:, i + 1, :]
+                            output["compressed_cell_embs"][i + 1]
+                            if self.compressor is not None
+                            else output["input_cell_embs"][:, i + 1, :]
                         )
                     }
                 )
@@ -1614,18 +1621,18 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     # Get predictions from the adversarial decoder
                     if "assay" in clsname:
                         adv_pred = self.adv_assay_decoder(adv_input_emb)
+                        # Replace elements in clss[:, j] using self.assay_relab mapping
+                        cl = np.zeros_like(clss[:, j])
+                        for i in range(cl.shape[0]):
+                            cl[i] = self.assay_relab.get(clss[i, j].item(), -1)
                     else:
                         adv_pred = self.adv_organism_decoder(adv_input_emb)
+                        cl = clss[:, j]
 
                     # Compute the adversarial loss
-                    adv_loss = loss.hierarchical_classification(
-                        pred=adv_pred,
-                        cl=clss[
-                            :, j
-                        ],  # Use the true label for the adversarial target class
-                        labels_hierarchy=self.mat_labels_hierarchy[clsname]
-                        if clsname in self.mat_labels_hierarchy.keys()
-                        else None,
+                    adv_loss = torch.nn.functional.cross_entropy(
+                        input=adv_pred,
+                        target=cl,
                     )
                     # Add the adversarial loss to the total loss (gradient reversal handles the maximization objective for the generator)
                     total_loss += self.adv_class_scale * adv_loss
@@ -1935,6 +1942,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         keep_output=True,
         max_size_in_mem=100_000,
         get_gene_emb=False,
+        mask=None,
         metacell_token=None,
         name="predict_part_",
     ):
@@ -1985,6 +1993,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             do_class=True,
             get_gene_emb=get_gene_emb,
             metacell_token=metacell_token,
+            mask=mask,
         )
         if get_attention_layer is not None:
             # only first 2 (QK)
