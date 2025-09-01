@@ -147,9 +147,9 @@ class FSQ(Module):
         assert (
             z.shape[-1] == self.dim
         ), f"expected dimension of {self.dim} but found dimension of {z.shape[-1]}"
-        z = self.project_in(z)
+        small = self.project_in(z)
 
-        z = rearrange(z, "b (c d) -> b c d", c=self.num_codebooks)
+        z = rearrange(small, "b (c d) -> b c d", c=self.num_codebooks)
 
         codes = self.quantize(z)
         indices = self.codes_to_indices(codes)
@@ -161,7 +161,7 @@ class FSQ(Module):
         if not self.keep_num_codebooks_dim:
             indices = rearrange(indices, "... 1 -> ...")
 
-        return out, indices
+        return out, indices, small
 
 
 if __name__ == "__main__":

@@ -409,7 +409,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             mdim = d_model_cell if cell_specific_blocks else self.d_model
             dim = compress_class_dim[clss] if compress_class_dim is not None else mdim
             self.cls_decoders[clss] = decoders.ClsDecoder(
-                dim if dim >= 8 else mdim,
+                dim,
                 n_cls,
                 layers=layers_cls,
                 dropout=dropout,
@@ -863,11 +863,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             for i, clsname in enumerate(self.classes):
                 out = self.compressor[clsname](cell_embs[:, i + 1, :])
                 res.append(out[0].unsqueeze(1))
-                if len(out) == 5:
+                if len(out) == 5: # VAE case
                     output["vae_kl_loss"] += out[4]
                     zs.append(out[3])
-                else:
-                    zs.append(out[0])
+                else: # FSQ case
+                    zs.append(out[2])
             # shape (minibatch, n_classes + 1, embsize)
             output["output_cell_embs"] = torch.cat(res, dim=1)
             # shape [n_classes + 1](minibatch, compressed_embsizes[i])
