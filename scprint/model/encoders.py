@@ -33,7 +33,7 @@ class GeneEncoder(nn.Module):
             freeze (bool, optional): Whether to freeze the weights of the embedding layer
         """
         super(GeneEncoder, self).__init__()
-        self.embedding_dim = embedding_dim
+        self.output_dim = embedding_dim
 
         if weights_file is not None:
             self.memmap = True
@@ -54,7 +54,7 @@ class GeneEncoder(nn.Module):
             if not os.path.exists(self.mmap_file):
                 print(f"Creating memory-mapped file for embeddings at {self.mmap_file}")
                 df = pd.read_parquet(weights_file)
-                embeddings = torch.nn.AdaptiveAvgPool1d(self.embedding_dim)(
+                embeddings = torch.nn.AdaptiveAvgPool1d(self.output_dim)(
                     torch.tensor(df.values)
                 )
 
@@ -260,6 +260,7 @@ class ContinuousValueEncoder(nn.Module):
         super(ContinuousValueEncoder, self).__init__()
         self.max_value = max_value
         self.encoder = nn.ModuleList()
+        self.output_dim = d_model
         # self.mask_value = nn.Embedding(1, d_model)
         self.encoder.append(nn.Linear(size, d_model))
         for _ in range(layers - 1):
@@ -283,6 +284,79 @@ class ContinuousValueEncoder(nn.Module):
         if mask is not None:
             x = x.masked_fill_(mask.unsqueeze(-1), 0)
             # x = x.masked_fill_(mask.unsqueeze(-1), self.mask_value(0))
+        return x
+
+
+class ExprBasedFT(nn.Module):
+    def __init__(
+        self,
+        d_model: int,
+        gene_encoder: nn.Module,
+        expr_encoder: nn.Module = nn.Identity(),
+        dropout: float = 0.1,
+        layers: int = 2,
+        intermediary_d: int = 512,
+    ):
+        """
+        Encode real number values to a vector using neural nets projection.
+
+        Args:
+            d_model (int): The dimension of the input vectors.
+            dropout (float, optional): The dropout rate to apply to the output of the positional encoding.
+            max_value (int, optional): The maximum value of the input. Defaults to 100_000.
+            layers (int, optional): The number of layers in the encoder. Defaults to 1.
+            size (int, optional): The size of the input. Defaults to 1.
+
+        Returns:
+            torch.Tensor: A tensor representing the encoded continuous values.
+        """
+        super(ExprBasedFT, self).__init__()
+        self.encoder = nn.ModuleList()
+        # self.mask_value = nn.Embedding(1, d_model)
+        self.add_module("gene_encoder", gene_encoder)
+        self.add_module("expr_encoder", expr_encoder)
+        expr_shape, gene_shape = (
+            self.expr_encoder.output_dim,
+            self.gene_encoder.output_dim,
+        )
+        self.encoder.append(nn.Linear(expr_shape + gene_shape, intermediary_d))
+        for i in range(layers - 1):
+            self.encoder.append(nn.LayerNorm(intermediary_d))
+            self.encoder.append(nn.ReLU())
+            self.encoder.append(nn.Dropout(p=dropout))
+            self.encoder.append(
+                nn.Linear(intermediary_d, intermediary_d if i < layers - 2 else d_model)
+            )
+
+    def forward(
+        self,
+        gene_pos: Tensor,
+        expr: Tensor = None,
+        mask: Tensor = None,
+        neighbors: Tensor = None,
+        neighbors_info: Tensor = None,
+    ) -> Tensor:
+        """
+        Args:
+            x: Tensor, shape [batch_size, seq_len]
+        """
+        # expand last dimension
+        if neighbors is None and expr is None:
+            expr = torch.zeros_like(
+                gene_pos, dtype=torch.float32, device=gene_pos.device
+            )
+
+        # use the mask embedding when x=-1
+        # mask = (x == -1).float()
+        expr = (
+            self.expr_encoder(expr, mask=mask)
+            if neighbors is None
+            else self.expr_encoder(expr, neighbors, neighbors_info, mask=mask)
+        )
+        gene_pos = self.gene_encoder(gene_pos)
+        x = torch.cat([expr, gene_pos], dim=-1)
+        for val in self.encoder:
+            x = val(x)
         return x
 
 
@@ -313,6 +387,57 @@ class CategoryValueEncoder(nn.Module):
 
     def forward(self, x: Tensor, mask: Tensor = None) -> Tensor:
         x = self.embedding(x.long())  # (batch, seq_len, embsize)
+        if mask is not None:
+            x = x.masked_fill(mask.unsqueeze(-1), 0)
+        return x
+
+
+class EasyExprGNN(nn.Module):
+    def __init__(
+        self,
+        input_dim: int = 2,
+        output_dim: int = 32,
+        num_layers: int = 4,
+        dropout: float = 0.1,
+    ):
+        super(EasyExprGNN, self).__init__()
+        self.output_dim = output_dim
+        self.input_dim = input_dim
+        self.layers = nn.ModuleList()
+        self.layers.append(nn.Linear(input_dim, output_dim))
+        for _ in range(num_layers - 1):
+            self.layers.append(nn.LayerNorm(output_dim))
+            self.layers.append(nn.ReLU())
+            self.layers.append(nn.Dropout(p=dropout))
+            self.layers.append(nn.Linear(output_dim, output_dim))
+
+    def forward(self, expr=None, neighbors=None, edge_info=None, mask=None):
+        # 2x batch, seq_len, neighbs
+        # this is a debugger line
+        import pdb
+
+        pdb.set_trace()
+        if neighbors is not None:
+            if expr is None:
+                x = neighbors
+            else:
+                x = torch.cat([expr.unsqueeze(-1), neighbors], dim=-1)
+        elif expr is None:
+            raise ValueError("need at least one of the two")
+
+        if edge_info is not None:
+            if expr is not None:
+                edge_info = torch.cat([torch.zeros_like(expr).unsqueeze(-1), edge_info])
+        elif self.input_dim == 2:
+            # we are in the case where edge info should be passed but no neighbors were passed
+            edge_info = torch.zeros_like(expr).unsqueeze(-1)
+
+        if edge_info is not None:
+            x = torch.cat([x.unsqueeze(-1), edge_info.unsqueeze(-1)], dim=-1)
+
+        for layer in self.layers:
+            # batch, seq_len, neighbs, hidden_dim
+            x = layer(x).sum(-2)
         if mask is not None:
             x = x.masked_fill(mask.unsqueeze(-1), 0)
         return x

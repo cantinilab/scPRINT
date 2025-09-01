@@ -268,33 +268,33 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             gene_encoder = encoders.GeneEncoder(
                 len(self.genes), d_model, freeze=freeze_embeddings
             )
-        if finetune_gene_emb:
-            if not freeze_embeddings:
-                raise ValueError(
-                    "finetune_gene_emb is True but freeze_embeddings is False"
-                )
-            # Create adapter layers after the frozen base encoder
-            self.gene_encoder = torch.nn.Sequential(
-                gene_encoder,
-                torch.nn.Linear(d_model, d_model),
-                torch.nn.ReLU(),
-                torch.nn.Linear(d_model, d_model),
-            )
-        else:
-            self.gene_encoder = gene_encoder
         # Value Encoder, NOTE: the scaling style is also handled in _encode method
+
+        expr_d_model = d_model // 8 if finetune_gene_emb else d_model
         if expr_emb_style in "continuous":
-            self.expr_encoder = encoders.ContinuousValueEncoder(
-                d_model, dropout, layers=expr_encoder_layers
+            expr_encoder = encoders.ContinuousValueEncoder(
+                expr_d_model, dropout, layers=expr_encoder_layers
             )
         elif expr_emb_style == "binned":
             assert n_input_bins > 0
             assert normalization == "no", "shouldn't use normalization"
-            self.expr_encoder = encoders.CategoryValueEncoder(n_input_bins, d_model)
+            expr_encoder = encoders.CategoryValueEncoder(n_input_bins, expr_d_model)
         elif expr_emb_style == "metacell":
-            self.expr_encoder = encoders.GNN(
-                1, d_model // 2, d_model, expr_encoder_layers, dropout, "deepset"
+            expr_encoder = encoders.EasyExprGNN(
+                2, expr_d_model, expr_encoder_layers, dropout
             )
+        if finetune_gene_emb:
+            self.expr_encoder = encoders.ExprBasedFT(
+                d_model,
+                gene_encoder,
+                expr_encoder,
+                dropout,
+                layers=expr_encoder_layers,
+                intermediary_d=int(d_model * 1.5),
+            )
+        else:
+            self.expr_encoder = expr_encoder
+        self.gene_encoder = gene_encoder
 
         # Positional Encoding
         if gene_pos_file is not None:
@@ -521,10 +521,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
         emb = emb.loc[genes.index]
         self._genes[organism] = genes.index.tolist()
-        if type(self.gene_encoder) is torch.nn.Sequential:
-            enc = self.gene_encoder[0]
-        else:
-            enc = self.gene_encoder
+        enc = self.gene_encoder
         semb = torch.nn.AdaptiveAvgPool1d(self.d_model)(
             torch.tensor(emb.values, dtype=torch.float32)
         ).to(enc.embeddings.weight.data.device)
@@ -540,10 +537,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         )
         enc.embeddings.weight.data.copy_(embs)
         enc.embeddings.weight.data = enc.embeddings.weight.data.to(self.device)
-        if type(self.gene_encoder) is torch.nn.Sequential:
-            self.gene_encoder[0] = enc
-        else:
-            self.gene_encoder = enc
+        if self.gene_encoder is None:
+            self.expr_encoder.gene_encoder = enc
+        self.gene_encoder = enc
 
     def on_load_checkpoint(self, checkpoints):
         # if not the same number of labels (due to diff datasets)
@@ -732,6 +728,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # Copy the kept embeddingss to the new encoder
         new_gene_encoder.embeddings.weight.data = kept_embeddings
         # Replace the old encoder with the new one
+        if type(self.expr_encoder) is encoders.ExprBasedFT:
+            self.expr_encoder.gene_encoder = new_gene_encoder
         self.gene_encoder = new_gene_encoder
         # Update vocabulary
         self.vocab = {i: n for i, n in enumerate(self.genes)}
@@ -746,6 +744,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         gene_pos: Tensor,
         expression: Optional[Tensor] = None,
         neighbors: Optional[Tensor] = None,
+        neighbors_info: Optional[Tensor] = None,
         mask: Optional[Tensor] = None,
         cell_embs: Optional[Tensor] = None,  # (minibatch, n_labels, embsize)
         metacell_token: Optional[Tensor] = None,  # (minibatch, 1)
@@ -759,9 +758,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         Returns:
             Tensor: the encoded data
         """
-        enc = self.gene_encoder(gene_pos)  # (minibatch, seq_len, embsize)
-        self.cur_gene_token_embs = enc.clone()
-        if expression is not None:
+        if expression is not None or neighbors is not None:
             if self.normalization == "sum":
                 expression = expression / expression.sum(1).unsqueeze(1)
                 if neighbors is not None:
@@ -774,11 +771,44 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     neighbors = torch.log2(1 + neighbors)
             else:
                 raise ValueError(f"Unknown normalization: {self.normalization}")
-            if neighbors is not None:
-                expr_emb = self.expr_encoder(expression, mask=mask, neighbors=neighbors)
+            if neighbors_info is not None:
+                # go from size batch, n_neighbor to batch, len, n_neighbor
+                neighbors_info = neighbors_info.repeat(1, gene_pos.shape[1], 1)
+            if type(self.expr_encoder) is encoders.ExprBasedFT:
+                enc = self.expr_encoder(
+                    gene_pos=gene_pos,
+                    expr=expression,
+                    mask=mask,
+                    neighbors=neighbors,
+                    neighbors_info=neighbors_info,
+                )
+            elif type(self.expr_encoder) is encoders.EasyExprGNN:
+                enc = self.gene_encoder(gene_pos)
+                expr_emb = self.expr_encoder(
+                    expression,
+                    mask=mask,
+                    neighbors=neighbors,
+                    neighbors_info=neighbors_info,
+                )
+                enc._add(expr_emb)
             else:
                 expr_emb = self.expr_encoder(expression, mask=mask)
-            enc.add_(expr_emb)
+                enc = self.gene_encoder(gene_pos)
+                enc._add(expr_emb)
+        elif type(self.expr_encoder) is encoders.ExprBasedFT:
+            # Set all mask values to True (mask everything)
+            mask = torch.ones_like(gene_pos, dtype=torch.bool)
+            # Set expression to zeros
+            expression = torch.zeros_like(gene_pos, dtype=torch.float32)
+            enc = self.expr_encoder(
+                gene_pos=gene_pos,
+                expr=expression,
+                mask=mask,
+                neighbors=neighbors,
+                neighbors_info=neighbors_info,
+            )
+        else:
+            enc = self.gene_encoder(gene_pos)  # (minibatch, seq_len, embsize)
         if self.pos_encoder is not None:
             enc.add_(self.pos_encoder(gene_pos))
         if cell_embs is None:
@@ -839,6 +869,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         do_class,
         depth_mult,
         req_depth,
+        gene_pos=None,
     ):
         output = {}
         output["input_cell_embs"] = cell_embs
@@ -863,10 +894,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             for i, clsname in enumerate(self.classes):
                 out = self.compressor[clsname](cell_embs[:, i + 1, :])
                 res.append(out[0].unsqueeze(1))
-                if len(out) == 5: # VAE case
+                if len(out) == 5:  # VAE case
                     output["vae_kl_loss"] += out[4]
                     zs.append(out[3])
-                else: # FSQ case
+                else:  # FSQ case
                     zs.append(out[2])
             # shape (minibatch, n_classes + 1, embsize)
             output["output_cell_embs"] = torch.cat(res, dim=1)
@@ -893,8 +924,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if do_mvc:
             output.update(
                 self.mvc_decoder(
-                    output["output_cell_emb"],
-                    self.cur_gene_token_embs,
+                    output["input_cell_emb"],
+                    # TODO: recomp
+                    self.gene_encoder(gene_pos),
                     req_depth=req_depth,
                 )
             )
@@ -908,6 +940,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         gene_pos: Tensor,
         expression: Optional[Tensor] = None,
         neighbors: Optional[Tensor] = None,
+        neighbors_info: Optional[Tensor] = None,
         mask: Optional[Tensor] = None,
         req_depth: Optional[Tensor] = None,
         get_gene_emb: bool = False,
@@ -959,10 +992,15 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 - "output_cell_emb": the concatenated compressed cell embedding output after compression (when using compression)
                 - "cls_output": the output of the classifier
         """
+        # this is a debugger line
+        import pdb
+
+        pdb.set_trace()
         cell_embs, encoding = self._encoder(
             gene_pos,
             expression,
             neighbors,
+            neighbors_info,
             mask,
             metacell_token=metacell_token,
         )
@@ -1050,6 +1088,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 do_class,
                 depth_mult,
                 req_depth,
+                gene_pos if do_mvc else None,
             )
         )
         return (res, qkvs) if get_attention_layer is not None else res
@@ -1278,8 +1317,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 )
 
         knn_cells = batch.get("knn_cells", None)
+        knn_cells_info = batch.get("knn_cells_info", None)
         if knn_cells is not None:
             knn_cells = knn_cells[:, :, :context_length]
+
         if self.mask_zeros and knn_cells is None:
             keep = expression.sum(0) != 0
             # we can work on smaller datasets
@@ -1309,6 +1350,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 gene_pos,
                 expression,
                 neighbors=knn_cells,
+                neighbors_info=knn_cells_info,
                 mask=None,
                 req_depth=total_count,
                 do_mvc=do_mvc,
@@ -1364,6 +1406,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 gene_pos,
                 expression=expr,
                 neighbors=knn_cells,
+                neighbors_info=knn_cells_info,
                 mask=mask,
                 req_depth=expr.sum(1),
                 do_mvc=do_mvc,
@@ -1395,15 +1438,16 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 expr = utils.downsample_profile(
                     expression, dropout=i, randsamp=self.randsamp
                 )
-            if knn_cells is not None:
-                # knn_cells = utils.downsample_profile(
-                #    knn_cells, dropout=i, randsamp=self.randsamp
-                # )
-                pass
+                if knn_cells is not None:
+                    # knn_cells = utils.downsample_profile(
+                    #    knn_cells, dropout=i, randsamp=self.randsamp
+                    # )
+                    pass
             output = self.forward(
                 gene_pos,
                 expression=expr,
                 neighbors=knn_cells,
+                neighbors_info=knn_cells_info,
                 mask=None,
                 depth_mult=expression.sum(1),
                 req_depth=total_count,
