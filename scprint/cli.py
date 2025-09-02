@@ -29,6 +29,7 @@ class MyCLI(LightningCLI):
                 "scprint_early_stopping.monitor": "val_loss",
                 # patience is the number of consecutive epochs with no improvement after which learning rate will be reduced.
                 "scprint_early_stopping.patience": 5,
+                "scprint_early_stopping.check_on_train_epoch_end": False,
             }
         )
         parser.add_lightning_class_args(
