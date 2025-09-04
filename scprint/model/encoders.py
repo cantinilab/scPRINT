@@ -345,9 +345,9 @@ class ExprBasedFT(nn.Module):
             expr = torch.zeros_like(
                 gene_pos, dtype=torch.float32, device=gene_pos.device
             )
+            # if no expr information: consider that it is all masked
+            mask = torch.ones_like(expr, dtype=torch.bool)
 
-        # use the mask embedding when x=-1
-        # mask = (x == -1).float()
         expr = (
             self.expr_encoder(expr, mask=mask)
             if neighbors is None
@@ -399,45 +399,47 @@ class EasyExprGNN(nn.Module):
         output_dim: int = 32,
         num_layers: int = 4,
         dropout: float = 0.1,
+        shared_layers: int = 2,
     ):
         super(EasyExprGNN, self).__init__()
         self.output_dim = output_dim
         self.input_dim = input_dim
+        self.solo_layers = num_layers - shared_layers
         self.layers = nn.ModuleList()
-        self.layers.append(nn.Linear(input_dim, output_dim))
-        for _ in range(num_layers - 1):
-            self.layers.append(nn.LayerNorm(output_dim))
+        self.layers.append(nn.Linear(input_dim, output_dim // 2 if num_layers > 1 else output_dim))
+        for i in range(num_layers - 1):
+            self.layers.append(nn.LayerNorm(output_dim // 2 if i<self.solo_layers else output_dim))
             self.layers.append(nn.ReLU())
             self.layers.append(nn.Dropout(p=dropout))
-            self.layers.append(nn.Linear(output_dim, output_dim))
+            self.layers.append(nn.Linear(output_dim // 2 if i<self.solo_layers else output_dim, output_dim))
 
     def forward(self, expr=None, neighbors=None, edge_info=None, mask=None):
-        # 2x batch, seq_len, neighbs
-        # this is a debugger line
-        import pdb
-
-        pdb.set_trace()
+        # batch, seq_len, neighbs
         if neighbors is not None:
+            neighbors = neighbors.transpose(1,2)
             if expr is None:
                 x = neighbors
             else:
                 x = torch.cat([expr.unsqueeze(-1), neighbors], dim=-1)
         elif expr is None:
             raise ValueError("need at least one of the two")
-
         if edge_info is not None:
             if expr is not None:
-                edge_info = torch.cat([torch.zeros_like(expr).unsqueeze(-1), edge_info])
+                # edge_info = [batch, seqlen, neighbors]
+                edge_info = torch.cat([torch.zeros_like(expr).unsqueeze(-1), edge_info], dim=-1)
         elif self.input_dim == 2:
             # we are in the case where edge info should be passed but no neighbors were passed
             edge_info = torch.zeros_like(expr).unsqueeze(-1)
+            x = expr.unsqueeze(-1)
 
         if edge_info is not None:
             x = torch.cat([x.unsqueeze(-1), edge_info.unsqueeze(-1)], dim=-1)
 
-        for layer in self.layers:
+        for i, layer in enumerate(self.layers):
             # batch, seq_len, neighbs, hidden_dim
-            x = layer(x).sum(-2)
+            x = layer(x)
+            if i == self.solo_layers-1:
+                x = x.sum(-2)
         if mask is not None:
             x = x.masked_fill(mask.unsqueeze(-1), 0)
         return x

@@ -1,11 +1,8 @@
 import torch
 from jsonargparse import class_from_function
-from lightning.pytorch.callbacks import (
-    EarlyStopping,
-    LearningRateMonitor,
-    ModelCheckpoint,
-    StochasticWeightAveraging,
-)
+from lightning.pytorch.callbacks import (EarlyStopping, LearningRateMonitor,
+                                         ModelCheckpoint,
+                                         StochasticWeightAveraging)
 from lightning.pytorch.cli import LightningCLI, _get_short_description
 from lightning.pytorch.trainer import Trainer
 
@@ -32,6 +29,8 @@ class MyCLI(LightningCLI):
                 "scprint_early_stopping.monitor": "val_loss",
                 # patience is the number of consecutive epochs with no improvement after which learning rate will be reduced.
                 "scprint_early_stopping.patience": 5,
+                # Prevent early stopping from checking on train epoch end when val_loss isn't available yet
+                "scprint_early_stopping.check_on_train_epoch_end": False,
             }
         )
         parser.add_lightning_class_args(

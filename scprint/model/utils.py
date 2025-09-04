@@ -821,7 +821,8 @@ def relabel_assay_for_adv(label_decoders, labels_hierarchy):
             relab[enc[i]] = -1
             prevlen = 10000
             for val in topred:
-                li = labels_hierarchy["assay_ontology_term_id"].get(enc[val], [])
+                li = labels_hierarchy["assay_ontology_term_id"].get(enc.get(val, ""), [])
                 if enc[i] in li and prevlen > len(li):
                     relab[enc[i]] = topred.index(val)
                     prevlen = len(li)
+    return relab

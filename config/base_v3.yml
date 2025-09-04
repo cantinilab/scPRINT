@@ -93,7 +93,7 @@ data:
   validation_split: 0.05
   test_split: 0.02
   batch_size: 32
-  num_workers: 8
+  num_workers: 10
   hierarchical_clss:
     - cell_type_ontology_term_id
     - tissue_ontology_term_id

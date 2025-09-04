@@ -41,6 +41,5 @@ def main(args: ArgsType = None):
         save_config_callback=MySaveConfig,
     )
 
-
 if __name__ == "__main__":  # pragma: no cover
     main()
