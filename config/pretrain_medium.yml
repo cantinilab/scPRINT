@@ -10,6 +10,7 @@ model:
   nhead_cell: 4
   nlayers_cell: 6
 data:
+  n_samples_per_epoch: 400000
   batch_size: 16
 # model is 90M params
 scprint_training:

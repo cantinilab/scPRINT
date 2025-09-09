@@ -54,7 +54,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         normalization: str = "sum",
         attn_bias: str = "none",
         expr_encoder_layers: int = 3,
-        attention: str = "normal",  # "performer", "legacy-flash", "normal", "crisscross", "hyper", "adasplash"
+        attention: str = "normal",  # "performer", "legacy-flash", "normal", "criss-cross", "hyper", "adasplash"
         expr_emb_style: str = "continuous",  # "binned", "continuous", "metacell"
         n_input_bins: int = 60,
         mvc_decoder: Optional[
@@ -74,6 +74,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         use_metacell_token: bool = False,
         lr: float = 0.0001,
         nb_features: Optional[int] = None,
+        sketcher_size: int = 200,
         feature_redraw_interval: Optional[int] = None,
         num_heads_kv: int = 4,
         d_model_cell: int = 128,
@@ -280,7 +281,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             expr_encoder = encoders.CategoryValueEncoder(n_input_bins, expr_d_model)
         elif expr_emb_style == "metacell":
             expr_encoder = encoders.EasyExprGNN(
-                2, expr_d_model, expr_encoder_layers, dropout
+                self_dim=expr_d_model * 2, output_dim=expr_d_model, shared_layers=expr_encoder_layers, dropout=dropout
             )
         if finetune_gene_emb:
             self.expr_encoder = encoders.ExprBasedFT(
@@ -365,6 +366,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 cross_dim=d_model_cell,
                 attn_type=attention,
                 num_heads_kv=num_heads_kv,
+                sketcher_size=sketcher_size,
                 **attention_kwargs,
             )
         if cell_specific_blocks:
@@ -1185,12 +1187,21 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if self.lr_reduce_monitor is None:
             print("no lr reduce factor")
             return [optimizer]
-        lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+        lr_scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
             optimizer,
-            mode="min",
-            patience=self.lr_reduce_patience,
-            factor=self.lr_reduce_factor,
+            T_0=15,
+            eta_min=1e-8,
         )
+        #lr_scheduler = optim.lr_scheduler.ExponentialLR(
+        #    optimizer,
+        #    gamma=0.85,
+        #)
+        #lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+        #    optimizer,
+        #    mode="min",
+        #    patience=self.lr_reduce_patience,
+        #    factor=self.lr_reduce_factor,
+        #)
         lr_dict = {
             "scheduler": lr_scheduler,
             # The unit of the scheduler's step size, could also be 'step'.
@@ -1515,7 +1526,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             total_loss += self.ecs_scale * loss_ecs
             losses.update({"ecs": loss_ecs})
         # TASK 5. elastic cell similarity
-        if self.cce_scale > 0:
+        if self.cce_scale > 0 and len(gathered_cell_embs_list) > 1:
             loss_cce = 0
             n_pairs = 0
             for i, cell_emb1 in enumerate(gathered_cell_embs_list[:-1]):
