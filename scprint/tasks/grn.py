@@ -42,7 +42,7 @@ class GNInfer:
         num_genes: int = 3000,
         max_cells: int = 0,
         cell_type_col: str = "cell_type",
-        how: str = "random expr",  # random expr, most var within, most var across, given
+        how: str = "random expr",  # random expr, most var within, most var across, some
         genelist: Optional[List[str]] = None,
         ### GRN inference parameters
         layer: Optional[List[int]] = None,
@@ -181,6 +181,7 @@ class GNInfer:
                 + str((subadata.X.sum(0) > 1).sum())
             )
         elif self.how == "most var across" and cell_type is not None:
+            adata.raw.X = adata.X
             sc.tl.rank_genes_groups(
                 adata,
                 mask_var=adata.var.index.isin(model.genes),

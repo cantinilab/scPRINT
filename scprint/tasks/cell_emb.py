@@ -466,6 +466,7 @@ def compute_classification(
     for label in classes:
         res = []
         if label not in adata.obs.columns:
+            print("not in columns")
             continue
         labels_topred = label_decoders[label].values()
         if label in labels_hierarchy:
