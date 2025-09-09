@@ -38,6 +38,7 @@ class Denoiser:
         save_every: int = 100_000,
         pred_embedding: List[str] = ["cell_type_ontology_term_id"],
         additional_info: bool = False,
+        apply_zero_pred: bool = False,
     ):
         """
         Denoiser class for denoising scRNA-seq data using a scPRINT model
@@ -76,6 +77,7 @@ class Denoiser:
         self.save_every = save_every
         self.pred_embedding = pred_embedding
         self.additional_info = additional_info
+        self.apply_zero_pred = apply_zero_pred
 
     def __call__(self, model: torch.nn.Module, adata: AnnData):
         """
@@ -232,6 +234,20 @@ class Denoiser:
                     :, pred_adata.var.index.isin(adata.var.index)
                 ].any(axis=0),
             ].toarray()
+            if self.apply_zero_pred:
+                reco = (
+                    reco
+                    * (
+                        1
+                        - F.sigmoid(
+                            torch.Tensor(
+                                np.array(pred_adata.layers["scprint_pi"].data).reshape(
+                                    pred_adata.shape[0], -1
+                                )
+                            )
+                        )
+                    ).numpy()
+                )
 
             corr_coef, p_value = spearmanr(
                 np.vstack([reco[true != 0], stored_noisy[true != 0], true[true != 0]]).T
@@ -242,38 +258,24 @@ class Denoiser:
                 "noisy2full": corr_coef[1, 2],
             }
             if self.additional_info:
-                reco_pi = (
-                    reco
-                    * F.sigmoid(
-                        torch.Tensor(
-                            np.array(pred_adata.layers["scprint_pi"].data).reshape(
-                                pred_adata.shape[0], -1
-                            )
-                        )
-                        < 0.5
-                    ).numpy()
-                )
                 # Sample only 3000 elements for correlation calculation
-                if reco_pi.shape[0] <= 3000:
-                    indices = np.random.choice(reco_pi.shape[0], 3000, replace=False)
+                if reco.shape[0] <= 3000:
+                    indices = np.random.choice(reco.shape[0], 3000, replace=False)
                     reco = reco[indices]
-                    reco_pi = reco_pi[indices]
                     stored_noisy = stored_noisy[indices]
                     true = true[indices]
                 corr, p_value = spearmanr(
                     np.vstack(
                         [
                             reco.flatten(),
-                            reco_pi.flatten(),
                             stored_noisy.flatten(),
                             true.flatten(),
                         ]
                     ).T
                 )
                 m = {
-                    "reco2full": corr[0, 3],
-                    "reco+pi2full": corr[1, 3],
-                    "noisy2full": corr[2, 3],
+                    "reco2full": corr[0, 2],
+                    "noisy2full": corr[1, 2],
                 }
                 print("corr with zeros: ")
                 print(m)

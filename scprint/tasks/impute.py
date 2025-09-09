@@ -31,11 +31,11 @@ class Imputer:
         num_workers: int = 1,
         max_cells: int = 500_000,
         doplot: bool = False,
+        method: str = "masking",
         predict_depth_mult: int = 4,
         genes_to_use: Optional[List[str]] = None,
         genes_to_impute: Optional[List[str]] = None,
         save_every: int = 100_000,
-        additional_info: bool = False,
     ):
         """
         Imputer class for imputing missing values in scRNA-seq data using a scPRINT model
@@ -60,9 +60,9 @@ class Imputer:
         self.doplot = doplot
         self.predict_depth_mult = predict_depth_mult
         self.save_every = save_every
-        self.additional_info = additional_info
         self.genes_to_use = genes_to_use
         self.genes_to_impute = genes_to_impute
+        self.method = method
 
     def __call__(self, model: torch.nn.Module, adata: AnnData):
         """
@@ -92,22 +92,22 @@ class Imputer:
                 obs_to_output=["organism_ontology_term_id"],
                 get_knn_cells=model.expr_emb_style == "metacell",
             )
-        l = len(self.genes_to_use)
-        self.genes_to_use = [i for i in model.genes if i in self.genes_to_use]
-        print(f"{}% of genes to use are available in the model".format(
-            100 * len(self.genes_to_use) / l
-        ))
-        l = len(self.genes_to_impute)
-        self.genes_to_impute = [i for i in model.genes if i in self.genes_to_impute]
-        print(f"{}% of genes to impute are available in the model".format(
-            100 * len(self.genes_to_impute) / l
-        ))
-
+        genes_to_use = set(model.genes) & set(self.genes_to_use)
+        print(
+            f"{100 * len(genes_to_use) / len(self.genes_to_use)}% of genes to use are available in the model"
+        )
+        genes_to_impute = set(model.genes) & set(self.genes_to_impute)
+        print(
+            f"{100 * len(genes_to_impute) / len(self.genes_to_impute)}% of genes to impute are available in the model"
+        )
+        tot = genes_to_use | genes_to_impute
+        tot = sorted(tot)
         col = Collator(
             organisms=model.organisms,
             valid_genes=model.genes,
             how="some",
-            genelist=self.genes_to_use+self.genes_to_impute
+            genelist=list(genes_to_use)
+            + (list(genes_to_impute) if self.method == "masking" else []),
         )
         dataloader = DataLoader(
             adataset,
@@ -116,17 +116,26 @@ class Imputer:
             num_workers=self.num_workers,
             shuffle=False,
         )
-        if method=="masking":
-            mask = torch.Tensor([i in self.genes_to_impute for i in model.genes], dtype(bool), device=model.device)
+        mask = None
+        generate_on = None
+        if self.method == "masking":
+            mask = torch.Tensor(
+                [i in genes_to_use for i in tot],
+            ).to(device=model.device, dtype=torch.bool)
+        elif self.method == "generative":
+            generate_on = (
+                torch.Tensor([model.genes.index(i) for i in genes_to_impute])
+                .to(device=model.device)
+                .long().unsqueeze(0).repeat(self.batch_size, 1)
+            )
         else:
-            mask = None
+            raise ValueError("need to be one of generative or masking")
 
         prevplot = model.doplot
         model.doplot = self.doplot
         model.on_predict_epoch_start()
         model.eval()
         device = model.device.type
-        stored_noisy = None
         rand = random_str()
         dtype = (
             torch.float16
@@ -148,12 +157,12 @@ class Imputer:
                     knn_cells=batch["knn_cells"].to(device)
                     if model.expr_emb_style == "metacell"
                     else None,
-                    do_generate=False,
+                    do_generate=self.method == "generative",
                     depth_mult=self.predict_depth_mult,
-                    pred_embedding=self.pred_embedding,
                     max_size_in_mem=self.save_every,
                     name="impute" + rand + "_",
-                    mask=mask
+                    mask=mask,
+                    generate_on=generate_on,
                 )
         torch.cuda.empty_cache()
         model.log_adata(name="impute" + rand + "_" + str(model.counter))
@@ -185,38 +194,59 @@ class Imputer:
 
         model.doplot = prevplot
 
-        pred_adata.X = adata.X if random_indices is None else adata.X[random_indices]
-        pred_imp = pred_adata.layers['scprint_mu'][:, pred_adata.var.index.isin(self.genes_to_impute)].toarray()
-        true_imp = pred_adata.X[
-            :,pred_adata.var.index.isin(self.genes_to_impute)
-        ].toarray()
-        
+        # pred_adata.X = adata.X if random_indices is None else adata.X[random_indices]
+        true_imp = pred_adata.X[:, pred_adata.var.index.isin(genes_to_impute)].toarray()
+
         if true_imp.sum() > 0:
             # we had some gt
-        
-            pred_known = pred_adata.layers['scprint_mu'][:, pred_adata.var.index.isin(self.genes_to_use)].toarray()
-            true_known = pred_adata.X[
-                :,pred_adata.var.index.isin(self.genes_to_use)
+            pred_imp = pred_adata.layers["scprint_mu"][
+                :, pred_adata.var.index.isin(genes_to_impute)
             ].toarray()
-            
+            pred_known = pred_adata.layers["scprint_mu"][
+                :, pred_adata.var.index.isin(genes_to_use)
+            ].toarray()
+            true_known = pred_adata.X[
+                :, pred_adata.var.index.isin(genes_to_use)
+            ].toarray()
+
             if self.apply_zero_pred:
-                pred_imp = pred_imp * F.sigmoid(
-                        torch.Tensor(
-                            pred_adata.layers["scprint_pi"][:, pred_adata.var.index.isin(self.genes_to_impute)].toarray()
-                        < 0.5
+                pred_imp = (
+                    pred_imp
+                    * (
+                        1
+                        - F.sigmoid(
+                            torch.Tensor(
+                                pred_adata.layers["scprint_pi"][
+                                    :, pred_adata.var.index.isin(genes_to_impute)
+                                ].toarray()
+                            )
+                        )
                     ).numpy()
                 )
-                pred_known = pred_known * F.sigmoid(
-                        torch.Tensor(
-                            pred_adata.layers["scprint_pi"][:, pred_adata.var.index.isin(self.genes_to_use)].toarray()
-                        < 0.5
+                pred_known = (
+                    pred_known
+                    * (
+                        1
+                        - F.sigmoid(
+                            torch.Tensor(
+                                pred_adata.layers["scprint_pi"][
+                                    :, pred_adata.var.index.isin(genes_to_use)
+                                ].toarray()
+                            )
+                        )
                     ).numpy()
                 )
             cell_wise_pred = np.array(
-                [spearmanr(pred_imp[i], true_imp[i])[0] for i in range(pred_imp.shape[0])]
+                [
+                    spearmanr(pred_imp[i], true_imp[i])[0]
+                    for i in range(pred_imp.shape[0])
+                ]
             )
             cell_wise_known = np.array(
-                [spearmanr(pred_known[i], true_known[i])[0] for i in range(pred_known.shape[0])]
+                [
+                    spearmanr(pred_known[i], true_known[i])[0]
+                    for i in range(pred_known.shape[0])
+                ]
             )
             print(
                 {

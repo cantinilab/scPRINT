@@ -22,20 +22,16 @@ from tqdm import tqdm
 FILE_LOC = os.path.dirname(os.path.realpath(__file__))
 
 
-class Embedder:
+class Generate:
     def __init__(
         self,
+        genelist: List[str],
         batch_size: int = 64,
         num_workers: int = 8,
-        how: str = "random expr",
-        max_len: int = 2000,
-        doclass: bool = True,
-        pred_embedding: List[str] = [
+        embedding_to_use: List[str] = [
             "all",
         ],
         doplot: bool = True,
-        keep_all_labels_pred: bool = False,
-        genelist: Optional[List[str]] = None,
         save_every: int = 40_000,
     ):
         """
@@ -44,28 +40,16 @@ class Embedder:
         Args:
             batch_size (int, optional): The size of the batches to be used in the DataLoader. Defaults to 64.
             num_workers (int, optional): The number of worker processes to use for data loading. Defaults to 8.
-            how (str, optional): The method to be used for selecting valid genes. Defaults to "random expr".
-                - "random expr": random expression
-                - "most var": highly variable genes in the dataset
-                - "some": specific genes (from genelist)
-                - "most expr": most expressed genes in the cell
-            max_len (int, optional): The maximum length of the gene sequence given to the model. Defaults to 1000.
-            pred_embedding (List[str], optional): The list of labels to be used for plotting embeddings. Defaults to [ "cell_type_ontology_term_id", "disease_ontology_term_id", "self_reported_ethnicity_ontology_term_id", "sex_ontology_term_id", ].
-            doclass (bool, optional): Whether to perform classification. Defaults to True.
+            embedding_to_use (List[str], optional): The list of embeddings to be used for generating expression. Defaults to [ "all" ].
             doplot (bool, optional): Whether to generate plots. Defaults to True.
-            keep_all_labels_pred (bool, optional): Whether to keep all class predictions. Defaults to False, will only keep the most likely class.
-            genelist (List[str], optional): The list of genes to be used for embedding. Defaults to []: In this case, "how" needs to be "most var" or "random expr".
-            save_every (int, optional): The number of cells to save at a time. Defaults to 100_000.
+            genelist (List[str]): The list of genes for which to generate expression data
+            save_every (int, optional): The number of cells to save at a time. Defaults to 40_000.
                 This is important to avoid memory issues.
         """
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.how = how
-        self.max_len = max_len
-        self.pred_embedding = pred_embedding
-        self.keep_all_labels_pred = keep_all_labels_pred
+        self.embedding_to_use = embedding_to_use
         self.doplot = doplot
-        self.doclass = doclass
         self.genelist = genelist if genelist is not None else []
         self.save_every = save_every
 
@@ -89,34 +73,7 @@ class Embedder:
         """
         # one of "all" "sample" "none"
         model.predict_mode = "none"
-        prevkeep = model.keep_all_labels_pred
-        model.keep_all_labels_pred = self.keep_all_labels_pred
-        # Add at least the organism you are working with
-        if self.how == "most var":
-            sc.pp.highly_variable_genes(
-                adata, flavor="seurat_v3", n_top_genes=self.max_len
-            )
-            self.genelist = adata.var.index[adata.var.highly_variable]
-        adataset = SimpleAnnDataset(
-            adata,
-            obs_to_output=["organism_ontology_term_id"],
-            get_knn_cells=model.expr_emb_style == "metacell",
-        )
-        col = Collator(
-            organisms=model.organisms,
-            valid_genes=model.genes,
-            how=self.how if self.how != "most var" else "some",
-            max_len=self.max_len,
-            add_zero_genes=0,
-            genelist=self.genelist if self.how in ["most var", "some"] else [],
-        )
-        dataloader = DataLoader(
-            adataset,
-            collate_fn=col,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            shuffle=False,
-        )
+
         model.eval()
         model.on_predict_epoch_start()
         device = model.device.type
@@ -128,29 +85,21 @@ class Embedder:
             if isinstance(model.transformer, FlashTransformer)
             else model.dtype
         )
+        embeddings = adata.obsm[""]
         with (
             torch.no_grad(),
             torch.autocast(device_type=device, dtype=dtype),
         ):
-            for batch in tqdm(dataloader):
-                gene_pos, expression, depth = (
-                    batch["genes"].to(device),
-                    batch["x"].to(device),
-                    batch["depth"].to(device),
-                )
+            for batch in tqdm(embeddings):
                 model._predict(
                     gene_pos,
-                    expression,
-                    depth,
-                    knn_cells=batch["knn_cells"].to(device)
-                    if model.expr_emb_style == "metacell"
-                    else None,
-                    pred_embedding=self.pred_embedding,
+                    embeddings,
+                    self.req_depth,
                     max_size_in_mem=self.save_every,
-                    name="embed_" + rand + "_",
+                    name="generate_" + rand + "_",
                 )
                 torch.cuda.empty_cache()
-        model.log_adata(name="embed_" + rand + "_" + str(model.counter))
+        model.log_adata(name="generate_" + rand + "_" + str(model.counter))
         try:
             mdir = (
                 model.logger.save_dir if model.logger.save_dir is not None else "data"
@@ -166,7 +115,7 @@ class Embedder:
                 + str(model.global_step)
                 + "_"
                 + model.name
-                + "_embed_"
+                + "_generate_"
                 + rand
                 + "_"
                 + str(i)

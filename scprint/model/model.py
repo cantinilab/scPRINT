@@ -3,7 +3,6 @@ import copy
 import datetime
 import os
 from functools import partial
-
 # from galore_torch import GaLoreAdamW
 from math import factorial
 from pathlib import Path
@@ -1944,6 +1943,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         get_gene_emb=False,
         mask=None,
         metacell_token=None,
+        generate_on=None,
         name="predict_part_",
     ):
         """
@@ -2007,9 +2007,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             output.update(
                 self._generate(
                     output["output_cell_embs"],
-                    gene_pos,
+                    gene_pos if generate_on is None else generate_on,
                     req_depth=depth * depth_mult,  # otherwise we have 2 depths passed
-                    depth_mult=expression.sum(1),
+                    depth_mult=expression.sum(1)*depth_mult,
                 )
             )
         ind = {}
@@ -2042,7 +2042,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     if len(self.classes) > 0
                     else None
                 ),
-                "pos": gene_pos,
+                "pos": gene_pos if generate_on is None else generate_on,
                 "expr": (
                     [output["mean"], output["disp"], output["zero_logits"]]
                     if "disp" in output
@@ -2073,7 +2073,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 if len(self.classes) > 0
                 else None
             )
-            self.pos = gene_pos
+            self.pos = gene_pos if generate_on is None else generate_on
             self.expr_pred = (
                 [output["mean"], output["disp"], output["zero_logits"]]
                 if "disp" in output
@@ -2108,7 +2108,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 if len(self.classes) > 0
                 else None
             )
-            self.pos = torch.cat([self.pos, gene_pos])
+            self.pos = torch.cat([self.pos, gene_pos if generate_on is None else generate_on])
             self.expr_pred = (
                 [
                     torch.cat([self.expr_pred[0], output["mean"]]),

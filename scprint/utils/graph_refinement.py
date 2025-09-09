@@ -77,15 +77,27 @@ def graph_regularized_logit_refinement(
         # Use adjacency matrix directly
         L = A
 
-    # Solve the optimization: P̃ = (I + λL)⁻¹P₀
-    I = sp.identity(n_cells, format="csr")
-    system_matrix = I + lambda_reg * L
+    # Solve the optimization problem:
+    # P̃ = arg min_P ||P - P₀||²_F + λ Tr(P^T L P)
+    #
+    # Taking the derivative with respect to P and setting to zero:
+    # ∂/∂P [||P - P₀||²_F + λ Tr(P^T L P)] = 0
+    # 2(P - P₀) + 2λLP = 0
+    # P - P₀ + λLP = 0
+    # P + λLP = P₀
+    # (I + λL)P = P₀
+    # Therefore: P̃ = (I + λL)⁻¹P₀
 
-    # Solve for each class separately
+    identity_matrix = sp.identity(n_cells, format="csr")
+    system_matrix = identity_matrix + lambda_reg * L
+
+    # Solve the linear system (I + λL)P̃ = P₀ for each class separately
+    # This minimizes ||P̃ - P₀||²_F + λ Tr(P̃^T L P̃) for each class column
     refined_pred = np.zeros_like(pred)
 
     for class_idx in range(n_classes):
-        # Solve the linear system for this class
+        # Solve (I + λL) * refined_pred[:, class_idx] = pred[:, class_idx]
+        # This gives us the refined logits that minimize the objective function
         refined_pred[:, class_idx] = spsolve(system_matrix, pred[:, class_idx])
 
     return refined_pred
