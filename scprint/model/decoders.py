@@ -369,12 +369,12 @@ class VAEDecoder(nn.Module):
         log_var = self.fc_var(encoded)
 
         # Sample latent vector
+        kl_loss = self.kl_divergence(mu, log_var)
         z = self.reparameterize(mu, log_var)
 
         # Decode
         decoded = self.decoder(z)
 
         if self.return_latent:
-            kl_loss = self.kl_divergence(mu, log_var)
             return decoded, mu, log_var, encoded, kl_loss
-        return decoded
+        return decoded, kl_loss

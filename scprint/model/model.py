@@ -364,7 +364,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 nlayers=nlayers,
                 cross_attn=cell_specific_blocks,
                 cross_dim=d_model_cell,
-                attn_type=attention,
+                attn_type="flash" if attention == "legacy-flash" else attention,
                 num_heads_kv=num_heads_kv,
                 sketcher_size=sketcher_size,
                 **attention_kwargs,
@@ -451,15 +451,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         else:
             self.mvc_decoder = None
 
-        self.apply(
-            partial(
-                utils._init_weights,
-                n_layer=nlayers,
-            )
-        )
-        for i, dec in self.cls_decoders.items():
-            torch.nn.init.constant_(dec.out_layer.bias, -0.13)
-
         if compress_class_dim is not None:
             self.compressor = torch.nn.ModuleDict()
             dim = d_model_cell if cell_specific_blocks else self.d_model
@@ -478,6 +469,15 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     self.compressor[k] = fsq.FSQ(levels=[2] * v, dim=dim)
         else:
             self.compressor = None
+        
+        self.apply(
+            partial(
+                utils._init_weights,
+                n_layer=nlayers,
+            )
+        )
+        for i, dec in self.cls_decoders.items():
+            torch.nn.init.constant_(dec.out_layer.bias, -0.13)
 
     def add_organism(
         self, organism: str, genes: pd.Index, emb: pd.DataFrame, locs=None
@@ -1046,7 +1046,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     ],
                     dim=1,
                 )
-
             transformer_output = self.transformer(
                 encoding,
                 return_qkv=get_attention_layer,
@@ -1187,31 +1186,36 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if self.lr_reduce_monitor is None:
             print("no lr reduce factor")
             return [optimizer]
-        lr_scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
-            optimizer,
-            T_0=15,
-            eta_min=1e-8,
-        )
+        #lr_scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
+        #    optimizer,
+        #    T_0=20000,
+        #    T_mult=2,
+        #    eta_min=1e-8,
+        #)
+        #interval = "step"
+        #frequency = 10
         #lr_scheduler = optim.lr_scheduler.ExponentialLR(
         #    optimizer,
         #    gamma=0.85,
         #)
-        #lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        #    optimizer,
-        #    mode="min",
-        #    patience=self.lr_reduce_patience,
-        #    factor=self.lr_reduce_factor,
-        #)
+        lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode="min", 
+            patience=self.lr_reduce_patience,
+            factor=self.lr_reduce_factor,
+        )
+        interval = "epoch"
+        frequency=10
         lr_dict = {
             "scheduler": lr_scheduler,
             # The unit of the scheduler's step size, could also be 'step'.
             # 'epoch' updates the scheduler on epoch end whereas 'step'
             # updates it after a optimizer update.
-            "interval": "epoch",
+            "interval": interval,
             # How many epochs/steps should pass between calls to
             # `scheduler.step()`. 1 corresponds to updating the learning
             # rate after every epoch/step.
-            "frequency": 1,
+            "frequency": frequency,
             # Metric to to monitor for schedulers like `ReduceLROnPlateau`
             "monitor": self.lr_reduce_monitor,
         }
@@ -1637,10 +1641,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # TASK 2. predict classes
         if len(self.classes) > 0 and "input_cell_embs" in output and do_cls:
             # Calculate pairwise cosine similarity for the embeddings
-            if self.class_embd_diss_scale > 0:
-                loss_emb_indep = loss.within_sample(output["input_cell_embs"])
-                losses.update({"emb_independence": loss_emb_indep})
-                total_loss += self.class_embd_diss_scale * loss_emb_indep
+            #if self.class_embd_diss_scale > 0:
+            #    loss_emb_indep = loss.within_sample(output["input_cell_embs"])
+            #    losses.update({"emb_independence": loss_emb_indep})
+            #    total_loss += self.class_embd_diss_scale * loss_emb_indep
             # compute class loss
             loss_cls = 0
             for j, clsname in enumerate(self.classes):
