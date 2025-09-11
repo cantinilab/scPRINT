@@ -280,11 +280,16 @@ class Denoiser:
                 print("corr with zeros: ")
                 print(m)
                 cell_wise = np.array(
-                    [spearmanr(reco[i], true[i])[0] for i in range(reco.shape[0])]
+                    [
+                        spearmanr(reco[i][true[i] != 0], true[i][true[i] != 0])[0]
+                        for i in range(reco.shape[0])
+                    ]
                 )
                 torm = np.array(
                     [
-                        spearmanr(stored_noisy[i], true[i])[0]
+                        spearmanr(stored_noisy[i][true[i] != 0], true[i][true[i] != 0])[
+                            0
+                        ]
                         for i in range(reco.shape[0])
                     ]
                 )
@@ -300,7 +305,7 @@ class Denoiser:
                     }
                 )
                 print("depth-wise plot")
-                plot_cell_depth_wise_corr_improvement(cell_wise, true.sum(1))
+                plot_cell_depth_wise_corr_improvement(cell_wise, (true > 0).sum(1))
 
             if self.doplot and self.max_cells < 100:
                 corr_coef[p_value > 0.05] = 0
@@ -456,5 +461,6 @@ def plot_cell_depth_wise_corr_improvement(corr_coef, y):
 
     plt.xlabel("True sum (depth)")
     plt.ylabel("Denoising improvement")
+    plt.ylim(-0.5, 1)
     plt.legend()
     plt.show()
