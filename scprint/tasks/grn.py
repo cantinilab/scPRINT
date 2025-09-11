@@ -14,7 +14,6 @@ from anndata import AnnData
 from anndata.utils import make_index_unique
 from bengrn import BenGRN, get_perturb_gt, get_sroy_gt
 from bengrn.base import train_classifier
-
 # from bengrn.GeneRNIB_reg2 import run_gene_rnib, NORMAN, OP, ADAMSON
 from grnndata import GRNAnnData, from_anndata
 from grnndata import utils as grnutils
@@ -297,6 +296,9 @@ class GNInfer:
                     expression,
                     depth,
                     knn_cells=batch["knn_cells"].to(device)
+                    if model.expr_emb_style == "metacell"
+                    else None,
+                    knn_cells_info=batch["knn_cells_info"].to(device)
                     if model.expr_emb_style == "metacell"
                     else None,
                     keep_output=False,

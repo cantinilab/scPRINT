@@ -335,12 +335,6 @@ class ExprBasedFT(nn.Module):
             self.encoder.append(
                 nn.Linear(intermediary_d, intermediary_d if i < layers - 2 else d_model)
             )
-            
-        def _init_weights(self):
-            for m in self.encoder:
-                if isinstance(m, nn.Linear):
-                    torch.nn.init.eye_(m.weight)
-            self.expr_encoder._init_weights()
 
     def forward(
         self,
@@ -372,6 +366,12 @@ class ExprBasedFT(nn.Module):
         for val in self.encoder:
             x = val(x)
         return x
+    
+    def _init_weights(self):
+        for m in self.encoder:
+            if isinstance(m, nn.Linear):
+                torch.nn.init.eye_(m.weight)
+        self.expr_encoder._init_weights()
 
 
 class CategoryValueEncoder(nn.Module):

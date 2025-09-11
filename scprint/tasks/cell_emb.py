@@ -145,6 +145,9 @@ class Embedder:
                     knn_cells=batch["knn_cells"].to(device)
                     if model.expr_emb_style == "metacell"
                     else None,
+                    knn_cells_info=batch["knn_cells_info"].to(device)
+                    if model.expr_emb_style == "metacell"
+                    else None,
                     pred_embedding=self.pred_embedding,
                     max_size_in_mem=self.save_every,
                     name="embed_" + rand + "_",
