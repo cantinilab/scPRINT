@@ -120,6 +120,9 @@ class GeneEncoder(nn.Module):
                 self.embeddings._mmap.close()
             except:
                 pass
+    
+    def _init_weights(self):
+        pass
 
 
 class PositionalEncoding(nn.Module):
@@ -285,6 +288,11 @@ class ContinuousValueEncoder(nn.Module):
             x = x.masked_fill_(mask.unsqueeze(-1), 0)
             # x = x.masked_fill_(mask.unsqueeze(-1), self.mask_value(0))
         return x
+    
+    def _init_weights(self):
+        for m in self.encoder:
+            if isinstance(m, nn.Linear):
+                torch.nn.init.eye_(m.weight)
 
 
 class ExprBasedFT(nn.Module):
@@ -295,7 +303,7 @@ class ExprBasedFT(nn.Module):
         expr_encoder: nn.Module = nn.Identity(),
         dropout: float = 0.1,
         layers: int = 2,
-        intermediary_d: int = 512,
+        intermediary_d: int = 256+64,
     ):
         """
         Encode real number values to a vector using neural nets projection.
@@ -327,6 +335,12 @@ class ExprBasedFT(nn.Module):
             self.encoder.append(
                 nn.Linear(intermediary_d, intermediary_d if i < layers - 2 else d_model)
             )
+            
+        def _init_weights(self):
+            for m in self.encoder:
+                if isinstance(m, nn.Linear):
+                    torch.nn.init.eye_(m.weight)
+            self.expr_encoder._init_weights()
 
     def forward(
         self,
@@ -454,6 +468,24 @@ class EasyExprGNN(nn.Module):
         if mask is not None:
             x = x.masked_fill(mask.unsqueeze(-1), 0)
         return x
+    
+    def _init_weights(self):
+        for m in self.neighbors_layers:
+            if isinstance(m, nn.Linear):
+                torch.nn.init.zeros_(m.weight)
+                if m.bias is not None:
+                    torch.nn.init.constant_(m.bias, 0)
+        for m in self.self_layers:
+            if isinstance(m, nn.Linear):
+                torch.nn.init.eye_(m.weight)
+                if m.bias is not None:
+                    torch.nn.init.constant_(m.bias, 0)
+        for m in self.shared_layers:
+            if isinstance(m, nn.Linear):
+                torch.nn.init.eye_(m.weight)
+                if m.bias is not None:
+                    torch.nn.init.constant_(m.bias, 0)
+            
 
 
 class GNN(nn.Module):
