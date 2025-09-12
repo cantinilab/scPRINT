@@ -135,10 +135,10 @@ def make_adata(
     if pred is not None:
         for clss in classes:
             if gtclass is not None:
-                tr = translate(adata.obs[clss].tolist(), clss)
+                tr = translate(set(adata.obs[clss]), clss)
                 if tr is not None:
                     adata.obs["conv_" + clss] = adata.obs[clss].replace(tr)
-            tr = translate(adata.obs["pred_" + clss].tolist(), clss)
+            tr = translate(set(adata.obs["pred_" + clss]), clss)
             if tr is not None:
                 adata.obs["conv_pred_" + clss] = adata.obs["pred_" + clss].replace(tr)
             res = []
