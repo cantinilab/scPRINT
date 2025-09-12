@@ -44,15 +44,16 @@ It is a foundation model and can be fine-tuned to perform any other analysis
     - [To know: lamin.ai](#to-know-laminai)
     - [install](#install)
     - [pytorch and GPUs](#pytorch-and-gpus)
-    - [dev install](#dev-install)
-  - [Reproducibility](#reproducibility)
+      - [follow up](#follow-up)
   - [Usage](#usage)
     - [scPRINT's basic commands](#scprints-basic-commands)
-    - [Notes on GPU/CPU usage with triton](#notes-on-gpucpu-usage-with-triton)
+  - [Documentation](#documentation)
+  - [Docker](#docker)
     - [Simple tests:](#simple-tests)
   - [FAQ](#faq)
     - [I have a dataset and want a quick analysis:](#i-have-a-dataset-and-want-a-quick-analysis)
     - [I have a dataset and want some more control over what is going on and which model to use:](#i-have-a-dataset-and-want-some-more-control-over-what-is-going-on-and-which-model-to-use)
+    - [What does my anndata need to contain to be run with scPRINT](#what-does-my-anndata-need-to-contain-to-be-run-with-scprint)
     - [I want to generate gene networks from scRNAseq data:](#i-want-to-generate-gene-networks-from-scrnaseq-data)
     - [I want to generate cell embeddings and cell label predictions from scRNAseq data:](#i-want-to-generate-cell-embeddings-and-cell-label-predictions-from-scrnaseq-data)
     - [I want to denoise my scRNAseq dataset:](#i-want-to-denoise-my-scrnaseq-dataset)
@@ -66,13 +67,13 @@ It is a foundation model and can be fine-tuned to perform any other analysis
     - [I have different scRNASeq batches. Should I integrate my data before running scPRINT?](#i-have-different-scrnaseq-batches-should-i-integrate-my-data-before-running-scprint)
     - [where to find the input gene embeddings?](#where-to-find-the-input-gene-embeddings)
     - [I want to extract output gene embeddings from scPRINT](#i-want-to-extract-output-gene-embeddings-from-scprint)
-  - [Documentation](#documentation)
-  - [Model Weights](#model-weights)
-  - [Docker](#docker)
+  - [Development](#development)
+    - [dev install](#dev-install)
+    - [Reproducibility](#reproducibility)
     - [Building the Docker Image](#building-the-docker-image)
     - [Pulling the Docker Image from Docker Hub](#pulling-the-docker-image-from-docker-hub)
     - [Running the Docker Container](#running-the-docker-container)
-  - [Development](#development)
+    - [Participate](#participate)
   - [Work in progress (PR welcomed):](#work-in-progress-pr-welcomed)
 
 
@@ -101,6 +102,7 @@ To start you will need to do:
 
 ```bash
 uv venv <env-name> --python 3.10 #scprint might work with python >3.10, but it is not tested
+source <env-name>/bin/activate
 #one of
 uv pip install scprint 
 # OR uv pip install scprint[dev] # for the dev dependencies (building etc..) OR
@@ -110,11 +112,15 @@ uv pip install scprint
 lamin init --storage ./testdb --name test --modules bionty
 ```
 
-if you start with lamin and had to do a `lamin init`, you will also need to populate your ontologies. This is because scPRINT is using ontologies to define its cell types, diseases, sexes, ethnicities, etc.
+⚠️ `./testdb` is set in this example but be mindful about where you want to store your data, this might get quite big as you use it and if you are on specific partition you want to consider this.
 
-you can do it via the command 
+if you start with lamin and had to do a `lamin init`, you will also need to populate your ontologies. This is because scPRINT is using ontologies to define its cell types, diseases, sexes, ethnicities, etc. ([link to view ontologies](https://www.ebi.ac.uk/ols4/ontologies/cl/classes/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCL_0000057))
 
-`scdataloader populate all` 
+you can do it via the command:
+
+`scdataloader populate all`
+
+⚠️ It is ok to get warnings with this function
 
 or with this function:
 
