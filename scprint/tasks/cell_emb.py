@@ -109,6 +109,7 @@ class Embedder:
             max_len=self.max_len,
             add_zero_genes=0,
             genelist=self.genelist if self.how in ["most var", "some"] else [],
+            n_bins=model.n_input_bins if model.expr_emb_style == "binned" else 0,
         )
         dataloader = DataLoader(
             adataset,
@@ -121,6 +122,7 @@ class Embedder:
         model.on_predict_epoch_start()
         device = model.device.type
         prevplot = model.doplot
+        model.pred_log_adata = True
         model.doplot = self.doplot and not self.keep_all_labels_pred
         rand = random_str()
         dtype = (
@@ -439,9 +441,10 @@ def default_benchmark(
     metrics.update(
         {"scib": bm.get_results(min_max_scale=False).T.to_dict()["scprint_emb"]}
     )
-    metrics["classif"] = compute_classification(
-        adata, model.classes, model.label_decoders, model.labels_hierarchy
-    )
+    if model.class_scale > 0:
+        metrics["classif"] = compute_classification(
+            adata, model.classes, model.label_decoders, model.labels_hierarchy
+        )
     return metrics
 
 

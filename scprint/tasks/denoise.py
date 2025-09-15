@@ -123,6 +123,7 @@ class Denoiser:
             max_len=self.max_len,
             how="some" if self.how == "most var" else self.how,
             genelist=self.genelist if self.how != "random expr" else [],
+            n_bins=model.n_input_bins if model.expr_emb_style == "binned" else 0,
         )
         dataloader = DataLoader(
             adataset,
@@ -137,6 +138,7 @@ class Denoiser:
         model.on_predict_epoch_start()
         model.eval()
         device = model.device.type
+        model.pred_log_adata = True
         stored_noisy = None
         rand = random_str()
         dtype = (
