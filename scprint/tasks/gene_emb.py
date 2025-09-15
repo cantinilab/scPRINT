@@ -76,6 +76,7 @@ class GeneEmbeddingExtractor:
             max_len=0,
             how="some",
             genelist=gene_list,
+            n_bins=model.n_input_bins if model.expr_emb_style == "binned" else 0,
         )
         dataloader = DataLoader(
             adataset,
