@@ -1148,7 +1148,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 self.parameters(),
                 lr=self.hparams.lr,
                 betas=(0.9, 0.999),
-                eps=1e-08,
+                eps=1e-5,
                 weight_decay=self.weight_decay,
                 amsgrad=False,
                 fused=self.fused_adam,
@@ -1158,7 +1158,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 self.parameters(),
                 lr=self.hparams.lr,
                 betas=(0.9, 0.999),
-                eps=1e-08,
+                eps=1e-5,
                 weight_decay=self.weight_decay,
                 amsgrad=False,
                 fused=self.fused_adam,
@@ -1270,6 +1270,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             run_full_forward=self.run_full_forward,
             mask_ratio=self.mask_ratio,
         )
+        if total_loss is None or torch.isnan(total_loss):
+            raise ValueError("Loss is NaN")
         try:
             self.log("train_loss", total_loss, prog_bar=True, sync_dist=True)
             self.log_dict(losses, prog_bar=True, sync_dist=True)

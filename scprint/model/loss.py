@@ -53,7 +53,7 @@ def masked_nb(input: Tensor, target: Tensor, mask: Tensor) -> Tensor:
 
 
 # FROM SCVI
-def nb(target: Tensor, mu: Tensor, theta: Tensor, eps=1e-8):
+def nb(target: Tensor, mu: Tensor, theta: Tensor, eps=1e-4):
     """
     Computes the negative binomial (NB) loss.
 
@@ -63,7 +63,7 @@ def nb(target: Tensor, mu: Tensor, theta: Tensor, eps=1e-8):
         target (Tensor): Ground truth data.
         mu (Tensor): Means of the negative binomial distribution (must have positive support).
         theta (Tensor): Inverse dispersion parameter (must have positive support).
-        eps (float, optional): Numerical stability constant. Defaults to 1e-8.
+        eps (float, optional): Numerical stability constant. Defaults to 1e-4.
 
     Returns:
         Tensor: NB loss value.
@@ -83,7 +83,7 @@ def nb(target: Tensor, mu: Tensor, theta: Tensor, eps=1e-8):
     return -res.mean()
 
 
-def nb_dist(x: Tensor, mu: Tensor, theta: Tensor, eps=1e-8):
+def nb_dist(x: Tensor, mu: Tensor, theta: Tensor, eps=1e-4):
     """
     nb_dist Computes the negative binomial distribution.
 
@@ -91,7 +91,7 @@ def nb_dist(x: Tensor, mu: Tensor, theta: Tensor, eps=1e-8):
         x (Tensor): Torch Tensor of observed data.
         mu (Tensor): Torch Tensor of means of the negative binomial distribution (must have positive support).
         theta (Tensor): Torch Tensor of inverse dispersion parameter (must have positive support).
-        eps (float, optional): Numerical stability constant. Defaults to 1e-8.
+        eps (float, optional): Numerical stability constant. Defaults to 1e-4.
 
     Returns:
         Tensor: Negative binomial loss value.
@@ -105,7 +105,7 @@ def zinb(
     mu: Tensor,
     theta: Tensor,
     pi: Tensor,
-    eps=1e-8,
+    eps=1e-4,
 ):
     """
     Computes zero-inflated negative binomial (ZINB) loss.
@@ -117,7 +117,7 @@ def zinb(
         mu (Tensor): Torch Tensor of means of the negative binomial (must have positive support).
         theta (Tensor): Torch Tensor of inverse dispersion parameter (must have positive support).
         pi (Tensor): Torch Tensor of logits of the dropout parameter (real support).
-        eps (float, optional): Numerical stability constant. Defaults to 1e-8.
+        eps (float, optional): Numerical stability constant. Defaults to 1e-4.
 
     Returns:
         Tensor: ZINB loss value.
@@ -163,7 +163,7 @@ def masked_relative_error(
     Compute the masked relative error between input and target.
     """
     assert mask.any()
-    loss = torch.abs(input[mask] - target[mask]) / (target[mask] + 1e-6)
+    loss = torch.abs(input[mask] - target[mask]) / (target[mask] + 1e-5)
     return loss.mean()
 
 

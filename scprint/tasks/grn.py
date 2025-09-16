@@ -180,7 +180,7 @@ class GNInfer:
                 + str((subadata.X.sum(0) > 1).sum())
             )
         elif self.how == "most var across" and cell_type is not None:
-            adata.raw.X = adata.X
+            adata.raw = adata
             sc.tl.rank_genes_groups(
                 adata,
                 mask_var=adata.var.index.isin(model.genes),
@@ -828,7 +828,7 @@ def default_benchmark(
     return metrics
 
 
-def softpick(x, dim=-1, eps=1e-6):
+def softpick(x, dim=-1, eps=1e-5):
     # softpick function: relu(exp(x)-1) / sum(abs(exp(x)-1))
     # numerically stable version
     x_m = torch.max(x, dim=dim, keepdim=True).values

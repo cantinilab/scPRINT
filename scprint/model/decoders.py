@@ -367,6 +367,7 @@ class VAEDecoder(nn.Module):
         # Get latent parameters
         mu = self.fc_mu(encoded)
         log_var = self.fc_var(encoded)
+        log_var = torch.clamp(log_var, min=-10)
 
         # Sample latent vector
         kl_loss = self.kl_divergence(mu, log_var)
