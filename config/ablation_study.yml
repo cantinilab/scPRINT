@@ -1,7 +1,7 @@
 project: scprint_ablation
 seed_everything: 50
 set_float32_matmul_precision: True
-# wandblog: all
+wandblog: all
 ckpt_path: null
 trainer:
   precision: 16-mixed
