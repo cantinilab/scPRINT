@@ -108,6 +108,7 @@ class Imputer:
             how="some",
             genelist=list(genes_to_use)
             + (list(genes_to_impute) if self.method == "masking" else []),
+            n_bins=model.n_input_bins if model.expr_emb_style == "binned" else 0,
         )
         dataloader = DataLoader(
             adataset,

@@ -51,12 +51,12 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         finetune_gene_emb: bool = False,
         freeze_embeddings: bool = True,
         gene_pos_file: Optional[str] = None,
-        normalization: str = "sum",
+        normalization: str = "sum", # log, sum, raw
         attn_bias: str = "none",
         expr_encoder_layers: int = 3,
         attention: str = "normal",  # "performer", "legacy-flash", "normal", "crisscross", "hyper", "adasplash"
         expr_emb_style: str = "continuous",  # "binned", "continuous", "metacell"
-        n_input_bins: int = 60,
+        n_input_bins: int = 0,
         mvc_decoder: Optional[
             str
         ] = None,  # "inner product", "concat query", "sum query"
@@ -288,7 +288,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             )
         elif expr_emb_style == "binned":
             assert n_input_bins > 0
-            assert normalization == "no", "shouldn't use normalization"
+            assert normalization == "raw", "shouldn't use normalization"
             self.expr_encoder = encoders.CategoryValueEncoder(n_input_bins, d_model)
         elif expr_emb_style == "metacell":
             self.expr_encoder = encoders.GNN(
@@ -619,11 +619,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if (
             self.label_decoders != checkpoints["hyper_parameters"]["label_decoders"]
             or self.labels_hierarchy
-            != checkpoints["hyper_parameters"]["labels_hierarchy"]
+            != checkpoints["hyper_parameters"].get("labels_hierarchy", {})
         ):
             print("label decoders have changed, be careful")
             self.label_decoders = checkpoints["hyper_parameters"]["label_decoders"]
-            self.labels_hierarchy = checkpoints["hyper_parameters"]["labels_hierarchy"]
+            self.labels_hierarchy = checkpoints["hyper_parameters"].get("labels_hierarchy", {})
             for k, v in self.labels_hierarchy.items():
                 tens = torch.zeros((len(v), self.label_counts[k]))
                 for k2, v2 in v.items():
@@ -1155,6 +1155,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             patience=self.lr_reduce_patience,
             factor=self.lr_reduce_factor,
         )
+        # lr_scheduler = StepwiseCAWRWithWD(
+        #     optimizer,
+        #     T_0=20_000,
+        #     T_mult=2,
+        #     eta_min=1e-8,
+        #     wd_decay=0.9
+        # )
         lr_dict = {
             "scheduler": lr_scheduler,
             # The unit of the scheduler's step size, could also be 'step'.
@@ -1585,10 +1592,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # TASK 2. predict classes
         if len(self.classes) > 0 and "input_cell_embs" in output and do_cls:
             # Calculate pairwise cosine similarity for the embeddings
-            if self.class_embd_diss_scale > 0:
-                loss_emb_indep = loss.within_sample(output["input_cell_embs"])
-                losses.update({"emb_independence": loss_emb_indep})
-                total_loss += self.class_embd_diss_scale * loss_emb_indep
+            #if self.class_embd_diss_scale > 0:
+            #    loss_emb_indep = loss.within_sample(output["input_cell_embs"])
+            #    losses.update({"emb_independence": loss_emb_indep})
+            #    total_loss += self.class_embd_diss_scale * loss_emb_indep
             # compute class loss
             loss_cls = 0
             for j, clsname in enumerate(self.classes):

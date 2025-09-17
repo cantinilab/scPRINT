@@ -14,7 +14,6 @@ from anndata import AnnData
 from anndata.utils import make_index_unique
 from bengrn import BenGRN, get_perturb_gt, get_sroy_gt
 from bengrn.base import train_classifier
-
 # from bengrn.GeneRNIB_reg2 import run_gene_rnib, NORMAN, OP, ADAMSON
 from grnndata import GRNAnnData, from_anndata
 from grnndata import utils as grnutils
@@ -229,6 +228,7 @@ class GNInfer:
             max_len=self.num_genes if self.how == "random expr" else 0,
             how="some" if self.how != "random expr" else "random expr",
             genelist=self.curr_genes if self.how != "random expr" else [],
+            n_bins=model.n_input_bins if model.expr_emb_style == "binned" else 0,
         )
         dataloader = DataLoader(
             adataset,
@@ -304,7 +304,6 @@ class GNInfer:
                 )
                 torch.cuda.empty_cache()
         model.doplot = prevplot
-        model.pred_log_adata = True
         return subadata
 
     def aggregate(self, attn, genes):
