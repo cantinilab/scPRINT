@@ -898,7 +898,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 res.append(out[0].unsqueeze(1))
                 if len(out) == 5:  # VAE case
                     output["vae_kl_loss"] += out[4]
-                    zs.append(out[3])
+                    zs.append(out[1])
                 else:  # FSQ case
                     zs.append(out[2])
             # shape (minibatch, n_classes + 1, embsize)

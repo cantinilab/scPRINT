@@ -19,7 +19,7 @@ class MySaveConfig(SaveConfigCallback):
             if self.config.get("wandblog", "") != "":
                 trainer.logger.watch(
                     pl_module,
-                    # log=self.config.get("wandblog", "all"),
+                    log=self.config.get("wandblog", "all"),
                     log_freq=self.config.get("wandblog_freq", 1000),
                     log_graph=False,
                 )
