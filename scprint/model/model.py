@@ -947,6 +947,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         do_mvc: bool = False,
         do_class: bool = False,
         get_attention_layer: Optional[list] = None,
+        mask_zeros: Optional[Tensor]=None,
     ):
         """
         forward also called on self(), a full forward pass on the model
@@ -1029,25 +1030,12 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if not self.cell_transformer:
             encoding = torch.cat([cell_embs, encoding], dim=1)
         if type(self.transformer) is FlashTransformer:
-            if self.mask_zeros:
-                mask_zeros = torch.cat(
-                    [
-                        torch.ones(
-                            expression.shape[0],
-                            num,
-                            dtype=torch.bool,
-                            device=expression.device,
-                        ),
-                        expression != 0,
-                    ],
-                    dim=1,
-                )
             transformer_output = self.transformer(
                 encoding,
                 return_qkv=get_attention_layer,
                 bias=bias if self.attn_bias != "none" else None,
                 bias_layer=list(range(self.nlayers - 1)),
-                mask_zeros=mask_zeros if self.mask_zeros else None,
+                mask_zeros=mask_zeros,
             )
         elif type(self.transformer) is Performer:
             transformer_output = self.transformer(encoding)
@@ -1093,6 +1081,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         depth_mult: Tensor,
         req_depth: Optional[Tensor] = None,
         metacell_token: Optional[Tensor] = None,
+        bias: Optional[Tensor] = None,
+        mask_zeros: Optional[Tensor] = None,
         **decoder_kwargs,
     ):
         """
@@ -1115,35 +1105,20 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             metacell_token=metacell_token,
         )
         if type(self.transformer) is FlashTransformer:
-            if self.mask_zeros:
-                mask_zeros = torch.cat(
-                    [
-                        torch.ones(
-                            expression.shape[0],
-                            num,
-                            dtype=torch.bool,
-                            device=expression.device,
-                        ),
-                        expression != 0,
-                    ],
-                    dim=1,
-                )
             if self.cell_transformer:
                 transformer_output = self.transformer(
                     encoding,
-                    x_kv=cell_embs
-                    bias=bias if self.attn_bias != "none" else None,
+                    x_kv=cell_embs,
                     bias_layer=list(range(self.nlayers - 1)),
-                    mask_zeros=mask_zeros if self.mask_zeros else None,
+                    mask_zeros=mask_zeros,
                     drop_path_rate_self=0.5
                 )
             else:
                 encoding = torch.cat([cell_embs, encoding], dim=1)
                 transformer_output = self.transformer(
                     encoding,
-                    bias=bias if self.attn_bias != "none" else None,
                     bias_layer=list(range(self.nlayers - 1)),
-                    mask_zeros=mask_zeros if self.mask_zeros else None,
+                    mask_zeros=mask_zeros,
                     drop_path_rate_self=0.5
                 )
                 cell_embs, transformer_output = transformer_output.split(
@@ -1375,12 +1350,30 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if knn_cells is not None:
             knn_cells = knn_cells[:, :, :context_length]
 
-        if self.mask_zeros and knn_cells is None:
-            keep = expression.sum(0) != 0
-            # we can work on smaller datasets
-            if keep.sum() != keep.shape[0]:
-                expression = expression[:, keep]
-                gene_pos = gene_pos[:, keep]
+        mask_zeros = None
+        if self.mask_zeros:
+            num = (1 if self.use_metacell_token else 0) + (
+                (len(self.classes) + 1) if not self.cell_transformer else 0
+            )
+            mask_zeros = torch.cat(
+                [
+                    torch.ones(
+                        expression.shape[0],
+                        num,
+                        dtype=torch.bool,
+                        device=expression.device,
+                    ),
+                    expression != 0,
+                ],
+                dim=1,
+            )
+            if knn_cells is None:
+                keep = expression.sum(0) != 0
+                # we can work on smaller datasets
+                if keep.sum() != keep.shape[0]:
+                    expression = expression[:, keep]
+                    gene_pos = gene_pos[:, keep]
+                
 
         if self.transformer.attn_type == "hyper":
             # seq len must be a multiple of 128
@@ -1410,6 +1403,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 do_mvc=do_mvc,
                 do_class=do_cls,
                 metacell_token=metacell_token,
+                mask_zeros=mask_zeros,
             )
             if "disp" in output:
                 output.pop("disp")
@@ -1466,6 +1460,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 do_mvc=do_mvc,
                 do_class=do_cls,
                 metacell_token=metacell_token,
+                mask_zeros=mask_zeros,
             )
             l, tot = self._compute_loss(
                 output,
@@ -1508,6 +1503,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 do_mvc=do_mvc,
                 do_class=do_cls,
                 metacell_token=metacell_token,
+                mask_zeros=mask_zeros,
             )
             l, tot = self._compute_loss(
                 output,
@@ -1539,6 +1535,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 if other_expression is None
                 else other_expression.sum(1),
                 req_depth=total_count,
+                mask_zeros=mask_zeros,
             )
             l, tloss = self._compute_loss(
                 output,
