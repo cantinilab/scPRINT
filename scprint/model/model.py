@@ -1114,9 +1114,47 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             gene_pos=gene_pos,
             metacell_token=metacell_token,
         )
-        if self.cell_transformer:
-            transformer_output = self.transformer(encoding, x_kv=cell_embs, drop_path_rate_self=0.5)
-        else:
+        if type(self.transformer) is FlashTransformer:
+            if self.mask_zeros:
+                mask_zeros = torch.cat(
+                    [
+                        torch.ones(
+                            expression.shape[0],
+                            num,
+                            dtype=torch.bool,
+                            device=expression.device,
+                        ),
+                        expression != 0,
+                    ],
+                    dim=1,
+                )
+            if self.cell_transformer:
+                transformer_output = self.transformer(
+                    encoding,
+                    x_kv=cell_embs
+                    bias=bias if self.attn_bias != "none" else None,
+                    bias_layer=list(range(self.nlayers - 1)),
+                    mask_zeros=mask_zeros if self.mask_zeros else None,
+                    drop_path_rate_self=0.5
+                )
+            else:
+                encoding = torch.cat([cell_embs, encoding], dim=1)
+                transformer_output = self.transformer(
+                    encoding,
+                    bias=bias if self.attn_bias != "none" else None,
+                    bias_layer=list(range(self.nlayers - 1)),
+                    mask_zeros=mask_zeros if self.mask_zeros else None,
+                    drop_path_rate_self=0.5
+                )
+                cell_embs, transformer_output = transformer_output.split(
+                    [
+                        len(self.classes) + 1,
+                        transformer_output.shape[1] - (len(self.classes) + 1),
+                    ],
+                    dim=1,
+                )
+            
+        elif type(self.transformer) is Performer:
             encoding = torch.cat([cell_embs, encoding], dim=1)
             transformer_output = self.transformer(encoding)
             cell_embs, transformer_output = transformer_output.split(
