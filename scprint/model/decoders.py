@@ -371,6 +371,8 @@ class VAEDecoder(nn.Module):
 
         # Sample latent vector
         kl_loss = self.kl_divergence(mu, log_var)
+        #free_bits = 2.0  # per latent dim
+        #kl_loss = torch.clamp(kl_loss / mu.size(-1), min=free_bits) * mu.size(-1)
         z = self.reparameterize(mu, log_var)
 
         # Decode

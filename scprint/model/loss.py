@@ -12,24 +12,30 @@ from torch.distributions import NegativeBinomial
 # from ot.gromov import gromov_wasserstein, fused_gromov_wasserstein
 
 
-def mse(input: Tensor, target: Tensor) -> Tensor:
-    """
-    Compute the MSE loss between input and target.
-    """
-    input = torch.log2(input + 1)
-    input = (input / torch.sum(input, dim=1, keepdim=True)) * 10000
-    target = torch.log2(target + 1)
-    target = target / torch.sum(target, dim=1, keepdim=True) * 10000
-    return F.mse_loss(input, target, reduction="mean")
-
-
 def masked_mse(input: Tensor, target: Tensor, mask: Tensor) -> Tensor:
     """
     Compute the masked MSE loss between input and target.
     """
     mask = mask.float()
+    input = torch.log2(input + 1)
+    input = (input / torch.sum(input, dim=1, keepdim=True)) * 10000
+    target = torch.log2(target + 1)
+    target = (target / torch.sum(target, dim=1, keepdim=True)) * 10000
     loss = F.mse_loss(input * mask, target * mask, reduction="sum")
     return loss / mask.sum()
+
+
+def mse(input: Tensor, target: Tensor, mask=False) -> Tensor:
+    """
+    Compute the MSE loss between input and target.
+    """
+    if mask:
+        return masked_mse(input, target, (target > 0))
+    input = torch.log2(input + 1)
+    input = (input / torch.sum(input, dim=1, keepdim=True)) * 10000
+    target = torch.log2(target + 1)
+    target = (target / torch.sum(target, dim=1, keepdim=True)) * 10000
+    return F.mse_loss(input, target, reduction="mean")
 
 
 def masked_mae(input: Tensor, target: Tensor, mask: Tensor) -> Tensor:
@@ -106,6 +112,7 @@ def zinb(
     theta: Tensor,
     pi: Tensor,
     eps=1e-4,
+    mask=False,
 ):
     """
     Computes zero-inflated negative binomial (ZINB) loss.
@@ -143,6 +150,10 @@ def zinb(
 
     res = mul_case_zero + mul_case_non_zero
     # we want to minize the loss but maximize the log likelyhood
+    if mask:
+        mask = (target > 0).float()
+        res = res * mask
+        return -res.sum() / mask.sum()
     return -res.mean()
 
 

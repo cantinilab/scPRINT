@@ -84,6 +84,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         max_cont_len: int = 30_000,
         transformer=None,
         gene_pos_enc=None,
+        drop_path_rate=0.0,
         **attention_kwargs,
     ):
         """
@@ -367,6 +368,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 attn_type="flash" if attention == "legacy-flash" else attention,
                 num_heads_kv=num_heads_kv,
                 sketcher_size=sketcher_size,
+                drop_path_rate=drop_path_rate,
                 **attention_kwargs,
             )
         if cell_specific_blocks:
@@ -1120,7 +1122,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             metacell_token=metacell_token,
         )
         if self.cell_transformer:
-            transformer_output = self.transformer(encoding, x_kv=cell_embs)
+            transformer_output = self.transformer(encoding, x_kv=cell_embs, drop_path_rate_self=0.5)
         else:
             encoding = torch.cat([cell_embs, encoding], dim=1)
             transformer_output = self.transformer(encoding)
@@ -1601,6 +1603,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 pi=output["zero_logits"],
                 mu=output["mean"],
                 target=expression,
+                mask=self.mask_zeros
             )
             if do_mse:
                 loss_expr += (
@@ -1608,6 +1611,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                         input=torch.log(output["mean"] + 1)
                         * (1 - torch.sigmoid(output["zero_logits"])),
                         target=torch.log(expression + 1),
+                        mask=self.mask_zeros,
                     )
                     / 10  # scale to make it more similar to the zinb
                 )
@@ -1634,6 +1638,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             loss_expr = loss.mse(
                 input=torch.log(output["mean"] + 1),
                 target=torch.log(expression + 1),
+                mask=self.mask_zeros
             )
             if self.splicing_head is not None:
                 loss_nov_expr = loss.mse(
@@ -1714,6 +1719,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 pi=output["mvc_zero_logits"],
                 mu=output["mvc_mean"],
                 target=expression,
+                mask=self.mask_zeros
             )
             total_loss += loss_expr_mvc * self.mvc_scale
             losses.update({"expr_mvc": loss_expr_mvc})
@@ -1721,6 +1727,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             loss_expr_mvc = loss.mse(
                 input=output["mvc_mean"],
                 target=expression,
+                mask=self.mask_zeros
             )
             total_loss += loss_expr_mvc * self.mvc_scale
             losses.update({"expr_mvc": loss_expr_mvc})

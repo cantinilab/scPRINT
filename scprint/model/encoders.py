@@ -350,17 +350,16 @@ class ExprBasedFT(nn.Module):
         """
         # expand last dimension
         if neighbors is None and expr is None:
-            expr = torch.zeros_like(
-                gene_pos, dtype=torch.float32, device=gene_pos.device
+            expr = torch.zeros((
+                gene_pos.shape[0], gene_pos.shape[1], self.expr_encoder.output_dim), dtype=torch.float32, device=gene_pos.device
             )
             # if no expr information: consider that it is all masked
-            mask = torch.ones_like(expr, dtype=torch.bool)
-
-        expr = (
-            self.expr_encoder(expr, mask=mask)
-            if neighbors is None
-            else self.expr_encoder(expr, neighbors, neighbors_info, mask=mask)
-        )
+        else:
+            expr = (
+                self.expr_encoder(expr, mask=mask)
+                if neighbors is None
+                else self.expr_encoder(expr, neighbors, neighbors_info, mask=mask)
+            )
         gene_pos = self.gene_encoder(gene_pos)
         x = torch.cat([expr, gene_pos], dim=-1)
         for val in self.encoder:
@@ -368,10 +367,11 @@ class ExprBasedFT(nn.Module):
         return x
     
     def _init_weights(self):
-        for m in self.encoder:
-            if isinstance(m, nn.Linear):
-                torch.nn.init.eye_(m.weight)
-        self.expr_encoder._init_weights()
+        pass
+    #    for m in self.encoder:
+    #        if isinstance(m, nn.Linear):
+    #            torch.nn.init.eye_(m.weight)
+    #    self.expr_encoder._init_weights()
 
 
 class CategoryValueEncoder(nn.Module):
@@ -456,7 +456,7 @@ class EasyExprGNN(nn.Module):
                 neighbors = layer(neighbors)
             neighbors = neighbors.sum(-2)
         if expr is None:
-            expr = torch.zeros_like(neighbors)
+            expr = torch.zeros((neighbors.shape[0], neighbors.shape[1], 1), device=neighbors.device)
         else:
             expr = expr.unsqueeze(-1)
             for i, layer in enumerate(self.self_layers):
@@ -470,22 +470,23 @@ class EasyExprGNN(nn.Module):
         return x
     
     def _init_weights(self):
-        for m in self.neighbors_layers:
-            if isinstance(m, nn.Linear):
-                torch.nn.init.zeros_(m.weight)
-                if m.bias is not None:
-                    torch.nn.init.constant_(m.bias, 0)
-        for m in self.self_layers:
-            if isinstance(m, nn.Linear):
-                torch.nn.init.eye_(m.weight)
-                if m.bias is not None:
-                    torch.nn.init.constant_(m.bias, 0)
-        for m in self.shared_layers:
-            if isinstance(m, nn.Linear):
-                torch.nn.init.eye_(m.weight)
-                if m.bias is not None:
-                    torch.nn.init.constant_(m.bias, 0)
-            
+        pass
+        #for m in self.neighbors_layers:
+        #    if isinstance(m, nn.Linear):
+        #        torch.nn.init.zeros_(m.weight)
+        #        if m.bias is not None:
+        #            torch.nn.init.constant_(m.bias, 0)
+        #for m in self.self_layers:
+        #    if isinstance(m, nn.Linear):
+        #        torch.nn.init.eye_(m.weight)
+        #        if m.bias is not None:
+        #            torch.nn.init.constant_(m.bias, 0)
+        #for m in self.shared_layers:
+        #    if isinstance(m, nn.Linear):
+        #        torch.nn.init.eye_(m.weight)
+        #        if m.bias is not None:
+        #            torch.nn.init.constant_(m.bias, 0)
+        #    
 
 
 class GNN(nn.Module):
