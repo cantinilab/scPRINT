@@ -129,8 +129,7 @@ class PositionalEncoding(nn.Module):
     def __init__(
         self,
         d_model: int,
-        gene_pos_enc: list[str],
-        maxval=30_000,
+        gene_pos_enc: list[str] = [],
     ):
         """
         The PositionalEncoding module applies a positional encoding to a sequence of vectors.
@@ -146,7 +145,6 @@ class PositionalEncoding(nn.Module):
         """
         super(PositionalEncoding, self).__init__()
         self.gene_pos_enc = gene_pos_enc
-        self.maxval = maxval
         max_len = max(gene_pos_enc)
         position = torch.arange(max_len).unsqueeze(1)
         token_to_pos = {token: pos for token, pos in enumerate(gene_pos_enc)}
@@ -154,7 +152,7 @@ class PositionalEncoding(nn.Module):
         # Create a dictionary to convert token to position
 
         div_term = torch.exp(
-            torch.arange(0, d_model, 2) * (-math.log(float(maxval)) / d_model)
+            torch.arange(0, d_model, 2) * (-math.log(float(10_000)) / d_model)
         )
         pe = torch.zeros(max_len, 1, d_model)
         pe[:, 0, 0::2] = torch.sin(position * div_term)

@@ -81,7 +81,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         nhead_cell: int = 4,
         nlayers_cell: int = 6,
         num_heads_kv_cell: int = 4,
-        max_cont_len: int = 30_000,
         transformer=None,
         gene_pos_enc=None,
         drop_path_rate=0.0,
@@ -178,7 +177,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # need to store
         self.n_input_bins = n_input_bins
         self.attention = attention
-        self.max_cont_len = max_cont_len
 
         if classes is None:
             classes = []
@@ -189,15 +187,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.pred_embedding = pred_embedding
         self._genes = genes
         self.expr_emb_style = expr_emb_style
-        if self.expr_emb_style not in [
-            "binned",
-            "continuous",
-            "metacell",
-        ]:
-            raise ValueError(
-                f"expr_emb_style should be one of binned, continuous, metacell, "
-                f"got {expr_emb_style}"
-            )
         if labels_hierarchy is None:
             labels_hierarchy = {}
         self.labels_hierarchy = labels_hierarchy
@@ -270,7 +259,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 len(self.genes), d_model, freeze=freeze_embeddings
             )
         # Value Encoder, NOTE: the scaling style is also handled in _encode method
-
         expr_d_model = d_model // 8 if finetune_gene_emb else d_model
         if expr_emb_style in "continuous":
             expr_encoder = encoders.ContinuousValueEncoder(
@@ -283,6 +271,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         elif expr_emb_style == "metacell":
             expr_encoder = encoders.EasyExprGNN(
                 self_dim=expr_d_model * 2, output_dim=expr_d_model, shared_layers=expr_encoder_layers, dropout=dropout
+            )
+        else:
+            raise ValueError(
+                f"expr_emb_style should be one of binned, continuous, metacell, "
+                f"got {expr_emb_style}"
             )
         if finetune_gene_emb:
             self.expr_encoder = encoders.ExprBasedFT(
@@ -302,7 +295,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             # redoing it just in case some were dropped with embbeding file step
             gene_pos_enc = gene_pos_enc.loc[self.genes, "pos"].astype(int).tolist()
             self.pos_encoder = encoders.PositionalEncoding(
-                d_model, gene_pos_enc=gene_pos_enc, maxval=max_cont_len
+                d_model, gene_pos_enc=gene_pos_enc
             )
         else:
             self.pos_encoder = None
@@ -331,6 +324,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             "num_batch_labels",
             "transformer",
             "residual_in_fp32",
+            "max_cont_len",
         ]:
             if i in attention_kwargs:
                 attention_kwargs.pop(i)
@@ -646,7 +640,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 self.pos_encoder = encoders.PositionalEncoding(
                     self.d_model,
                     gene_pos_enc=checkpoints["hyper_parameters"]["gene_pos_enc"],
-                    maxval=self.max_cont_len,
                 )
                 checkpoints["hyper_parameters"].pop("gene_pos_enc")
         mencoders = {}
