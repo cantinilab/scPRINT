@@ -280,7 +280,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         else:
             self.gene_encoder = gene_encoder
         # Value Encoder, NOTE: the scaling style is also handled in _encode method
-        expr_d_model = d_model // 8 if finetune_gene_emb else d_model
+        expr_d_model = d_model  # // 8 if finetune_gene_emb else d_model
         if expr_emb_style in "continuous":
             expr_encoder = encoders.ContinuousValueEncoder(
                 expr_d_model, dropout, layers=expr_encoder_layers
