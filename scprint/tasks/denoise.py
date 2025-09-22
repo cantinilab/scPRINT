@@ -383,6 +383,7 @@ def default_benchmark(
         num_workers=8,
         predict_depth_mult=5,
         downsample_expr=0.7,
+        pred_embedding=model.pred_embedding,
     )
     return denoise(model, adata)[0]
 

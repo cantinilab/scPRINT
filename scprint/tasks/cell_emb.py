@@ -420,7 +420,7 @@ def default_benchmark(
     if model.expr_emb_style == "metacell":
         sc.pp.neighbors(adata, use_rep="X_pca")
     embedder = Embedder(
-        pred_embedding=["cell_type_ontology_term_id"],
+        pred_embedding=model.pred_embedding,
         doclass=do_class,
         max_len=max_len,
         doplot=False,

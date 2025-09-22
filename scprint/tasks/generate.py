@@ -107,7 +107,6 @@ class Generate:
         except:
             mdir = "data"
         pred_adata = []
-        del adataset, dataloader
         for i in range(model.counter + 1):
             file = (
                 mdir
