@@ -288,9 +288,10 @@ class ContinuousValueEncoder(nn.Module):
         return x
     
     def _init_weights(self):
-        for m in self.encoder:
-            if isinstance(m, nn.Linear):
-                torch.nn.init.eye_(m.weight)
+        pass
+        #for m in self.encoder:
+        #    if isinstance(m, nn.Linear):
+        #        torch.nn.init.eye_(m.weight)
 
 
 class ExprBasedFT(nn.Module):
@@ -402,6 +403,9 @@ class CategoryValueEncoder(nn.Module):
         if mask is not None:
             x = x.masked_fill(mask.unsqueeze(-1), 0)
         return x
+    
+    def _init_weights(self):
+        pass
 
 
 class EasyExprGNN(nn.Module):

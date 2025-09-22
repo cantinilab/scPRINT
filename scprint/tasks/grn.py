@@ -46,7 +46,7 @@ class GNInfer:
         ### GRN inference parameters
         layer: Optional[List[int]] = None,
         preprocess: str = "softmax",  # sinkhorn, softmax, none
-        head_agg: str = "mean",  # mean, sum, none
+        head_agg: str = "mean",  # mean, sum, none, mean_full
         filtration: str = "thresh",  # thresh, top-k, mst, known, none
         k: int = 10,
         apc: bool = False,
@@ -765,7 +765,7 @@ def default_benchmark(
             if "X_pca" not in adata.obsm:
                 sc.pp.pca(adata, n_comps=50)
             sc.pp.neighbors(adata, use_rep="X_pca")
-        for celltype in list(adata.obs["cell_type"].unique())[:10]:
+        for celltype in list(adata.obs["cell_type"].unique())[:14]:
             # print(celltype)
             # grn_inferer = GNInfer(
             #    layer=layers,

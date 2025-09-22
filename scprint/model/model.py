@@ -54,7 +54,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         normalization: str = "sum", # log, sum, raw
         attn_bias: str = "none",
         expr_encoder_layers: int = 3,
-        attention: str = "normal",  # "performer", "legacy-flash", "normal", "criss-cross", "hyper", "adasplash"
+        attention: str = "normal",  # "performer", "legacy-flash", "normal", "criss-cross", "hyper", "adasplash", "softpick"
         expr_emb_style: str = "continuous",  # "binned", "continuous", "metacell"
         n_input_bins: int = 0,
         mvc_decoder: Optional[
@@ -102,8 +102,16 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             organisms (list[str], optional): List of organisms to use for plotting embeddings. Defaults to [].
             labels_hierarchy (Dict[str, Dict[int, list[int]]], optional): Class hierarchy for classes with hierarchical classes. Defaults to {}.
             dropout (float, optional): Dropout value. Defaults to 0.2.
-            attention (str, optional): attention type to use. One of "linear", "legacy-flash", "flashsparse", "scprint". Defaults to "fast".
-            expr_emb_style (str, optional): Style of input embedding. One of "continuous", "binned_pos", "cont_pos", "metacell", "full_pos". Defaults to "continuous".
+            attention (str, optional): attention type to use. One of: Defaults to "normal".
+                "normal": normal pytorch attention
+                "linear": linear attention using the fast attention package
+                "legacy-flash": flash attention using the simpler-flash package
+                "hyper": compressed flash attention reimplemented from ()
+                "adasplash": sparse flash attention reimplemented from ()
+                "softpick": sparse flash attention reimplemented from ()
+                "performer": compressed attention using the performer package (see )
+                "criss-cross": compressed flash attention from ()
+            expr_emb_style (str, optional): Style of input embedding. One of: Defaults to "continuous".
                 "metacell" uses a DeepSet multi gene encoder across the KNN cells
                 "binned" uses a binned expr embedding for each gene
                 "continuous" uses a continuous embedding for each gene with an MLP
@@ -246,7 +254,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 )
             else:
                 embeddings = None
-
             gene_encoder = encoders.GeneEncoder(
                 len(self.genes),
                 d_model,
@@ -258,6 +265,20 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             gene_encoder = encoders.GeneEncoder(
                 len(self.genes), d_model, freeze=freeze_embeddings
             )
+        if finetune_gene_emb:
+            if not freeze_embeddings:
+                raise ValueError(
+                    "finetune_gene_emb is True but freeze_embeddings is False"
+                )
+            # Create adapter layers after the frozen base encoder
+            self.gene_encoder = torch.nn.Sequential(
+                gene_encoder,
+                torch.nn.Linear(d_model, d_model),
+                torch.nn.ReLU(),
+                torch.nn.Linear(d_model, d_model),
+            )
+        else:
+            self.gene_encoder = gene_encoder
         # Value Encoder, NOTE: the scaling style is also handled in _encode method
         expr_d_model = d_model // 8 if finetune_gene_emb else d_model
         if expr_emb_style in "continuous":
@@ -267,7 +288,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         elif expr_emb_style == "binned":
             assert n_input_bins > 0
             assert normalization == "raw", "shouldn't use normalization"
-            self.expr_encoder = encoders.CategoryValueEncoder(n_input_bins, expr_d_model)
+            expr_encoder = encoders.CategoryValueEncoder(n_input_bins, expr_d_model)
         elif expr_emb_style == "metacell":
             expr_encoder = encoders.EasyExprGNN(
                 self_dim=expr_d_model * 2, output_dim=expr_d_model, shared_layers=expr_encoder_layers, dropout=dropout
@@ -277,7 +298,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 f"expr_emb_style should be one of binned, continuous, metacell, "
                 f"got {expr_emb_style}"
             )
-        if finetune_gene_emb:
+        if finetune_gene_emb and False:
             self.expr_encoder = encoders.ExprBasedFT(
                 d_model,
                 gene_encoder,
@@ -519,7 +540,14 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
         emb = emb.loc[genes.index]
         self._genes[organism] = genes.index.tolist()
-        enc = self.gene_encoder
+        if self.gene_encoder is None:
+            genc = self.expr_encoder.gene_encoder
+        else:
+            genc = self.gene_encoder
+        if type(genc) is torch.nn.Sequential:
+            enc = genc[0]
+        else:
+            enc = genc
         semb = torch.nn.AdaptiveAvgPool1d(self.d_model)(
             torch.tensor(emb.values, dtype=torch.float32)
         ).to(enc.embeddings.weight.data.device)
@@ -535,9 +563,15 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         )
         enc.embeddings.weight.data.copy_(embs)
         enc.embeddings.weight.data = enc.embeddings.weight.data.to(self.device)
+        if type(genc) is torch.nn.Sequential:
+            genc[0] = enc
+        else:
+            genc = enc
         if self.gene_encoder is None:
-            self.expr_encoder.gene_encoder = enc
-        self.gene_encoder = enc
+            self.expr_encoder.gene_encoder = genc
+        else:
+            self.gene_encoder = genc
+
 
     def on_load_checkpoint(self, checkpoints):
         # if not the same number of labels (due to diff datasets)
@@ -644,13 +678,14 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 checkpoints["hyper_parameters"].pop("gene_pos_enc")
         mencoders = {}
         if type(checkpoints["hyper_parameters"]["genes"]) is list:
-            genedf = load_genes(checkpoints["hyper_parameters"]["organisms"])
+            org = checkpoints["hyper_parameters"].get("organisms", self.organisms)
+            genedf = load_genes(org)
             checkpoints["hyper_parameters"]["genes"] = {
                 i: genedf.index[
                     (genedf.organism == i)
                     & genedf.index.isin(checkpoints["hyper_parameters"]["genes"])
                 ].tolist()
-                for i in checkpoints["hyper_parameters"]["organisms"]
+                for i in org
             }
         if "precpt_gene_emb" in checkpoints["hyper_parameters"]:
             checkpoints["hyper_parameters"].pop("precpt_gene_emb")
@@ -696,6 +731,16 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 print("FYI: scPrint is not attached to a `Trainer`.")
             else:
                 raise e
+        if self.mvc_decoder is None and checkpoints["state_dict"].get("mvc_decoder.gene2query.weight") is not None:
+            for i in [
+                "mvc_decoder.gene2query.weight",
+                "mvc_decoder.gene2query.bias",
+                "mvc_decoder.norm.weight",
+                "mvc_decoder.norm.bias",
+                "mvc_decoder.pred_var_zero.weight"
+            ]:
+                if i in checkpoints["state_dict"]:
+                    del checkpoints["state_dict"][i]
         if self._genes != checkpoints["hyper_parameters"]["genes"]:
             self._genes = checkpoints["hyper_parameters"]["genes"]
             try:
@@ -703,8 +748,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             except RuntimeError as e:
                 if "scPrint is not attached to a `Trainer`." not in str(e):
                     raise e
-        if self.organisms != checkpoints["hyper_parameters"]["organisms"]:
-            self.organisms = checkpoints["hyper_parameters"]["organisms"]
+        org = checkpoints["hyper_parameters"].get("organisms")
+        if self.organisms != org and org is not None:
+            self.organisms = org
             try:
                 self.trainer.datamodule.organisms = self.organisms
             except RuntimeError as e:
@@ -1641,7 +1687,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                         target=torch.log(expression + 1),
                         mask=self.mask_zeros,
                     )
-                    / 10  # scale to make it more similar to the zinb
+                    / 2  # scale to make it more similar to the zinb
+                    # indeed it gets to ~3 at conv whereas zinb gets to ~ 1.1
+                    
                 )
             if self.splicing_head is not None:
                 loss_nov_expr = loss.zinb(

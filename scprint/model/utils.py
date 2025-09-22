@@ -640,7 +640,7 @@ def test(
     model: torch.nn.Module,
     filedir: str,
     do_class: bool = True,
-    maxcells_grn: int = 4_000,
+    maxcells_grn: int = 1024,
 ) -> None:
     """
     Test the given model on the full set of benchmarks and save the results to JSON files.
@@ -716,6 +716,7 @@ def test(
     print(metrics)
     gc.collect()
     for dataset, filepath in {
+        "old_kidney": "https://datasets.cellxgene.cziscience.com/ede85b09-454b-4374-bf60-5f675e989b64.h5ad",
         "kidney": "https://datasets.cellxgene.cziscience.com/01bc7039-961f-4c24-b407-d535a2a7ba2c.h5ad",
         "lung_smart": "https://datasets.cellxgene.cziscience.com/6ebba0e0-a159-406f-8095-451115673a2c.h5ad",
         # filedir + "/../../data/yBCKp6HmXuHa0cZptMo7.h5ad",
@@ -734,8 +735,8 @@ def test(
                 "grn_omni_" + dataset + "/auprc_class": float(
                     np.mean([i["auprc"] for k, i in res.items() if "_class" in k])
                 ),
-                "grn_omni_" + dataset + "/epr_class": float(
-                    np.mean([i["epr"] for k, i in res.items() if "_class" in k])
+                "grn_omni_" + dataset + "/or_class": float(
+                    np.mean([i["odd_ratio"] for k, i in res.items() if "_class" in k])
                 ),
                 "grn_omni_" + dataset + "/tf_enr_class": float(
                     np.sum(
@@ -760,6 +761,9 @@ def test(
                 ),
                 "grn_omni_" + dataset + "/epr": float(
                     np.mean([i["epr"] for k, i in res.items() if "_mean" in k])
+                ),
+                "grn_omni_" + dataset + "/or": float(
+                    np.mean([i["odd_ratio"] for k, i in res.items() if "_mean" in k])
                 ),
                 "grn_omni_" + dataset + "/tf_enr": float(
                     np.sum(
