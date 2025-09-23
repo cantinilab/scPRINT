@@ -18,7 +18,7 @@ trainer:
       init_args:
         project: ${project}
         save_dir: /pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/lustre/fswork/projects/rech/xeg/uat95fg/  #/data/log/
-        offline: True
+        offline: False
   callbacks:
     #- class_path: lightning.pytorch.callbacks.StochasticWeightAveraging
     #  init_args:
@@ -29,9 +29,9 @@ trainer:
         save_top_k: 5
         save_last: True
 scprint_training:
-  # run_full_forward: True
+  run_full_forward: True
   noise: [0.7]
-  # mask_ratio: ["TF"]
+  mask_ratio: ["TF"]
   do_generate: True
   test_every: 5
   zinb_and_mse: True
@@ -62,9 +62,9 @@ model:
   num_heads_kv_cell: 4
   fused_dropout_add_ln: False
   fused_mlp: False
-  layers_cls: [256, 128]
+  layers_cls: [128]
   fused_bias_fc: False
-  drop_path_rate: 0
+  drop_path_rate: 0.0
   freeze_embeddings: True
   finetune_gene_emb: True
   normalization: log

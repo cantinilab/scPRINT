@@ -279,6 +279,16 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             )
         else:
             self.gene_encoder = gene_encoder
+            
+        # Positional Encoding
+        if gene_pos_file is not None:
+            # redoing it just in case some were dropped with embbeding file step
+            gene_pos_enc = gene_pos_enc.loc[self.genes, "pos"].astype(int).tolist()
+            self.pos_encoder = encoders.PositionalEncoding(
+                d_model, gene_pos_enc=gene_pos_enc
+            )
+        else:
+            self.pos_encoder = None
         # Value Encoder, NOTE: the scaling style is also handled in _encode method
         expr_d_model = d_model  # // 8 if finetune_gene_emb else d_model
         if expr_emb_style in "continuous":
@@ -311,15 +321,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.expr_encoder = expr_encoder
         self.gene_encoder = gene_encoder
 
-        # Positional Encoding
-        if gene_pos_file is not None:
-            # redoing it just in case some were dropped with embbeding file step
-            gene_pos_enc = gene_pos_enc.loc[self.genes, "pos"].astype(int).tolist()
-            self.pos_encoder = encoders.PositionalEncoding(
-                d_model, gene_pos_enc=gene_pos_enc
-            )
-        else:
-            self.pos_encoder = None
         # Class Encoder
         # always have [base_cell_emb, time_embedding, depth_embedding] + any other class info
         # base cell embedding will store other cell specific information
@@ -1202,7 +1203,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 self.parameters(),
                 lr=self.hparams.lr,
                 betas=(0.9, 0.999),
-                eps=1e-5,
+                eps=1e-7, #1e-5 to 1e-8
                 weight_decay=self.weight_decay,
                 amsgrad=False,
                 fused=self.fused_adam,
@@ -1212,7 +1213,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 self.parameters(),
                 lr=self.hparams.lr,
                 betas=(0.9, 0.999),
-                eps=1e-5,
+                eps=1e-7, #1e-5 to 1e-8
                 weight_decay=self.weight_decay,
                 amsgrad=False,
                 fused=self.fused_adam,
@@ -1593,7 +1594,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 do_vae_kl=do_vae_kl,
             )
             losses.update({"gen_" + k: v for k, v in l.items()})
-            total_loss += tloss * 0.5
+            total_loss += tloss #* 0.5
 
         # TASK 7. next time point prediction
         if do_next_tp:
@@ -1682,9 +1683,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             if do_mse:
                 loss_expr += (
                     loss.mse(
-                        input=torch.log(output["mean"] + 1)
-                        * (1 - torch.sigmoid(output["zero_logits"])),
-                        target=torch.log(expression + 1),
+                        input=output["mean"] * (1 - torch.sigmoid(output["zero_logits"])),
+                        target=expression,
                         mask=self.mask_zeros,
                     )
                     / 2  # scale to make it more similar to the zinb
@@ -1712,8 +1712,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 )
         elif "mean" in output:
             loss_expr = loss.mse(
-                input=torch.log(output["mean"] + 1),
-                target=torch.log(expression + 1),
+                # log1p is done in the function
+                input=output["mean"],
+                target=expression,
                 mask=self.mask_zeros
             )
             if self.splicing_head is not None:
@@ -1732,10 +1733,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # TASK 2. predict classes
         if len(self.classes) > 0 and "input_cell_embs" in output and do_cls:
             # Calculate pairwise cosine similarity for the embeddings
-            #if self.class_embd_diss_scale > 0:
-            #    loss_emb_indep = loss.within_sample(output["input_cell_embs"])
-            #    losses.update({"emb_independence": loss_emb_indep})
-            #    total_loss += self.class_embd_diss_scale * loss_emb_indep
+            if self.class_embd_diss_scale > 0:
+                loss_emb_indep = loss.within_sample(output["input_cell_embs"])
+                losses.update({"emb_independence": loss_emb_indep})
+                total_loss += self.class_embd_diss_scale * loss_emb_indep
             # compute class loss
             loss_cls = 0
             for j, clsname in enumerate(self.classes):
@@ -1788,7 +1789,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             if loss_cls != 0:
                 losses.update({"cls": loss_cls})
 
-        # TODO: try to require the gene id to still be predictable (with weight tying)
         if "mvc_zero_logits" in output:
             loss_expr_mvc = loss.zinb(
                 theta=output["mvc_disp"],

@@ -302,9 +302,9 @@ def hierarchical_classification(
         addweight = addnewcl.clone() / (labels_hierarchy.sum(1) ** 0.5)
         
         # except if it is the cl label we know about ?
-        subset_parent_weight = addweight[is_parent]
-        subset_parent_weight[:, cl[is_parent] - maxsize] = 1
-        addweight[is_parent] = subset_parent_weight
+        #subset_parent_weight = addweight[is_parent]
+        #subset_parent_weight[:, cl[is_parent] - maxsize] = 1
+        #addweight[is_parent] = subset_parent_weight
         
         # we apply the same mask to the pred but now we want to compute
         # logsumexp instead of max since we want to keep the gradients
@@ -443,7 +443,7 @@ def within_sample(cell_embs):
     cos_sim = torch.bmm(cell_embs_norm, cell_embs_norm.transpose(1, 2))
 
     # Compute pairwise L2 distances (normalized by embedding dimension)
-    l2_dist = torch.cdist(cell_embs, cell_embs, p=2) / np.sqrt(emb_dim)
+    #l2_dist = torch.cdist(cell_embs, cell_embs, p=2) / np.sqrt(emb_dim)
 
     # Create mask for pairs (excluding self-similarity)
     mask = 1 - torch.eye(num_embeddings, device=cos_sim.device)
@@ -453,6 +453,6 @@ def within_sample(cell_embs):
     # - High cosine similarity should be penalized
     # - Small L2 distance should be penalized
     cos_loss = (cos_sim * mask).pow(2).mean()
-    l2_loss = 1.0 / (l2_dist * mask + 1e-3).mean()
+    #l2_loss = 1.0 / (l2_dist * mask + 1e-3).mean()
 
-    return 0.5 * cos_loss + 0.5 * l2_loss
+    return 0.5 * cos_loss # + 0.5 * l2_loss
