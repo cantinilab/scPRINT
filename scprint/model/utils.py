@@ -671,12 +671,12 @@ def test(
                     res["scib"]["Batch correction"]
                 ),
                 "emb_" + dataset + "/ct_class": float(
-                    res["classif"]["cell_type_ontology_term_id"]["accuracy"]
+                    res["classif"].get("cell_type_ontology_term_id", {}).get("macro", 0)
                     if do_class
                     else 0
                 ),
                 "emb_" + dataset + "/ct_class_macro": float(
-                    res["classif"]["cell_type_ontology_term_id"]["macro"]
+                    res["classif"].get("cell_type_ontology_term_id", {}).get("macro", 0)
                     if do_class
                     else 0
                 ),
