@@ -1,16 +1,16 @@
 project: scprint_v2
-seed_everything: 42
+seed_everything: 50
 set_float32_matmul_precision: True
 wandblog: parameters
 trainer:
   precision: 16-mixed
   strategy: ddp_find_unused_parameters_true
   use_distributed_sampler: False
-  gradient_clip_val: 10
+  gradient_clip_val: 40
   log_every_n_steps: 100
   limit_train_batches: 20000
-  gradient_clip_algorithm: norm
   limit_val_batches: 10000
+  gradient_clip_algorithm: norm
   limit_test_batches: 1 # we don't perform tests this way
   accumulate_grad_batches: 1
   logger:
@@ -55,16 +55,16 @@ model:
   attention: normal
   residual_in_fp32: True
   checkpointing: True
+  layers_cls: []
   cell_specific_blocks: True
-  d_model_cell: 128
+  d_model_cell: 256
   nhead_cell: 4
   nlayers_cell: 6
   num_heads_kv_cell: 4
   fused_dropout_add_ln: False
   fused_mlp: False
-  layers_cls: [128]
   fused_bias_fc: False
-  drop_path_rate: 0.0
+  drop_path_rate: 0
   freeze_embeddings: True
   finetune_gene_emb: True
   normalization: log
@@ -88,8 +88,8 @@ data:
   pin_memory: True
   # persistent_workers: True
   prefetch_factor: 3
-  metacell_mode: 0.1
-  weight_scaler: 300
+  metacell_mode: 0.2
+  weight_scaler: 200
   n_samples_per_epoch: 1300000 # {data.batch_size*trainer.limit_train_batches}
   validation_split: 0.05
   test_split: 0.02
@@ -104,14 +104,14 @@ data:
     - self_reported_ethnicity_ontology_term_id
   clss_to_weight: #['clust_cell_type','tissue_ontology_term_id','disease_ontology_term_id','assay_ontology_term_id','self_reported_ethnicity_ontology_term_id', 'sex_ontology_term_id', 'organism_ontology_term_id', 'cell_culture', 'nnz']
     - clust_cell_type
-    - tissue_ontology_term_id
+    #- tissue_ontology_term_id
     - disease_ontology_term_id
-    - age_group
+    #- age_group
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id
     - sex_ontology_term_id
     - organism_ontology_term_id
-    - cell_culture
+    #- cell_culture
     - nnz
   clss_to_predict:
     - cell_type_ontology_term_id
