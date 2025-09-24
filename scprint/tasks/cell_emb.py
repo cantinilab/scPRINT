@@ -420,7 +420,7 @@ def default_benchmark(
     if model.expr_emb_style == "metacell":
         sc.pp.neighbors(adata, use_rep="X_pca")
     embedder = Embedder(
-        pred_embedding=model.pred_embedding,
+        pred_embedding=model.pred_embedding if model.pred_embedding is not None else ["all"],
         doclass=do_class,
         max_len=max_len,
         doplot=False,

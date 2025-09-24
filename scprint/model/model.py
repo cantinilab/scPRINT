@@ -2168,16 +2168,15 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 )
             )
         ind = {}
+        if pred_embedding is None:
+            pred_embedding = ["all"]
         if (
-            pred_embedding is None
-            or "other" in pred_embedding
+            "other" in pred_embedding
             or ["all"] == pred_embedding
         ):
             ind = {"other": 0}
         if ["all"] == pred_embedding:
             pred_embedding = self.classes
-        if pred_embedding is None:
-            pred_embedding = []
         ind.update({i: self.classes.index(i) + 1 for i in pred_embedding})
         if not keep_output:
             return {
