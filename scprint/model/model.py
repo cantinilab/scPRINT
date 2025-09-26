@@ -1872,6 +1872,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             print("not on wandb, could not set name")
         self.embs = None
         self.counter = 0
+        self._store_adv_cls = self.do_adv_cls
+        self.do_adv_cls = False
 
     def validation_step(
         self,
@@ -1952,6 +1954,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         """@see pl.LightningModule"""
         self.pos = None
         self.expr_pred = None
+        self.do_adv_cls = self._store_adv_cls
         gathered_embs = self.all_gather(self.embs)
         # Merge the dictionaries from all processes
         for key in self.embs.keys():
