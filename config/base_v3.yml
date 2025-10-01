@@ -46,7 +46,7 @@ model:
   dropout: 0.1
   nhead: 4
   precpt_gene_emb: ./data/main/gene_embs/
-  gene_pos_file: ./data/main/gene_locs/
+  gene_pos_file: ./data/main/gene_locs/all_locs.parquet
   num_heads_kv: 4
   nlayers: 8
   d_model: 256

@@ -435,7 +435,7 @@ class WeightedMasker:
         self,
         genes: List[str],
         TFs: List[str] = utils.fileToList(FILEDIR + "/../../data/main/TFs.txt"),
-        inv_weight: float = 10,
+        tf_weight: float = 10,
     ):
         """
         Randomly mask a batch of data.
@@ -443,20 +443,18 @@ class WeightedMasker:
         Args:
             genes (List[str]): The list of genes the model might see.
             TFs (List[str]): The list of TFs the model can drop.
-            inv_weight (float): How likely it is to drop a non TF compared to a TF.
+            tf_weight (float): How likely it is to drop a non TF compared to a TF.
 
         Returns:
             torch.Tensor: A tensor of masked data.
         """
         TFs = set(TFs)
-        self.weights = torch.tensor(
-            [1 if gene in TFs else inv_weight for gene in genes]
-        )
-        self.max_to_drop = (self.weights == inv_weight).sum()
-        self.inv_weight = inv_weight
+        self.weights = torch.tensor([tf_weight if gene in TFs else 1 for gene in genes])
+        self.max_to_drop = (self.weights == tf_weight).sum()
+        self.tf_weight = tf_weight
 
     def __call__(self, ids: torch.Tensor, mask_ratio: float = 1.0) -> torch.Tensor:
-        if self.inv_weight == 0:
+        if self.tf_weight == 0:
             if mask_ratio * ids.shape[1] > self.max_to_drop:
                 raise ValueError("Cannot drop more than max_to_drop")
         # Create a tensor of probabilities for each position
@@ -825,7 +823,9 @@ def relabel_assay_for_adv(label_decoders, labels_hierarchy):
             relab[enc[i]] = -1
             prevlen = 10000
             for val in topred:
-                li = labels_hierarchy["assay_ontology_term_id"].get(enc.get(val, ""), [])
+                li = labels_hierarchy["assay_ontology_term_id"].get(
+                    enc.get(val, ""), []
+                )
                 if enc[i] in li and prevlen > len(li):
                     relab[enc[i]] = topred.index(val)
                     prevlen = len(li)

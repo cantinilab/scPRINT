@@ -202,7 +202,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.hparams["label_decoders"] = label_decoders
         self.hparams["organisms"] = organisms
         self.hparams["use_metacell_token"] = use_metacell_token
-        self.tf_masker = WeightedMasker(self.genes, inv_weight=0.05)
+        # 20x more likely to drop a non TF compared to a TF
+        self.tf_masker = WeightedMasker(self.genes, tf_weight=0.05)
         self.attn = utils.Attention(
             len(self.genes),
             additional_tokens=(
