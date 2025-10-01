@@ -3,6 +3,7 @@ import copy
 import datetime
 import os
 from functools import partial
+
 # from galore_torch import GaLoreAdamW
 from math import factorial
 from pathlib import Path
@@ -51,7 +52,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         finetune_gene_emb: bool = False,
         freeze_embeddings: bool = True,
         gene_pos_file: Optional[str] = None,
-        normalization: str = "sum", # log, sum, raw
+        normalization: str = "sum",  # log, sum, raw
         attn_bias: str = "none",
         expr_encoder_layers: int = 3,
         attention: str = "normal",  # "performer", "legacy-flash", "normal", "crisscross", "hyper", "adasplash"
@@ -83,6 +84,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         max_cont_len: int = 30_000,
         transformer=None,
         gene_pos_enc=None,
+        drop_path_rate=0.0,
         **attention_kwargs,
     ):
         """
@@ -365,6 +367,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 cross_dim=d_model_cell,
                 attn_type=attention,
                 num_heads_kv=num_heads_kv,
+                drop_path_rate=drop_path_rate,
                 **attention_kwargs,
             )
         if cell_specific_blocks:
@@ -616,14 +619,16 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         else:
             print("no classes in the checkpoint, be careful")
 
-        if (
-            self.label_decoders != checkpoints["hyper_parameters"]["label_decoders"]
-            or self.labels_hierarchy
-            != checkpoints["hyper_parameters"].get("labels_hierarchy", {})
+        if self.label_decoders != checkpoints["hyper_parameters"][
+            "label_decoders"
+        ] or self.labels_hierarchy != checkpoints["hyper_parameters"].get(
+            "labels_hierarchy", {}
         ):
             print("label decoders have changed, be careful")
             self.label_decoders = checkpoints["hyper_parameters"]["label_decoders"]
-            self.labels_hierarchy = checkpoints["hyper_parameters"].get("labels_hierarchy", {})
+            self.labels_hierarchy = checkpoints["hyper_parameters"].get(
+                "labels_hierarchy", {}
+            )
             for k, v in self.labels_hierarchy.items():
                 tens = torch.zeros((len(v), self.label_counts[k]))
                 for k2, v2 in v.items():
@@ -1592,7 +1597,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # TASK 2. predict classes
         if len(self.classes) > 0 and "input_cell_embs" in output and do_cls:
             # Calculate pairwise cosine similarity for the embeddings
-            #if self.class_embd_diss_scale > 0:
+            # if self.class_embd_diss_scale > 0:
             #    loss_emb_indep = loss.within_sample(output["input_cell_embs"])
             #    losses.update({"emb_independence": loss_emb_indep})
             #    total_loss += self.class_embd_diss_scale * loss_emb_indep
@@ -2016,7 +2021,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     output["output_cell_embs"],
                     gene_pos if generate_on is None else generate_on,
                     req_depth=depth * depth_mult,  # otherwise we have 2 depths passed
-                    depth_mult=expression.sum(1)*depth_mult,
+                    depth_mult=expression.sum(1) * depth_mult,
                 )
             )
         ind = {}
@@ -2115,7 +2120,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 if len(self.classes) > 0
                 else None
             )
-            self.pos = torch.cat([self.pos, gene_pos if generate_on is None else generate_on])
+            self.pos = torch.cat(
+                [self.pos, gene_pos if generate_on is None else generate_on]
+            )
             self.expr_pred = (
                 [
                     torch.cat([self.expr_pred[0], output["mean"]]),
