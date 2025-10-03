@@ -51,7 +51,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         finetune_gene_emb: bool = False,
         freeze_embeddings: bool = True,
         gene_pos_file: Optional[str] = None,
-        normalization: str = "sum", # log, sum, raw
+        normalization: str = "sum",  # log, sum, raw
         attn_bias: str = "none",
         expr_encoder_layers: int = 3,
         attention: str = "normal",  # "performer", "legacy-flash", "normal", "criss-cross", "hyper", "adasplash", "softpick"
@@ -647,14 +647,16 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         else:
             print("no classes in the checkpoint, be careful")
 
-        if (
-            self.label_decoders != checkpoints["hyper_parameters"]["label_decoders"]
-            or self.labels_hierarchy
-            != checkpoints["hyper_parameters"].get("labels_hierarchy", {})
+        if self.label_decoders != checkpoints["hyper_parameters"][
+            "label_decoders"
+        ] or self.labels_hierarchy != checkpoints["hyper_parameters"].get(
+            "labels_hierarchy", {}
         ):
             print("label decoders have changed, be careful")
             self.label_decoders = checkpoints["hyper_parameters"]["label_decoders"]
-            self.labels_hierarchy = checkpoints["hyper_parameters"].get("labels_hierarchy", {})
+            self.labels_hierarchy = checkpoints["hyper_parameters"].get(
+                "labels_hierarchy", {}
+            )
             for k, v in self.labels_hierarchy.items():
                 tens = torch.zeros((len(v), self.label_counts[k]))
                 for k2, v2 in v.items():
@@ -2168,7 +2170,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     output["output_cell_embs"],
                     gene_pos if generate_on is None else generate_on,
                     req_depth=depth * depth_mult,  # otherwise we have 2 depths passed
-                    depth_mult=expression.sum(1)*depth_mult,
+                    depth_mult=expression.sum(1) * depth_mult,
                 )
             )
         ind = {}
@@ -2266,7 +2268,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 if len(self.classes) > 0
                 else None
             )
-            self.pos = torch.cat([self.pos, gene_pos if generate_on is None else generate_on])
+            self.pos = torch.cat(
+                [self.pos, gene_pos if generate_on is None else generate_on]
+            )
             self.expr_pred = (
                 [
                     torch.cat([self.expr_pred[0], output["mean"]]),
