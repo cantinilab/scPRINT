@@ -207,3 +207,4 @@ notebooks/scPRINT-2-repro-notebooks/benchmark_datasets.tar.gz
 notebooks/scPRINT-2-repro-notebooks/._normalize_log
 figures/umap_*.png
 notebooks/scPRINT-2-repro-notebooks/data/*.png
+data/data.zarr/
