@@ -1374,6 +1374,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         """
         if type(mask_ratio) is not list:
             mask_ratio = [mask_ratio]
+        
+        
         # dynamically change the context length every 5 steps
         other_expression = None
         if self.var_context_length and torch.rand(1).item() < 0.2:
@@ -1382,8 +1384,15 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # other_gene_pos = batch["genes"][:, context_length:]
         else:
             context_length = batch["x"].shape[1]
-        expression = batch["x"][:, :context_length]
-        gene_pos = batch["genes"][:, :context_length]
+        expression = batch["x"]
+        gene_pos = batch["genes"]
+        # if multiple cells
+        knn_cells = batch.get("knn_cells", None)
+        knn_cells_info = batch.get("knn_cells_info", None)
+        if knn_cells is not None:
+            if len(knn_cells) > 0:
+                nn = min(6, int(7*np.random.random()))
+                
         total_count = batch["depth"]
         clss = batch.get("class", None)
         # print(clss)
@@ -1394,11 +1403,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 raise ValueError(
                     "metacell_token is not provided but use_metacell_token is True"
                 )
-
-        knn_cells = batch.get("knn_cells", None)
-        knn_cells_info = batch.get("knn_cells_info", None)
-        if knn_cells is not None:
-            knn_cells = knn_cells[:, :, :context_length]
 
         mask_zeros = None
         if self.mask_zeros:
@@ -1424,13 +1428,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     expression = expression[:, keep]
                     gene_pos = gene_pos[:, keep]
                 
-
         if self.transformer.attn_type == "hyper":
             # seq len must be a multiple of 128
             num = (1 if self.use_metacell_token else 0) + (
                 (len(self.classes) + 1) if not self.cell_transformer else 0
             )
             if (expression.shape[1] + num) % 128 != 0:
+                context_length = (context_length // 128) * 128 - num
                 expression = expression[:, : ((expression.shape[1]) // 128 * 128) - num]
                 gene_pos = gene_pos[:, : ((gene_pos.shape[1]) // 128 * 128) - num]
                 if knn_cells is not None:
@@ -1442,12 +1446,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         cell_embs = []
         do_cls = self.class_scale > 0
         do_mvc = self.mvc_decoder is not None
+        do_knn = knn_cells_info is not None and nn > 0
         if run_full_forward:
             output = self.forward(
                 gene_pos,
                 expression,
-                neighbors=knn_cells,
-                neighbors_info=knn_cells_info,
+                neighbors=knn_cells[:, :nn] if do_knn else None,
+                neighbors_info=knn_cells_info[:, :nn] if do_knn else None,
                 mask=None,
                 req_depth=total_count,
                 do_mvc=do_mvc,
@@ -1480,8 +1485,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             # do noise and mask
             if False:
                 if knn_cells is not None:
-                    knn_cells = utils.downsample_profile(
-                        knn_cells, dropout=0.5, randsamp=self.randsamp
+                    knn_cells_sub = utils.downsample_profile(
+                        knn_cells[:, :nn], dropout=0.5, randsamp=self.randsamp
                     )
                     expr = expression
                 else:
@@ -1490,6 +1495,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     )
             else:
                 expr = expression
+                knn_cells_sub = knn_cells[:, :nn] if do_knn else None
             if i == "TF":
                 mask = self.tf_masker(
                     ids=gene_pos,
@@ -1503,8 +1509,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             output = self.forward(
                 gene_pos,
                 expression=expr,
-                neighbors=knn_cells,
-                neighbors_info=knn_cells_info,
+                neighbors=knn_cells_sub,
+                neighbors_info=knn_cells_info[:, :nn] if do_knn else None,
                 mask=mask,
                 req_depth=expr.sum(1),
                 do_mvc=do_mvc,
@@ -1533,20 +1539,17 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         for i in noise:
             if i == 1.0:
                 expr = torch.zeros_like(expression)
+                dnn = 6
             else:
                 expr = utils.downsample_profile(
                     expression, dropout=i, randsamp=self.randsamp
                 )
-                if knn_cells is not None:
-                    #knn_cells = utils.downsample_profile(
-                    #    knn_cells, dropout=i, randsamp=self.randsamp
-                    #)
-                    pass
+            do_knn = knn_cells_info is not None and dnn > 0
             output = self.forward(
-                gene_pos,
-                expression=expr,
-                neighbors=knn_cells,
-                neighbors_info=knn_cells_info,
+                gene_pos[:, :context_length],
+                expression=expr[:, :context_length],
+                neighbors=knn_cells[:, :nn, :context_length] if do_knn else None,
+                neighbors_info=knn_cells_info[:, :nn, :context_length] if do_knn else None,
                 mask=None,
                 depth_mult=expression.sum(1),
                 req_depth=total_count,
