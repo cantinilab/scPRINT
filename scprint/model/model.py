@@ -1375,7 +1375,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if type(mask_ratio) is not list:
             mask_ratio = [mask_ratio]
         
-        
         # dynamically change the context length every 5 steps
         other_expression = None
         if self.var_context_length and torch.rand(1).item() < 0.2:
@@ -1390,8 +1389,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         knn_cells = batch.get("knn_cells", None)
         knn_cells_info = batch.get("knn_cells_info", None)
         if knn_cells is not None:
-            if len(knn_cells) > 0:
-                nn = min(6, int(7*np.random.random()))
+            nn = min(6, int(7*np.random.random()))
+        else:
+            nn = 0
                 
         total_count = batch["depth"]
         clss = batch.get("class", None)
