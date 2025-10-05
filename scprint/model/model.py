@@ -1544,14 +1544,15 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 expr = utils.downsample_profile(
                     expression, dropout=i, randsamp=self.randsamp
                 )
+                dnn = nn
             do_knn = knn_cells_info is not None and dnn > 0
             output = self.forward(
                 gene_pos[:, :context_length],
                 expression=expr[:, :context_length],
-                neighbors=knn_cells[:, :nn, :context_length] if do_knn else None,
-                neighbors_info=knn_cells_info[:, :nn, :context_length] if do_knn else None,
+                neighbors=knn_cells[:, :dnn, :context_length] if do_knn else None,
+                neighbors_info=knn_cells_info[:, :dnn] if do_knn else None,
                 mask=None,
-                depth_mult=expression.sum(1),
+                depth_mult=expression[:, :context_length].sum(1),
                 req_depth=total_count,
                 do_mvc=do_mvc,
                 do_class=do_cls,
@@ -1560,7 +1561,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             )
             l, tot = self._compute_loss(
                 output,
-                expression,
+                expression[:, :context_length],
                 clss,
                 batch_idx,
                 do_cls,
