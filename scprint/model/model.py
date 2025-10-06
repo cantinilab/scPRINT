@@ -499,6 +499,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             torch.nn.init.constant_(dec.out_layer.bias, -0.13)
         self.expr_encoder._init_weights()
 
+        # self.hparams.drop(gene_pos_file)
+        # self.hparams.drop(precpt_gene_emb)
+
     def add_organism(
         self, organism: str, genes: pd.Index, emb: pd.DataFrame, locs=None
     ):
