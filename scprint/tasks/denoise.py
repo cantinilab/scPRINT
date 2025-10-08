@@ -264,7 +264,7 @@ class Denoiser:
             }
             if self.additional_info:
                 # Sample only 3000 elements for correlation calculation
-                if reco.shape[0] <= 3000:
+                if reco.shape[0] > 3000:
                     indices = np.random.choice(reco.shape[0], 3000, replace=False)
                     reco = reco[indices]
                     stored_noisy = stored_noisy[indices]
