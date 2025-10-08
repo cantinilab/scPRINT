@@ -139,7 +139,7 @@ class PositionalEncoding(nn.Module):
 
         Args:
             d_model (int): The dimension of the input vectors.
-            max_len (int, optional): The maximum length of a sequence that this module can handle.
+            gene_pos_enc (list[str], optional): The gene position encoding to use.
 
         Note: not used in the current version of scprint.
         """
