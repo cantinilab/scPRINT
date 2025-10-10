@@ -6,7 +6,6 @@
 # run script from above
 ulimit -c 0     # no core files
 echo "Running scprint $1"
-export NCCL_BLOCKING_WAIT=1
 
 # If a second parameter is provided, consider it a git commit hash and checkout
 if [ -n "$2" ]; then
