@@ -68,6 +68,7 @@ class Embedder:
         self.doclass = doclass
         self.genelist = genelist if genelist is not None else []
         self.save_every = save_every
+        self.pred = None
 
     def __call__(self, model: torch.nn.Module, adata: AnnData):
         """
@@ -89,6 +90,7 @@ class Embedder:
         """
         # one of "all" "sample" "none"
         model.predict_mode = "none"
+        self.pred = None
         prevkeep = model.keep_all_labels_pred
         model.keep_all_labels_pred = self.keep_all_labels_pred
         # Add at least the organism you are working with
@@ -140,7 +142,7 @@ class Embedder:
                     batch["x"].to(device),
                     batch["depth"].to(device),
                 )
-                model._predict(
+                pred = model._predict(
                     gene_pos,
                     expression,
                     depth,
@@ -155,7 +157,16 @@ class Embedder:
                     name="embed_" + rand + "_",
                 )
                 torch.cuda.empty_cache()
+                if self.keep_all_labels_pred:
+                    if pred is not None:
+                        self.pred = pred if self.pred is None else torch.cat([self.pred, pred])
         model.log_adata(name="embed_" + rand + "_" + str(model.counter))
+        model.pos = None
+        model.expr_pred = None
+        model.embs = None
+        if self.keep_all_labels_pred:
+            self.pred = model.pred if self.pred is None else torch.cat([self.pred, model.pred])
+        model.pred = None
         try:
             mdir = (
                 model.logger.save_dir if model.logger.save_dir is not None else "data"
@@ -232,7 +243,7 @@ class Embedder:
         adata.obs = pd.concat([adata.obs, pred_adata.obs], axis=1)
         del pred_adata
         if self.keep_all_labels_pred:
-            allclspred = model.pred.to(device="cpu").numpy()
+            allclspred = self.pred.to(device="cpu").numpy()
             columns = []
             for cl in model.classes:
                 n = model.label_counts[cl]
@@ -295,6 +306,7 @@ class Embedder:
                     print("     accuracy:", sum(res) / len(res))
                     print(" ")
                 metrics.update({cl + "_accuracy": sum(res) / len(res)})
+        self.pred = None
         return adata, metrics
 
 
@@ -454,6 +466,7 @@ def compute_classification(
     label_decoders: Dict[str, Any],
     labels_hierarchy: Dict[str, Any],
     metric_type: List[str] = ["macro", "micro", "weighted"],
+    use_unknown: bool = True,
 ) -> Dict[str, Dict[str, float]]:
     """
     Compute classification metrics for the given annotated data.
@@ -469,13 +482,13 @@ def compute_classification(
         Dict[str, Dict[str, float]]: A dictionary containing classification metrics for each class.
     """
     metrics = {}
-    for label in classes:
+    for clss in classes:
         res = []
-        if label not in adata.obs.columns:
+        if clss not in adata.obs.columns:
             print("not in columns")
             continue
-        labels_topred = label_decoders[label].values()
-        if label in labels_hierarchy:
+        labels_topred = label_decoders[clss].values()
+        if clss in labels_hierarchy:
             parentdf = (
                 bt.CellType.filter()
                 .df(include=["parents__ontology_id", "ontology_id"])
@@ -483,14 +496,19 @@ def compute_classification(
             )
             parentdf.parents__ontology_id = parentdf.parents__ontology_id.astype(str)
             class_groupings = {
-                k: get_descendants(k, parentdf) for k in set(adata.obs[label].unique())
+                k: get_descendants(k, parentdf) for k in set(adata.obs[clss].unique())
             }
-        for pred, true in adata.obs[["pred_" + label, label]].values:
+        tokeep = np.array([True] * adata.shape[0])
+        for i, (pred, true) in enumerate(adata.obs[["pred_" + clss, clss]].values):
             if pred == true:
                 res.append(true)
                 continue
-            if label in labels_hierarchy:
+            if true == "unknown":
+                tokeep[i] = False
+            if clss in labels_hierarchy:
                 if true in class_groupings:
+                    if pred == "unknown" and not use_unknown:
+                        tokeep[i] = False
                     res.append(true if pred in class_groupings[true] else "")
                     continue
                 elif true not in labels_topred:
@@ -498,11 +516,11 @@ def compute_classification(
             elif true not in labels_topred:
                 raise ValueError(f"true label {true} not in available classes")
             res.append("")
-        metrics[label] = {}
-        metrics[label]["accuracy"] = np.mean(np.array(res) == adata.obs[label].values)
+        metrics[clss] = {}
+        metrics[clss]["accuracy"] = np.mean(np.array(res)[tokeep] == adata.obs[clss].values[tokeep])
         for x in metric_type:
-            metrics[label][x] = f1_score(
-                np.array(res), adata.obs[label].values, average=x
+            metrics[clss][x] = f1_score(
+                np.array(res)[tokeep], adata.obs[clss].values[tokeep], average=x
             )
     return metrics
 

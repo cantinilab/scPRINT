@@ -51,7 +51,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         finetune_gene_emb: bool = False,
         freeze_embeddings: bool = True,
         gene_pos_file: Optional[str] = None,
-        normalization: str = "sum",  # log, sum, raw
+        normalization: str = "sum",  # log, sum, both, raw
         attn_bias: str = "none",
         expr_encoder_layers: int = 3,
         attention: str = "normal",  # "performer", "legacy-flash", "normal", "criss-cross", "hyper", "adasplash", "softpick"
@@ -833,13 +833,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             Tensor: the encoded data
         """
         if expression is not None or neighbors is not None:
-            if self.normalization == "sum":
+            if self.normalization in ["sum", "both"]:
                 expression = expression / expression.sum(1).unsqueeze(1)
                 if neighbors is not None:
                     neighbors = neighbors / neighbors.sum(2).unsqueeze(1)
             elif self.normalization == "raw":
                 pass
-            elif self.normalization == "log":
+            elif self.normalization in ["log", "both"]:
                 expression = torch.log2(1 + expression)
                 if neighbors is not None:
                     neighbors = torch.log2(1 + neighbors)
@@ -2029,6 +2029,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 # Set a timeout that's longer than your test typically takes
                 # Write rank to file for debugging
                 self.trainer.strategy.barrier()
+        self.pred = None
 
     def test_step(self, *args, **kwargs):
         pass
@@ -2130,7 +2131,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         get_attention_layer=None,
         depth_mult=1,
         keep_output=True,
-        max_size_in_mem=100_000,
+        max_size_in_mem=10_000,
         get_gene_emb=False,
         mask=None,
         metacell_token=None,
@@ -2324,8 +2325,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     )
                 self.pos = None
                 self.expr_pred = None
-                self.pred = None
                 self.embs = None
+                return self.pred
+                
 
     def on_predict_epoch_end(self):
         """@see pl.LightningModule will"""
@@ -2388,6 +2390,39 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 fig.savefig(mdir + "/umap_" + self.name + "_" + name + ".png")
 
         return adata
+    
+    #def log_adata(self, gtclass=None, name=""):
+    #    """
+    #    log_adata will log an adata from predictions.
+    #    It will log to tensorboard and wandb if available
+
+    #    see @utils.log_adata
+    #    """
+    #    try:
+    #        mdir = self.logger.save_dir if self.logger.save_dir is not None else "/tmp"
+    #    except:
+    #        mdir = "data/"
+    #    if not os.path.exists(mdir):
+    #        os.makedirs(mdir)
+    #    self.embs = torch.concat([self.embs[cl] for cl in self.classes], dim=1).cpu().numpy().astype(np.float16)
+    #    self.pred = self.pred.cpu().numpy()
+    #    loc = self.pred.argsort()[:, -3:][::-1]
+    #    self.pred = self.pred[loc].astype(np.float16)
+    #    loc = loc.astype(np.uint16)
+    #    save = (
+    #        str(mdir)
+    #        + "/step_"
+    #        + str(self.global_step)
+    #        + "_"
+    #        + str(self.name)
+    #        + "_"
+    #        + str(name)
+    #        + "_"
+    #        + str(self.global_rank)
+    #    )
+    #    loc.save(save+"_top3.npz")
+    #    np.save(self.pred, save+"_pred.npz")
+    #    np.save(self.embs, save+"_embs.npz")
 
     @property
     def genes(self):

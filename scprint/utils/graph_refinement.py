@@ -9,8 +9,10 @@ from typing import Optional, Union
 
 import anndata
 import numpy as np
+import pandas as pd
 import scipy.sparse as sp
 from scipy.sparse.linalg import spsolve
+from tqdm import tqdm
 
 
 def graph_regularized_logit_refinement(
@@ -22,6 +24,7 @@ def graph_regularized_logit_refinement(
 ) -> np.ndarray:
     """
     Refine logits using graph-regularized optimization.
+    Optimized version that solves for all classes simultaneously.
 
     This function implements the optimization problem:
     P̃ = arg min_P ||P - P₀||²_F + λ Tr(P^T L P)
@@ -50,11 +53,10 @@ def graph_regularized_logit_refinement(
     if connectivity_key not in adata.obsp:
         raise KeyError(f"Connectivity key '{connectivity_key}' not found in adata.obsp")
 
-    # Get connectivity matrix
     A = adata.obsp[connectivity_key]
+    n_cells, n_classes = pred.shape
 
     # Check dimensions
-    n_cells, n_classes = pred.shape
     if A.shape[0] != n_cells or A.shape[1] != n_cells:
         raise ValueError(
             f"Connectivity matrix shape {A.shape} doesn't match number of cells {n_cells}"
@@ -77,28 +79,18 @@ def graph_regularized_logit_refinement(
         # Use adjacency matrix directly
         L = A
 
-    # Solve the optimization problem:
-    # P̃ = arg min_P ||P - P₀||²_F + λ Tr(P^T L P)
-    #
-    # Taking the derivative with respect to P and setting to zero:
-    # ∂/∂P [||P - P₀||²_F + λ Tr(P^T L P)] = 0
-    # 2(P - P₀) + 2λLP = 0
-    # P - P₀ + λLP = 0
-    # P + λLP = P₀
-    # (I + λL)P = P₀
-    # Therefore: P̃ = (I + λL)⁻¹P₀
-
     identity_matrix = sp.identity(n_cells, format="csr")
     system_matrix = identity_matrix + lambda_reg * L
 
-    # Solve the linear system (I + λL)P̃ = P₀ for each class separately
-    # This minimizes ||P̃ - P₀||²_F + λ Tr(P̃^T L P̃) for each class column
-    refined_pred = np.zeros_like(pred)
+    # Solve for all classes at once instead of looping
+    # spsolve can handle multiple right-hand sides
+    refined_pred = spsolve(system_matrix, pred)
 
-    for class_idx in range(n_classes):
-        # Solve (I + λL) * refined_pred[:, class_idx] = pred[:, class_idx]
-        # This gives us the refined logits that minimize the objective function
-        refined_pred[:, class_idx] = spsolve(system_matrix, pred[:, class_idx])
+    # Handle the case where spsolve returns 1D array for single class
+    if refined_pred.ndim == 1 and n_classes == 1:
+        refined_pred = refined_pred.reshape(-1, 1)
+    elif refined_pred.ndim == 1:
+        refined_pred = refined_pred.reshape(n_cells, n_classes)
 
     return refined_pred
 
@@ -147,6 +139,7 @@ def zero_shot_annotation_with_refinement(
     metric: str = "euclidean",
     lambda_reg: float = 0.1,
     return_probabilities: bool = False,
+    return_raw: bool =False,
 ) -> Union[np.ndarray, tuple]:
     """
     Perform zero-shot cell type annotation with graph refinement.
@@ -166,6 +159,8 @@ def zero_shot_annotation_with_refinement(
                            predicted class indices. If True, returns tuple of
                            (predictions, refined_probabilities)
     """
+    if pred is type(pd.DataFrame):
+        pred = pred.values
     if adata.obsp.get(connectivity_key) is None:
         # Refine logits
         adata = build_knn_graph(
@@ -179,6 +174,8 @@ def zero_shot_annotation_with_refinement(
     refined_logits = graph_regularized_logit_refinement(
         pred, adata, connectivity_key, lambda_reg
     )
+    if return_raw:
+        return refined_logits
     # Get predictions: g(xi) = arg max_j {P̃(i)}
     predictions = np.argmax(refined_logits, axis=1)
 
