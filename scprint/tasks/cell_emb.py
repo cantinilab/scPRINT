@@ -466,7 +466,7 @@ def compute_classification(
     label_decoders: Dict[str, Any],
     labels_hierarchy: Dict[str, Any],
     metric_type: List[str] = ["macro", "micro", "weighted"],
-    use_unknown: bool = True,
+    use_unknown: bool = False,
 ) -> Dict[str, Dict[str, float]]:
     """
     Compute classification metrics for the given annotated data.
@@ -500,10 +500,6 @@ def compute_classification(
             }
         tokeep = np.array([True] * adata.shape[0])
         for i, (pred, true) in enumerate(adata.obs[["pred_" + clss, clss]].values):
-            if pred == true:
-                res.append(true)
-                continue
-            if true == "unknown":
                 tokeep[i] = False
             if clss in labels_hierarchy:
                 if true in class_groupings:
