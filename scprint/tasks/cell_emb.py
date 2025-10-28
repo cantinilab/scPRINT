@@ -451,6 +451,7 @@ def compute_classification(
     label_decoders: Dict[str, Any],
     labels_hierarchy: Dict[str, Any],
     metric_type: List[str] = ["macro", "micro", "weighted"],
+    count_unknowns: bool = True,
 ) -> Dict[str, Dict[str, float]]:
     """
     Compute classification metrics for the given annotated data.
@@ -482,12 +483,15 @@ def compute_classification(
             class_groupings = {
                 k: get_descendants(k, parentdf) for k in set(adata.obs[label].unique())
             }
-        for pred, true in adata.obs[["pred_" + label, label]].values:
+        loc = [True] * len(adata)
+        for i, (pred, true) in enumerate(adata.obs[["pred_" + label, label]].values):
             if pred == true:
                 res.append(true)
                 continue
             if label in labels_hierarchy:
                 if true in class_groupings:
+                    if pred == "unknown" and not count_unknowns:
+                        loc[i] = False
                     res.append(true if pred in class_groupings[true] else "")
                     continue
                 elif true not in labels_topred:
@@ -496,10 +500,13 @@ def compute_classification(
                 raise ValueError(f"true label {true} not in available classes")
             res.append("")
         metrics[label] = {}
-        metrics[label]["accuracy"] = np.mean(np.array(res) == adata.obs[label].values)
+        loc = np.array(loc)
+        metrics[label]["accuracy"] = np.mean(
+            np.array(res)[loc] == adata.obs[label].values[loc]
+        )
         for x in metric_type:
             metrics[label][x] = f1_score(
-                np.array(res), adata.obs[label].values, average=x
+                np.array(res)[loc], adata.obs[label].values[loc], average=x
             )
     return metrics
 
