@@ -208,3 +208,5 @@ notebooks/scPRINT-2-repro-notebooks/._normalize_log
 figures/umap_*.png
 notebooks/scPRINT-2-repro-notebooks/data/*.png
 data/data.zarr/
+data/*.png
+data/*.tsv

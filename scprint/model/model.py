@@ -3,7 +3,6 @@ import copy
 import datetime
 import os
 from functools import partial
-
 # from galore_torch import GaLoreAdamW
 from math import factorial
 from pathlib import Path
@@ -1195,14 +1194,12 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     encoding,
                     x_kv=cell_embs,
                     mask_zeros=mask_zeros,
-                    drop_path_rate_self=0.5,
                 )
             else:
                 encoding = torch.cat([cell_embs, encoding], dim=1)
                 transformer_output = self.transformer(
                     encoding,
                     mask_zeros=mask_zeros,
-                    drop_path_rate_self=0.5,
                 )
                 cell_embs, transformer_output = transformer_output.split(
                     [
