@@ -37,6 +37,7 @@ class Embedder:
         keep_all_labels_pred: bool = False,
         genelist: Optional[List[str]] = None,
         save_every: int = 40_000,
+        unknown_label: str = "unknown",
     ):
         """
         Embedder a class to embed and annotate cells using a model
@@ -69,6 +70,7 @@ class Embedder:
         self.genelist = genelist if genelist is not None else []
         self.save_every = save_every
         self.pred = None
+        self.unknown_label = unknown_label
 
     def __call__(self, model: torch.nn.Module, adata: AnnData):
         """
@@ -146,12 +148,16 @@ class Embedder:
                     gene_pos,
                     expression,
                     depth,
-                    knn_cells=batch["knn_cells"].to(device)
-                    if model.expr_emb_style == "metacell"
-                    else None,
-                    knn_cells_info=batch["knn_cells_info"].to(device)
-                    if model.expr_emb_style == "metacell"
-                    else None,
+                    knn_cells=(
+                        batch["knn_cells"].to(device)
+                        if model.expr_emb_style == "metacell"
+                        else None
+                    ),
+                    knn_cells_info=(
+                        batch["knn_cells_info"].to(device)
+                        if model.expr_emb_style == "metacell"
+                        else None
+                    ),
                     pred_embedding=self.pred_embedding,
                     max_size_in_mem=self.save_every,
                     name="embed_" + rand + "_",
@@ -159,13 +165,17 @@ class Embedder:
                 torch.cuda.empty_cache()
                 if self.keep_all_labels_pred:
                     if pred is not None:
-                        self.pred = pred if self.pred is None else torch.cat([self.pred, pred])
+                        self.pred = (
+                            pred if self.pred is None else torch.cat([self.pred, pred])
+                        )
         model.log_adata(name="embed_" + rand + "_" + str(model.counter))
         model.pos = None
         model.expr_pred = None
         model.embs = None
         if self.keep_all_labels_pred:
-            self.pred = model.pred if self.pred is None else torch.cat([self.pred, model.pred])
+            self.pred = (
+                model.pred if self.pred is None else torch.cat([self.pred, model.pred])
+            )
         model.pred = None
         try:
             mdir = (
@@ -286,7 +296,7 @@ class Embedder:
                         if true in cur_labels_hierarchy:
                             res.append(pred in cur_labels_hierarchy[true])
                             continue
-                        elif true != "unknown":
+                        elif true != self.unknown_label:
                             res.append(False)
                         elif true not in class_topred:
                             print(f"true label {true} not in available classes")
@@ -294,7 +304,7 @@ class Embedder:
                     elif true not in class_topred:
                         print(f"true label {true} not in available classes")
                         return adata, metrics
-                    elif true != "unknown":
+                    elif true != self.unknown_label:
                         res.append(False)
                     # else true is unknown
                     # else we pass
@@ -432,7 +442,9 @@ def default_benchmark(
     if model.expr_emb_style == "metacell":
         sc.pp.neighbors(adata, use_rep="X_pca")
     embedder = Embedder(
-        pred_embedding=model.pred_embedding if model.pred_embedding is not None else ["all"],
+        pred_embedding=(
+            model.pred_embedding if model.pred_embedding is not None else ["all"]
+        ),
         doclass=do_class,
         max_len=max_len,
         doplot=False,
@@ -517,7 +529,9 @@ def compute_classification(
                 raise ValueError(f"true label {true} not in available classes")
             res.append("")
         metrics[clss] = {}
-        metrics[clss]["accuracy"] = np.mean(np.array(res)[tokeep] == adata.obs[clss].values[tokeep])
+        metrics[clss]["accuracy"] = np.mean(
+            np.array(res)[tokeep] == adata.obs[clss].values[tokeep]
+        )
         for x in metric_type:
             metrics[clss][x] = f1_score(
                 np.array(res)[tokeep], adata.obs[clss].values[tokeep], average=x

@@ -1,8 +1,11 @@
 import torch
 from jsonargparse import class_from_function
-from lightning.pytorch.callbacks import (EarlyStopping, LearningRateMonitor,
-                                         ModelCheckpoint,
-                                         StochasticWeightAveraging)
+from lightning.pytorch.callbacks import (
+    EarlyStopping,
+    LearningRateMonitor,
+    ModelCheckpoint,
+    StochasticWeightAveraging,
+)
 from lightning.pytorch.cli import LightningCLI, _get_short_description
 from lightning.pytorch.trainer import Trainer
 
@@ -11,7 +14,7 @@ from scprint.tasks import Denoiser, Embedder, GNInfer
 from .trainer import TrainingMode
 
 TASKS = [("embed", Embedder), ("gninfer", GNInfer), ("denoise", Denoiser)]
-TIMEOUT = 3600 * 5  # 5 hours in seconds
+TIMEOUT = 3600 * 9  # 9 hours in seconds
 
 
 class MyCLI(LightningCLI):
@@ -277,6 +280,7 @@ class MyCLI(LightningCLI):
                 if v:
                     torch.set_float32_matmul_precision("medium")
         import os
+
         simpler_f_hash = os.system("cd ../simpler_flash && git rev-parse HEAD")
         scdata_v = os.system("cd ../scdataloader && git rev-parse HEAD")
         print("scdata_v:", scdata_v)
@@ -288,8 +292,8 @@ class MyCLI(LightningCLI):
         ]:
             import os
 
-            os.environ["NCCL_TIMEOUT"] = str(TIMEOUT)  # 5 hours in seconds
-            os.environ["TORCH_DISTRIBUTED_TIMEOUT"] = str(TIMEOUT)  # 5 hours in seconds
+            os.environ["NCCL_TIMEOUT"] = str(TIMEOUT)  # 9 hours in seconds
+            os.environ["TORCH_DISTRIBUTED_TIMEOUT"] = str(TIMEOUT)  # 9 hours in seconds
             os.environ["PL_TRAINER_STRATEGY_TIMEOUT"] = str(TIMEOUT)
 
             print(f"setting global pytorch distributed timeout to {TIMEOUT}s")
@@ -308,7 +312,7 @@ class MyCLI(LightningCLI):
 
             # Update the config
             print("updating the config")
-            trainer.strategy._timeout = timedelta(seconds=TIMEOUT)  # 5 hours in seconds
+            trainer.strategy._timeout = timedelta(seconds=TIMEOUT)  # 9 hours in seconds
             trainer.strategy.setup_distributed()
         # Call parent method to create trainer
         return trainer

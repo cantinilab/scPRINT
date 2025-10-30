@@ -18,7 +18,7 @@ trainer:
     - class_path: lightning.pytorch.loggers.WandbLogger
       init_args:
         project: ${project}
-        offline: True
+        offline: False
         save_dir: /pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/lustre/fswork/projects/rech/xeg/uat95fg/ #/pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/data/log/
   callbacks:
     #- class_path: lightning.pytorch.callbacks.StochasticWeightAveraging
@@ -68,8 +68,8 @@ model:
   #  self_reported_ethnicity_ontology_term_id: 8
   #  sex_ontology_term_id: 2
   #  organism_ontology_term_id: 8
-    # cell_culture: 2
-    # total: 164
+  # cell_culture: 2
+  # total: 164
 data:
   collection_name: scPRINT-V2 (good quality) filtered #scPRINT-V2 (full)
   how: random expr

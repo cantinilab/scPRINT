@@ -116,12 +116,14 @@ def make_adata(
     adata = AnnData(
         X=csr_matrix((n_cells, len(genes))),
         layers=layers,
-        obs=pd.DataFrame(
-            obs,
-            columns=colname,
-        )
-        if pred is not None
-        else None,
+        obs=(
+            pd.DataFrame(
+                obs,
+                columns=colname,
+            )
+            if pred is not None
+            else None
+        ),
         var=pd.DataFrame(index=genes),
     )
 
@@ -665,15 +667,19 @@ def test(
             {
                 "emb_" + dataset + "/scib": float(res["scib"]["Total"]),
                 "emb_" + dataset + "/scib_bio": float(res["scib"]["Bio conservation"]),
-                "emb_" + dataset + "/scib_batch": float(
-                    res["scib"]["Batch correction"]
-                ),
-                "emb_" + dataset + "/ct_class": float(
+                "emb_"
+                + dataset
+                + "/scib_batch": float(res["scib"]["Batch correction"]),
+                "emb_"
+                + dataset
+                + "/ct_class": float(
                     res["classif"].get("cell_type_ontology_term_id", {}).get("macro", 0)
                     if do_class
                     else 0
                 ),
-                "emb_" + dataset + "/ct_class_macro": float(
+                "emb_"
+                + dataset
+                + "/ct_class_macro": float(
                     res["classif"].get("cell_type_ontology_term_id", {}).get("macro", 0)
                     if do_class
                     else 0
@@ -687,7 +693,9 @@ def test(
         tot["denoise_" + dataset] = res
         metrics.update(
             {
-                "denoise_" + dataset + "/reco2full_vs_noisy2full": float(
+                "denoise_"
+                + dataset
+                + "/reco2full_vs_noisy2full": float(
                     res["reco2full"] - res["noisy2full"]
                 ),
             }
@@ -715,7 +723,7 @@ def test(
     gc.collect()
     for dataset, filepath in {
         "old_kidney": "https://datasets.cellxgene.cziscience.com/ede85b09-454b-4374-bf60-5f675e989b64.h5ad",
-        "kidney": "https://datasets.cellxgene.cziscience.com/01bc7039-961f-4c24-b407-d535a2a7ba2c.h5ad",
+        # "kidney": "https://datasets.cellxgene.cziscience.com/01bc7039-961f-4c24-b407-d535a2a7ba2c.h5ad",
         "lung_smart": "https://datasets.cellxgene.cziscience.com/6ebba0e0-a159-406f-8095-451115673a2c.h5ad",
         # filedir + "/../../data/yBCKp6HmXuHa0cZptMo7.h5ad",
     }.items():
@@ -730,13 +738,19 @@ def test(
         tot["grn_omni_" + dataset] = res
         metrics.update(
             {
-                "grn_omni_" + dataset + "/auprc_class": float(
+                "grn_omni_"
+                + dataset
+                + "/auprc_class": float(
                     np.mean([i["auprc"] for k, i in res.items() if "_class" in k])
                 ),
-                "grn_omni_" + dataset + "/or_class": float(
+                "grn_omni_"
+                + dataset
+                + "/or_class": float(
                     np.mean([i["odd_ratio"] for k, i in res.items() if "_class" in k])
                 ),
-                "grn_omni_" + dataset + "/tf_enr_class": float(
+                "grn_omni_"
+                + dataset
+                + "/tf_enr_class": float(
                     np.sum(
                         [
                             i.get("TF_enr", False)
@@ -745,7 +759,9 @@ def test(
                         ]
                     )
                 ),
-                "grn_omni_" + dataset + "/tf_targ_enr_class": float(
+                "grn_omni_"
+                + dataset
+                + "/tf_targ_enr_class": float(
                     np.mean(
                         [
                             i["significant_enriched_TFtargets"]
@@ -754,21 +770,31 @@ def test(
                         ]
                     )
                 ),
-                "grn_omni_" + dataset + "/auprc": float(
+                "grn_omni_"
+                + dataset
+                + "/auprc": float(
                     np.mean([i["auprc"] for k, i in res.items() if "_mean" in k])
                 ),
-                "grn_omni_" + dataset + "/epr": float(
+                "grn_omni_"
+                + dataset
+                + "/epr": float(
                     np.mean([i["epr"] for k, i in res.items() if "_mean" in k])
                 ),
-                "grn_omni_" + dataset + "/or": float(
+                "grn_omni_"
+                + dataset
+                + "/or": float(
                     np.mean([i["odd_ratio"] for k, i in res.items() if "_mean" in k])
                 ),
-                "grn_omni_" + dataset + "/tf_enr": float(
+                "grn_omni_"
+                + dataset
+                + "/tf_enr": float(
                     np.sum(
                         [i.get("TF_enr", False) for k, i in res.items() if "_mean" in k]
                     )
                 ),
-                "grn_omni_" + dataset + "/tf_targ_enr": float(
+                "grn_omni_"
+                + dataset
+                + "/tf_targ_enr": float(
                     np.mean(
                         [
                             i["significant_enriched_TFtargets"]
@@ -832,6 +858,128 @@ def relabel_assay_for_adv(label_decoders, labels_hierarchy):
     return relab
 
 
+class StepwiseCAWRWithWD(torch.optim.lr_scheduler.CosineAnnealingWarmRestarts):
+    def __init__(self, optimizer, T_0, T_mult=1, eta_min=0, wd_decay=1.0):
+        """
+        Args:
+            optimizer: torch optimizer
+            T_0: first restart interval (steps)
+            T_mult: multiplier for restart interval
+            eta_min: min learning rate
+            wd_decay: factor by which to multiply weight_decay at each restart
+        """
+        super().__init__(optimizer, T_0, T_mult=T_mult, eta_min=eta_min)
+        self.wd_decay = wd_decay
+        self._last_cycle = 0
+
+    def step(self, epoch=None):
+        # Always advance by one optimizer step (ignore epoch arg from Lightning)
+        super().step()
+        # Check if we just restarted a new cycle
+        if self.T_cur == 0 and self.last_epoch != 0:
+            self._last_cycle += 1
+            for group in self.optimizer.param_groups:
+                if "weight_decay" in group:
+                    group["weight_decay"] *= self.wd_decay
+                    # optional: clamp to non-negative
+                    if group["weight_decay"] < 0:
+                        group["weight_decay"] = 0.0
+
+
+
+
+
+
+
+
+
+
+class StepwiseCAWRWithWD(torch.optim.lr_scheduler.CosineAnnealingWarmRestarts):
+    def __init__(self, optimizer, T_0, T_mult=1, eta_min=0, wd_decay=1.0):
+        """
+        Args:
+            optimizer: torch optimizer
+            T_0: first restart interval (steps)
+            T_mult: multiplier for restart interval
+            eta_min: min learning rate
+            wd_decay: factor by which to multiply weight_decay at each restart
+        """
+        super().__init__(optimizer, T_0, T_mult=T_mult, eta_min=eta_min)
+        self.wd_decay = wd_decay
+        self._last_cycle = 0
+
+    def step(self, epoch=None):
+        # Always advance by one optimizer step (ignore epoch arg from Lightning)
+        super().step()
+        # Check if we just restarted a new cycle
+        if self.T_cur == 0 and self.last_epoch != 0:
+            self._last_cycle += 1
+            for group in self.optimizer.param_groups:
+                if "weight_decay" in group:
+                    group["weight_decay"] *= self.wd_decay
+                    # optional: clamp to non-negative
+                    if group["weight_decay"] < 0:
+                        group["weight_decay"] = 0.0
+class StepwiseCAWRWithWD(torch.optim.lr_scheduler.CosineAnnealingWarmRestarts):
+    def __init__(self, optimizer, T_0, T_mult=1, eta_min=0, wd_decay=1.0):
+        """
+        Args:
+            optimizer: torch optimizer
+            T_0: first restart interval (steps)
+            T_mult: multiplier for restart interval
+            eta_min: min learning rate
+            wd_decay: factor by which to multiply weight_decay at each restart
+        """
+        super().__init__(optimizer, T_0, T_mult=T_mult, eta_min=eta_min)
+        self.wd_decay = wd_decay
+        self._last_cycle = 0
+
+    def step(self, epoch=None):
+        # Always advance by one optimizer step (ignore epoch arg from Lightning)
+        super().step()
+        # Check if we just restarted a new cycle
+        if self.T_cur == 0 and self.last_epoch != 0:
+            self._last_cycle += 1
+            for group in self.optimizer.param_groups:
+                if "weight_decay" in group:
+                    group["weight_decay"] *= self.wd_decay
+                    # optional: clamp to non-negative
+                    if group["weight_decay"] < 0:
+                        group["weight_decay"] = 0.0
+                    if group["weight_decay"] < 0:
+                        group["weight_decay"] = 0.0
+class StepwiseCAWRWithWD(torch.optim.lr_scheduler.CosineAnnealingWarmRestarts):
+    def __init__(self, optimizer, T_0, T_mult=1, eta_min=0, wd_decay=1.0):
+        """
+        Args:
+            optimizer: torch optimizer
+            T_0: first restart interval (steps)
+            T_mult: multiplier for restart interval
+            eta_min: min learning rate
+            wd_decay: factor by which to multiply weight_decay at each restart
+        """
+        super().__init__(optimizer, T_0, T_mult=T_mult, eta_min=eta_min)
+        self.wd_decay = wd_decay
+        self._last_cycle = 0
+
+    def step(self, epoch=None):
+        # Always advance by one optimizer step (ignore epoch arg from Lightning)
+        super().step()
+        # Check if we just restarted a new cycle
+        if self.T_cur == 0 and self.last_epoch != 0:
+            self._last_cycle += 1
+            for group in self.optimizer.param_groups:
+                if "weight_decay" in group:
+                    group["weight_decay"] *= self.wd_decay
+                    # optional: clamp to non-negative
+                    if group["weight_decay"] < 0:
+                        group["weight_decay"] = 0.0
+                    group["weight_decay"] *= self.wd_decay
+                    # optional: clamp to non-negative
+                    if group["weight_decay"] < 0:
+                        group["weight_decay"] = 0.0
+                    if group["weight_decay"] < 0:
+                        group["weight_decay"] = 0.0
 class StepwiseCAWRWithWD(torch.optim.lr_scheduler.CosineAnnealingWarmRestarts):
     def __init__(self, optimizer, T_0, T_mult=1, eta_min=0, wd_decay=1.0):
         """
