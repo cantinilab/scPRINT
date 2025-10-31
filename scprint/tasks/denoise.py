@@ -169,12 +169,16 @@ class Denoiser:
                     gene_pos,
                     expression,
                     depth,
-                    knn_cells=batch["knn_cells"].to(device)
-                    if model.expr_emb_style == "metacell"
-                    else None,
-                    knn_cells_info=batch["knn_cells_info"].to(device)
-                    if model.expr_emb_style == "metacell"
-                    else None,
+                    knn_cells=(
+                        batch["knn_cells"].to(device)
+                        if model.expr_emb_style == "metacell"
+                        else None
+                    ),
+                    knn_cells_info=(
+                        batch["knn_cells_info"].to(device)
+                        if model.expr_emb_style == "metacell"
+                        else None
+                    ),
                     do_generate=False,
                     depth_mult=self.predict_depth_mult,
                     pred_embedding=self.pred_embedding,
@@ -211,7 +215,9 @@ class Denoiser:
 
         if model.transformer.attn_type == "hyper":
             # seq len must be a multiple of 128
-            num = model.cell_embs_count if not model.cell_transformer else 0
+            num = (1 if self.use_metacell_token else 0) + (
+                (len(self.classes) + 1) if not self.cell_transformer else 0
+            )
             if (stored_noisy.shape[1] + num) % 128 != 0:
                 stored_noisy = stored_noisy[
                     :, : ((stored_noisy.shape[1]) // 128 * 128) - num
