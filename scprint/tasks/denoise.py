@@ -154,10 +154,20 @@ class Denoiser:
                     batch["x"].to(device),
                     batch["depth"].to(device),
                 )
+                knn_cells = (
+                    batch["knn_cells"].to(device)
+                    if model.expr_emb_style == "metacell"
+                    else None
+                )
                 if self.downsample_expr is not None:
                     expression = utils.downsample_profile(
                         expression, self.downsample_expr
                     )
+                    if knn_cells is not None:
+                        for i in range(knn_cells.shape[1]):
+                            knn_cells[:, i] = utils.downsample_profile(
+                                knn_cells[:, i], self.downsample_expr
+                            )
                 if stored_noisy is None:
                     stored_noisy = expression.cpu().numpy()
                 else:
@@ -215,8 +225,8 @@ class Denoiser:
 
         if model.transformer.attn_type == "hyper":
             # seq len must be a multiple of 128
-            num = (1 if self.use_metacell_token else 0) + (
-                (len(self.classes) + 1) if not self.cell_transformer else 0
+            num = (1 if model.use_metacell_token else 0) + (
+                (len(model.classes) + 1) if not model.cell_transformer else 0
             )
             if (stored_noisy.shape[1] + num) % 128 != 0:
                 stored_noisy = stored_noisy[

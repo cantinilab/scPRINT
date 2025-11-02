@@ -9,7 +9,7 @@ trainer:
   log_every_n_steps: 100
   limit_train_batches: 10000
   gradient_clip_algorithm: norm
-  limit_val_batches: 5000
+  limit_val_batches: 5000 
   limit_test_batches: 1 # we don't perform tests this way
   accumulate_grad_batches: 1
   logger:

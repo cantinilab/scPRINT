@@ -52,9 +52,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         freeze_embeddings: bool = True,
         gene_pos_file: Optional[str] = None,
         normalization: str = "sum",  # log, sum, both, raw
-        attn_bias: str = "none",
+        attn_bias: Optional[str] = None,
         expr_encoder_layers: int = 3,
-        attention: str = "normal",  # "performer", "legacy-flash", "normal", "criss-cross", "hyper", "adasplash", "softpick"
+        attention: str = "normal",  # "performer", "legacy-flash", "normal", "criss-cross", "hyper", "adasplash", "softpick", "softpick-flash"
         expr_emb_style: str = "continuous",  # "binned", "continuous", "metacell"
         n_input_bins: int = 0,
         mvc_decoder: Optional[
@@ -192,7 +192,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # should be stored somehow
         self.d_model = d_model
         self.normalization = normalization
-        self.attn_bias = attn_bias
+        self.attn_bias = attn_bias if attn_bias != "none" else None
         self.organisms = organisms
         self.nlayers = nlayers
         self.use_metacell_token = use_metacell_token
@@ -421,21 +421,28 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
         # decoders
         # expression
-        self.expr_decoder = decoders.ExprDecoder(
-            d_model,
-            dropout=dropout,
-            zinb=zinb,
-            use_depth=True,
-        )
-        if splicing_head:
-            self.splicing_head = decoders.ExprDecoder(
+        self.splicing_head = None
+        if expr_emb_style == "binned":
+            self.expr_decoder = decoders.ClsDecoder(
+                d_model,
+                n_input_bins,
+                layers=[d_model // 2, d_model // 4],
+                dropout=dropout,
+            )
+        else:
+            self.expr_decoder = decoders.ExprDecoder(
                 d_model,
                 dropout=dropout,
                 zinb=zinb,
                 use_depth=True,
             )
-        else:
-            self.splicing_head = None
+            if splicing_head:
+                self.splicing_head = decoders.ExprDecoder(
+                    d_model,
+                    dropout=dropout,
+                    zinb=zinb,
+                    use_depth=True,
+                )
         # cls decoder
         self.cls_decoders = torch.nn.ModuleDict()
         # should be a very simple classifier for most things
@@ -928,9 +935,12 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         Returns:
             dict: the output of the model
         """
-        output = self.expr_decoder(transformer_output, req_depth)
-
-        output["mean"] = depth_mult.unsqueeze(1) * output["mean"]
+        if self.expr_emb_style != "binned":
+            output = self.expr_decoder(transformer_output, req_depth)
+            output["mean"] = depth_mult.unsqueeze(1) * output["mean"]
+        else:
+            # binned case
+            output = {"mean": self.expr_decoder(transformer_output)}
         if self.splicing_head is not None:
             splicing_output = self.splicing_head(transformer_output, req_depth)
             output.update({"spl_" + k: v for k, v in splicing_output.items()})
@@ -1003,6 +1013,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     }
                 )
         if do_mvc:
+            if self.expr_emb_style == "binned":
+                raise ValueError("MVC decoding not supported with binned expression")
             output.update(
                 self.mvc_decoder(
                     output["input_cell_emb"],
@@ -1088,14 +1100,12 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         num = (1 if self.use_metacell_token else 0) + (
             (len(self.classes) + 1) if not self.cell_transformer else 0
         )
-        if self.attn_bias != "none":
-            if not hasattr(self, "nbias"):
-                bias_path = os.path.join(
-                    Path(FILEDIR).parent.parent, "data", "bias_sparse.npz"
-                )
-                self.nbias = torch.Tensor(load_npz(bias_path).todense()).to(
-                    device=gene_pos.device, dtype=torch.float16
-                )
+        if self.attn_bias is not None:
+            if not hasattr(self, "nbias_sparse"):
+                bias_path = os.path.join(self.attn_bias)
+                # Keep as sparse matrix - much more memory efficient
+                self.nbias_sparse = load_npz(bias_path)
+
             bias = torch.zeros(
                 (
                     gene_pos.shape[0],
@@ -1105,19 +1115,33 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 device=gene_pos.device,
                 dtype=torch.float16,
             )
-            # fade slowly through the iterations
-            fade_factor = 40000 / (400 + self.trainer.global_step * 2)
-            bias[:, num:, num:] = (
-                self.nbias[gene_pos[:, :, None], gene_pos[:, None, :]] * fade_factor
-            )
-            bias[:, num:, :num] = -10_000  # do not pay attention to the cls embeddings
+
+            fade_factor = 100
+
+            # Extract only the needed values from sparse matrix
+            batch_size = gene_pos.shape[0]
+            seq_len = gene_pos.shape[1]
+
+            # Vectorized extraction from sparse matrix
+            for b in range(batch_size):
+                indices = gene_pos[b].cpu().numpy()
+                # Get submatrix for this batch's genes
+                submatrix = self.nbias_sparse[np.ix_(indices, indices)]
+                bias[b, num:, num:] = (
+                    torch.tensor(
+                        submatrix.toarray(), device=gene_pos.device, dtype=torch.float16
+                    )
+                    * fade_factor
+                )
+
+            bias[:, num:, :num] = -10_000
         if not self.cell_transformer:
             encoding = torch.cat([cell_embs, encoding], dim=1)
         if type(self.transformer) is FlashTransformer:
             transformer_output = self.transformer(
                 encoding,
                 return_qkv=get_attention_layer,
-                bias=bias if self.attn_bias != "none" else None,
+                bias=bias if self.attn_bias is not None else None,
                 bias_layer=list(range(self.nlayers - 1)),
                 mask_zeros=mask_zeros,
             )
@@ -1752,17 +1776,24 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     target=spl_expression,
                 )
         elif "mean" in output:
-            loss_expr = loss.mse(
-                # log1p is done in the function
-                input=output["mean"],
-                target=expression,
-                mask=self.mask_zeros,
-            )
-            if self.splicing_head is not None:
-                loss_nov_expr = loss.mse(
-                    input=torch.log(output["spl_mean"] + 1),
-                    target=torch.log(spl_expression + 1),
+            if self.expr_emb_style == "binned":
+                # we are in binned case
+                loss_expr = torch.nn.functional.cross_entropy(
+                    input=output["mean"].flatten(0, 1),
+                    target=expression.long().flatten(),
                 )
+            else:
+                loss_expr = loss.mse(
+                    # log1p is done in the function
+                    input=output["mean"],
+                    target=expression,
+                    mask=self.mask_zeros,
+                )
+                if self.splicing_head is not None:
+                    loss_nov_expr = loss.mse(
+                        input=torch.log(output["spl_mean"] + 1),
+                        target=torch.log(spl_expression + 1),
+                    )
         else:
             loss_expr = 0
         total_loss += loss_expr
@@ -2166,12 +2197,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.pred_embedding (list, optional): the classes to predict. Defaults to [].
 
         """
-        if self.mask_zeros and knn_cells is None:
-            keep = expression.sum(0) != 0
-            if keep.sum() != keep.shape[0]:
-                expression = expression[:, keep]
-                gene_pos = gene_pos[:, keep]
-
         if self.transformer.attn_type == "hyper":
             # seq len must be a multiple of 128
             num = (1 if self.use_metacell_token else 0) + (

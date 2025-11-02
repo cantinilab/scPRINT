@@ -14,6 +14,7 @@ from anndata import AnnData
 from anndata.utils import make_index_unique
 from bengrn import BenGRN, get_perturb_gt, get_sroy_gt
 from bengrn.base import train_classifier
+
 # from bengrn.GeneRNIB_reg2 import run_gene_rnib, NORMAN, OP, ADAMSON
 from grnndata import GRNAnnData, from_anndata
 from grnndata import utils as grnutils
@@ -99,9 +100,7 @@ class GNInfer:
             "random expr",
             "some",
             "most expr",
-        ], (
-            "how must be one of 'most var within', 'most var across', 'random expr', 'some', 'most expr'"
-        )
+        ], "how must be one of 'most var within', 'most var across', 'random expr', 'some', 'most expr'"
         self.num_genes = num_genes
         self.preprocess = preprocess
         self.cell_type_col = cell_type_col
@@ -138,7 +137,7 @@ class GNInfer:
             self.layer = list(range(model.nlayers))
         self.n_cell_embs = model.attn.additional_tokens
         subadata = self.predict(model, adata, self.layer, cell_type)
-        adjacencies = self.aggregate(model.attn.get(), model.genes)
+        adjacencies = self.aggregate(model)
         model.attn.data = None
         if self.head_agg == "none":
             return self.save(
@@ -296,12 +295,16 @@ class GNInfer:
                     gene_pos,
                     expression,
                     depth,
-                    knn_cells=batch["knn_cells"].to(device)
-                    if model.expr_emb_style == "metacell"
-                    else None,
-                    knn_cells_info=batch["knn_cells_info"].to(device)
-                    if model.expr_emb_style == "metacell"
-                    else None,
+                    knn_cells=(
+                        batch["knn_cells"].to(device)
+                        if model.expr_emb_style == "metacell"
+                        else None
+                    ),
+                    knn_cells_info=(
+                        batch["knn_cells_info"].to(device)
+                        if model.expr_emb_style == "metacell"
+                        else None
+                    ),
                     keep_output=False,
                     get_attention_layer=layer if type(layer) is list else [layer],
                 )
@@ -309,7 +312,8 @@ class GNInfer:
         model.doplot = prevplot
         return subadata
 
-    def aggregate(self, attn, genes):
+    def aggregate(self, model):
+        attn, genes = model.attn.get(), model.genes
         if self.head_agg == "mean_full" or not self.comp_attn:
             self.curr_genes = [i for i in genes if i in self.curr_genes]
             return attn.detach().cpu().numpy()
@@ -365,6 +369,17 @@ class GNInfer:
                 raise ValueError(
                     "preprocess must be one of 'sinkhorn', 'softmax', 'none'"
                 )
+            # this is a debugger line
+            # import pdb; pdb.set_trace()
+            # if model.attn_bias is not None:
+            #    if not hasattr(model, "nbias"):
+            #        raise ValueError(
+            #            "model does not have nbias attribute for attention bias"
+            #        )
+            #    attn += (
+            #        model.attn_bias[gene_pos[:, :, None], gene_pos[:, None, :]]
+            #        * 100
+            #    )
 
             if self.symmetrize:
                 attn = (attn + attn.T) / 2
