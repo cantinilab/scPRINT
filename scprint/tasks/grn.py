@@ -249,7 +249,9 @@ class GNInfer:
         model.attn.comp_attn = self.comp_attn
         if model.transformer.attn_type == "hyper":
             self.curr_genes = [i for i in model.genes if i in self.curr_genes]
-            num = model.cell_embs_count if not model.cell_transformer else 0
+            num = (1 if model.use_metacell_token else 0) + (
+                (len(model.classes) + 1) if not model.cell_transformer else 0
+            )
             if (len(self.curr_genes) + num) % 128 != 0:
                 self.curr_genes = self.curr_genes[
                     : (len(self.curr_genes) // 128 * 128) - num
