@@ -60,7 +60,7 @@ dependencies = [
     "sparse>=0.15.4",
     "biopython",
     "future>=1.0.0",
-    "storage3<=0.11.1",
+    "storage3>=0.10.0,<=0.11.1",
     "jupytext>=1.16.0",
     "torch_geometric>=2.6.0",
     # new restrictions to make it installable in python 3.11
