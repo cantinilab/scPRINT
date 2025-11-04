@@ -526,7 +526,11 @@ def default_benchmark(
             grn_inferer = GNInfer(
                 layer=layers,
                 how="most var within",
-                preprocess="softmax",
+                preprocess=(
+                    "softpick"
+                    if model.attention in ["softpick", "softpick-flash"]
+                    else "softmax"
+                ),
                 head_agg="none",
                 filtration="none",
                 num_genes=maxgenes,
@@ -647,7 +651,11 @@ def default_benchmark(
         grn_inferer = GNInfer(
             layer=layers,
             how="most var within",
-            preprocess="softmax",
+            preprocess=(
+                "softpick"
+                if model.attention in ["softpick", "softpick-flash"]
+                else "softmax"
+            ),
             head_agg="none",
             filtration="none",
             num_genes=maxgenes,
@@ -806,7 +814,11 @@ def default_benchmark(
             grn_inferer = GNInfer(
                 layer=layers,
                 how="most var across",
-                preprocess="softmax",
+                preprocess=(
+                    "softpick"
+                    if model.attention in ["softpick", "softpick-flash"]
+                    else "softmax"
+                ),
                 head_agg="none",
                 filtration="none",
                 num_workers=8,

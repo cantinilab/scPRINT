@@ -687,8 +687,8 @@ def display_confusion_matrix(
     )
     plt.xlabel(pred, fontsize=12)
     plt.ylabel(true + " (with counts)", fontsize=12)
-    plt.xticks(rotation=45, ha="right", fontsize=10)
-    plt.yticks(rotation=0, fontsize=10)
+    plt.xticks(rotation=45, ha="right", fontsize=12)
+    plt.yticks(rotation=0, fontsize=14)
     plt.tight_layout()
     plt.show()
 
