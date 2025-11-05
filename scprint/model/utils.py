@@ -91,9 +91,10 @@ def make_adata(
         # Create empty array with same shape as expr_pred[0]
         # Fill array with values from expr_pred[0]
         for idx in range(n_cells):
-            mu_array[idx, pos[idx]] = expr_pred[0][idx].cpu().numpy()
+            mu_array[idx, pos[idx]] = expr_pred[0][idx].cpu().numpy() + 1
         exist = mu_array.sum(0) != 0
         mu_array = mu_array[:, exist]
+        mu_array[mu_array == 1] = 0
         layers = {
             "scprint_mu": mu_array,
             #  "used_scprint": csr_matrix(pos),

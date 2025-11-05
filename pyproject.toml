@@ -73,6 +73,8 @@ dependencies = [
     "gseapy>=1.1.8",
     "d3graph>=2.5.1",
     "gget>=0.29.1",
+    "supabase>=2.15.0",
+    "s3fs>=2024.10.0",
 ]
 
 [project.optional-dependencies]

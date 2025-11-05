@@ -2272,7 +2272,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 "expr": (
                     [output["mean"], output["disp"], output["zero_logits"]]
                     if "disp" in output
-                    else [output["mean"]]
+                    else [
+                        (
+                            output["mean"]
+                            if self.expr_emb_style != "binned"
+                            else output["mean"].argmax(-1)
+                        )
+                    ]
                 ),
             }
         if self.embs is None:
@@ -2305,7 +2311,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.expr_pred = (
                 [output["mean"], output["disp"], output["zero_logits"]]
                 if "disp" in output
-                else [output["mean"]]
+                else [
+                    (
+                        output["mean"]
+                        if self.expr_emb_style != "binned"
+                        else output["mean"].argmax(-1)
+                    )
+                ]
             )
         else:
             self.embs = {
@@ -2350,7 +2362,18 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     torch.cat([self.expr_pred[2], output["zero_logits"]]),
                 ]
                 if "disp" in output
-                else [torch.cat([self.expr_pred[0], output["mean"]])]
+                else [
+                    torch.cat(
+                        [
+                            self.expr_pred[0],
+                            (
+                                output["mean"]
+                                if self.expr_emb_style != "binned"
+                                else output["mean"].argmax(-1)
+                            ),
+                        ]
+                    )
+                ]
             )
         if self.embs is not None:
             if self.pos.shape[0] > max_size_in_mem:
