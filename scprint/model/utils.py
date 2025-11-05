@@ -91,9 +91,10 @@ def make_adata(
         # Create empty array with same shape as expr_pred[0]
         # Fill array with values from expr_pred[0]
         for idx in range(n_cells):
-            mu_array[idx, pos[idx]] = expr_pred[0][idx].cpu().numpy()
-        # exist = mu_array.sum(0) != 0
-        # mu_array = mu_array[:, exist]
+            mu_array[idx, pos[idx]] = expr_pred[0][idx].cpu().numpy() + 1
+        exist = mu_array.sum(0) != 0
+        mu_array = mu_array[:, exist]
+        mu_array[mu_array == 1] = 0
         layers = {
             "scprint_mu": mu_array,
             #  "used_scprint": csr_matrix(pos),
@@ -103,14 +104,14 @@ def make_adata(
             # Fill array with values from expr_pred[0]
             for idx in range(n_cells):
                 theta_array[idx, pos[idx]] = expr_pred[1][idx].cpu().numpy()
-            # layers["scprint_theta"] = theta_array[:, exist]
+            layers["scprint_theta"] = theta_array[:, exist]
 
             pi_array = np.zeros((n_cells, size), dtype=np.float32)
             # Fill array with values from expr_pred[0]
             for idx in range(n_cells):
                 pi_array[idx, pos[idx]] = expr_pred[2][idx].cpu().numpy()
-        # layers["scprint_pi"] = pi_array[:, exist]
-        #  genes = [n for i, n in enumerate(genes) if exist[i] > 0]
+            layers["scprint_pi"] = pi_array[:, exist]
+        genes = [n for i, n in enumerate(genes) if exist[i] > 0]
     else:
         genes = []
     adata = AnnData(
