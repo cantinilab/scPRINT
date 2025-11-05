@@ -3,6 +3,7 @@ import copy
 import datetime
 import os
 from functools import partial
+
 # from galore_torch import GaLoreAdamW
 from math import factorial
 from pathlib import Path
@@ -82,9 +83,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         nlayers_cell: int = 6,
         num_heads_kv_cell: int = 4,
         transformer=None,
-        gene_pos_enc=None,
         drop_path_rate=0.0,
         # unused args from older versions kept for loading old models
+        gene_pos_enc=None,
         max_cont_len=None,
         residual_in_fp32=None,
         checkpointing=None,
