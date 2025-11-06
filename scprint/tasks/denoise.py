@@ -249,12 +249,12 @@ class Denoiser:
                 if random_indices is not None
                 else adata[:, adata.var.index.isin(pred_adata.var.index)]
             )
-            true = adata.X[
+            true = adata[
                 :,
-                pred_adata.layers["scprint_mu"][
-                    :, pred_adata.var.index.isin(adata.var.index)
-                ].any(axis=0),
-            ].toarray()
+                pred_adata.var.index[
+                    pred_adata.var.index.isin(adata.var.index)
+                ].to_list(),
+            ].X.toarray()
             if self.apply_zero_pred:
                 reco = (
                     reco

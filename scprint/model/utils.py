@@ -84,7 +84,11 @@ def make_adata(
 
     n_cells = embs[list(embs.keys())[0]].shape[0]
     layers = None
+    minval = pos.min()
+    maxval = pos.max()
+    genes = genes[minval : maxval + 1]
     size = len(genes)
+    pos = pos - minval 
     if pos is not None:
         mu_array = np.zeros((n_cells, size), dtype=np.float32)
         pos = pos.cpu().numpy()
