@@ -4,4 +4,4 @@ from .finetune import FinetuneBatchClass
 from .gene_emb import *
 from .generate import *
 from .grn import *
-from .impute import Imputerqq
+from .impute import Imputer

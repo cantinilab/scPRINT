@@ -120,7 +120,7 @@ class GeneEncoder(nn.Module):
                 self.embeddings._mmap.close()
             except:
                 pass
-    
+
     def _init_weights(self):
         pass
 
@@ -286,10 +286,10 @@ class ContinuousValueEncoder(nn.Module):
             x = x.masked_fill_(mask.unsqueeze(-1), 0)
             # x = x.masked_fill_(mask.unsqueeze(-1), self.mask_value(0))
         return x
-    
+
     def _init_weights(self):
         pass
-        #for m in self.encoder:
+        # for m in self.encoder:
         #    if isinstance(m, nn.Linear):
         #        torch.nn.init.eye_(m.weight)
 
@@ -302,7 +302,7 @@ class ExprBasedFT(nn.Module):
         expr_encoder: nn.Module = nn.Identity(),
         dropout: float = 0.1,
         layers: int = 2,
-        intermediary_d: int = 256+64,
+        intermediary_d: int = 256 + 64,
     ):
         """
         Encode real number values to a vector using neural nets projection.
@@ -349,8 +349,10 @@ class ExprBasedFT(nn.Module):
         """
         # expand last dimension
         if neighbors is None and expr is None:
-            expr = torch.zeros((
-                gene_pos.shape[0], gene_pos.shape[1], self.expr_encoder.output_dim), dtype=torch.float32, device=gene_pos.device
+            expr = torch.zeros(
+                (gene_pos.shape[0], gene_pos.shape[1], self.expr_encoder.output_dim),
+                dtype=torch.float32,
+                device=gene_pos.device,
             )
             # if no expr information: consider that it is all masked
         else:
@@ -364,9 +366,10 @@ class ExprBasedFT(nn.Module):
         for val in self.encoder:
             x = val(x)
         return x
-    
+
     def _init_weights(self):
         pass
+
     #    for m in self.encoder:
     #        if isinstance(m, nn.Linear):
     #            torch.nn.init.eye_(m.weight)
@@ -403,7 +406,7 @@ class CategoryValueEncoder(nn.Module):
         if mask is not None:
             x = x.masked_fill(mask.unsqueeze(-1), 0)
         return x
-    
+
     def _init_weights(self):
         pass
 
@@ -449,16 +452,22 @@ class EasyExprGNN(nn.Module):
     def forward(self, expr=None, neighbors=None, edge_info=None, mask=None):
         # batch, seq_len, neighbs
         if neighbors is None:
-            neighbors = torch.zeros((expr.shape[0], expr.shape[1], self.self_dim // 2), device=expr.device)
+            neighbors = torch.zeros(
+                (expr.shape[0], expr.shape[1], self.self_dim // 2), device=expr.device
+            )
         else:
-            neighbors = neighbors.transpose(1,2)
-            neighbors = torch.cat([neighbors.unsqueeze(-1), edge_info.unsqueeze(-1)], dim=-1)
+            neighbors = neighbors.transpose(1, 2)
+            neighbors = torch.cat(
+                [neighbors.unsqueeze(-1), edge_info.unsqueeze(-1)], dim=-1
+            )
             for i, layer in enumerate(self.neighbors_layers):
                 # batch, seq_len, neighbs, hidden_dim
                 neighbors = layer(neighbors)
             neighbors = neighbors.sum(-2)
         if expr is None:
-            expr = torch.zeros((neighbors.shape[0], neighbors.shape[1], 1), device=neighbors.device)
+            expr = torch.zeros(
+                (neighbors.shape[0], neighbors.shape[1], 1), device=neighbors.device
+            )
         else:
             expr = expr.unsqueeze(-1)
             for i, layer in enumerate(self.self_layers):
@@ -470,25 +479,25 @@ class EasyExprGNN(nn.Module):
         if mask is not None:
             x = x.masked_fill(mask.unsqueeze(-1), 0)
         return x
-    
+
     def _init_weights(self):
         pass
-        #for m in self.neighbors_layers:
+        # for m in self.neighbors_layers:
         #    if isinstance(m, nn.Linear):
         #        torch.nn.init.zeros_(m.weight)
         #        if m.bias is not None:
         #            torch.nn.init.constant_(m.bias, 0)
-        #for m in self.self_layers:
+        # for m in self.self_layers:
         #    if isinstance(m, nn.Linear):
         #        torch.nn.init.eye_(m.weight)
         #        if m.bias is not None:
         #            torch.nn.init.constant_(m.bias, 0)
-        #for m in self.shared_layers:
+        # for m in self.shared_layers:
         #    if isinstance(m, nn.Linear):
         #        torch.nn.init.eye_(m.weight)
         #        if m.bias is not None:
         #            torch.nn.init.constant_(m.bias, 0)
-        #    
+        #
 
 
 class GNN(nn.Module):
@@ -547,9 +556,9 @@ class GNN(nn.Module):
 
             # Global MLP (rho) for processing aggregated features
             self.output_layer = MLP(
-                in_channels=(merge_dim * 2) + 1
-                if add_connection_feature
-                else merge_dim * 2,
+                in_channels=(
+                    (merge_dim * 2) + 1 if add_connection_feature else merge_dim * 2
+                ),
                 hidden_channels=output_dim,
                 out_channels=output_dim,
                 num_layers=num_layers,
