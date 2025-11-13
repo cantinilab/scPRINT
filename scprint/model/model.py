@@ -3,7 +3,6 @@ import copy
 import datetime
 import os
 from functools import partial
-
 # from galore_torch import GaLoreAdamW
 from math import factorial
 from pathlib import Path
@@ -189,6 +188,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.mask_zeros = False
         self.vae_kl_scale = 0.05
         self.vae_kl_warmup_steps = 40_000  # Default value, can be adjusted
+        self.save_expr = True
 
         # should be stored somehow
         self.d_model = d_model
@@ -2413,9 +2413,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if not os.path.exists(mdir):
             os.makedirs(mdir)
         adata, fig = utils.make_adata(
-            genes=self.genes,
+            genes=self.genes if self.save_expr else None,
             embs=self.embs,
-            pos=self.pos,
+            pos=self.pos if self.save_expr else None,
             expr_pred=self.expr_pred,
             classes=self.classes,
             pred=self.pred if not self.keep_all_labels_pred else None,

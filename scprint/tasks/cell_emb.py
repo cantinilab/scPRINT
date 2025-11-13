@@ -128,6 +128,7 @@ class Embedder:
         prevplot = model.doplot
         model.pred_log_adata = True
         model.doplot = self.doplot and not self.keep_all_labels_pred
+        model.save_expr = False
         rand = random_str()
         dtype = (
             torch.float16
@@ -177,6 +178,7 @@ class Embedder:
                 model.pred if self.pred is None else torch.cat([self.pred, model.pred])
             )
         model.pred = None
+        model.save_expr = True
         try:
             mdir = (
                 model.logger.save_dir if model.logger.save_dir is not None else "data"
