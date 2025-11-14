@@ -3,6 +3,7 @@ import copy
 import datetime
 import os
 from functools import partial
+
 # from galore_torch import GaLoreAdamW
 from math import factorial
 from pathlib import Path
@@ -714,6 +715,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 checkpoints["hyper_parameters"].pop("gene_pos_enc")
         mencoders = {}
         if type(checkpoints["hyper_parameters"]["genes"]) is list:
+            print("converting a gene list-based model")
             org = checkpoints["hyper_parameters"].get("organisms", self.organisms)
             genedf = load_genes(org)
             checkpoints["hyper_parameters"]["genes"] = {
@@ -784,18 +786,22 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             ]:
                 if i in checkpoints["state_dict"]:
                     del checkpoints["state_dict"][i]
-        if self._genes != checkpoints["hyper_parameters"]["genes"]:
-            self._genes = checkpoints["hyper_parameters"]["genes"]
-            try:
-                self.trainer.datamodule.set_valid_genes_collator(self.genes)
-            except RuntimeError as e:
-                if "scPrint is not attached to a `Trainer`." not in str(e):
-                    raise e
         org = checkpoints["hyper_parameters"].get("organisms")
         if self.organisms != org and org is not None:
             self.organisms = org
             try:
                 self.trainer.datamodule.organisms = self.organisms
+            except RuntimeError as e:
+                if "scPrint is not attached to a `Trainer`." not in str(e):
+                    raise e
+        # this is a debugger line
+        import pdb
+
+        pdb.set_trace()
+        if self.genes != checkpoints["hyper_parameters"]["genes"]:
+            self._genes = checkpoints["hyper_parameters"]["genes"]
+            try:
+                self.trainer.datamodule.set_valid_genes_collator(self.genes)
             except RuntimeError as e:
                 if "scPrint is not attached to a `Trainer`." not in str(e):
                     raise e
@@ -818,8 +824,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.expr_encoder.gene_encoder = new_gene_encoder
         self.gene_encoder = new_gene_encoder
         # Update vocabulary
-        self.vocab = {i: n for i, n in enumerate(self.genes)}
-        self.genes = [g for g in self.genes if g not in names]
+        for k, v in self._genes.items():
+            if len(set(v) & set(names)) > 0:
+                self._genes[k] = [g for g in v if g not in names]
         self.attn.gene_dim = len(self.genes)
         if self.pos_encoder is not None:
             # Update gene position encoding
@@ -844,6 +851,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         Returns:
             Tensor: the encoded data
         """
+        # this is a debugger line
+        import pdb
+
+        pdb.set_trace()
         if expression is not None or neighbors is not None:
             if self.normalization in ["sum", "both"]:
                 expression = expression / expression.sum(1).unsqueeze(1)
@@ -2413,10 +2424,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if not os.path.exists(mdir):
             os.makedirs(mdir)
         adata, fig = utils.make_adata(
-            genes=self.genes if self.save_expr else None,
+            genes=self.genes,
             embs=self.embs,
             pos=self.pos if self.save_expr else None,
-            expr_pred=self.expr_pred,
+            expr_pred=self.expr_pred if self.save_expr else None,
             classes=self.classes,
             pred=self.pred if not self.keep_all_labels_pred else None,
             label_decoders=self.label_decoders,
