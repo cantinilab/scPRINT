@@ -517,7 +517,7 @@ class Attention:
     def __init__(
         self,
         gene_dim: int,
-        comp_attn: bool = True,
+        precomp_attn: bool = False,
         apply_softmax: bool = True,
         sum_heads: bool = True,
         additional_tokens: int = 0,
@@ -528,7 +528,7 @@ class Attention:
         Args:
             gene_dim (int): The dimension of the gene.
             additional_tokens (int): The number of additional tokens to add.
-            comp_attn (bool): Whether to compute attention or it is precomputed
+            precomp_attn (bool): Whether to compute attention or it is precomputed
             apply_softmax (bool): Whether to apply softmax to the attention.
             sum_heads (bool): Whether to sum the heads.
         """
@@ -538,11 +538,11 @@ class Attention:
         self.div: Optional[Tensor] = None
         self.apply_softmax: bool = apply_softmax
         self.sum_heads: bool = sum_heads
-        self.comp_attn: bool = comp_attn
+        self.precomp_attn: bool = precomp_attn
         self.speciesloc: int = 0
 
     def add(self, *args, **kwargs) -> None:
-        if self.comp_attn:
+        if not self.precomp_attn:
             self.add_qk(*args, **kwargs)
         else:
             self.add_attn(*args, **kwargs)
@@ -551,7 +551,7 @@ class Attention:
         self, x: List[Tensor], pos: Tensor, expr: Optional[Tensor] = None
     ) -> None:
         """
-        Aggregate the attention or data based on the comp_attn flag.
+        Aggregate the attention or data based on the precomp_attn flag.
 
         Args:
             x (List[Tensor]): List of tensors to aggregate. Tensor of size (batch, seq_len, 2, heads, emb)
@@ -602,6 +602,7 @@ class Attention:
             x (List[Tensor]): List of tensors to add.
             pos (Tensor): Position tensor.
         """
+        # this is a debugger line
         if self.data is None:
             self.data = torch.zeros(
                 [len(x), self.gene_dim + self.additional_tokens] + list(x[0].shape[2:]),
@@ -610,7 +611,6 @@ class Attention:
             self.div = torch.zeros(
                 self.gene_dim + self.additional_tokens, device=pos.device
             )
-        # this is a debugger line
         for i in range(x[0].shape[0]):  # batch size
             loc = torch.cat(
                 [
@@ -618,7 +618,6 @@ class Attention:
                     pos[i] + self.additional_tokens - self.speciesloc,
                 ]
             ).int()
-            # this is a debugger line
             for j in range(len(x)):  # number of layers * heads
                 self.data[j, loc, :, :, :] += x[j][i]
             self.div[loc] += 1
@@ -630,7 +629,7 @@ class Attention:
         Returns:
             Optional[np.ndarray]: The aggregated attention or data.
         """
-        if self.comp_attn:
+        if not self.precomp_attn:
             if self.data is None:
                 return None
             # shape is (layers, genes, qkv, heads, emb)

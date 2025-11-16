@@ -52,7 +52,7 @@ class GNInfer:
         k: int = 10,
         apc: bool = False,
         known_grn: Optional[Any] = None,
-        comp_attn: bool = True,
+        precomp_attn: bool = False,
         symmetrize: bool = False,
         loc: str = "./",
         dtype: torch.dtype = torch.float16,
@@ -115,7 +115,7 @@ class GNInfer:
         self.max_cells = max_cells
         self.curr_genes = None
         self.drop_unexpressed = drop_unexpressed
-        self.comp_attn = comp_attn
+        self.precomp_attn = precomp_attn
         if self.filtration != "none" and self.head_agg == "none":
             raise ValueError("filtration must be 'none' when head_agg is 'none'")
 
@@ -201,9 +201,7 @@ class GNInfer:
                 adata.X.sum(0).A1.argsort()[::-1]
             ].tolist()[: self.num_genes]
         else:
-            raise ValueError(
-                "how must be one of 'most var', 'random expr', 'most expr'"
-            )
+            raise ValueError("something wrong with your inputs")
         if self.drop_unexpressed:
             expr = subadata.var[(subadata.X.sum(0) > 0).tolist()[0]].index.tolist()
             self.curr_genes = [i for i in self.curr_genes if i in expr]
@@ -236,17 +234,17 @@ class GNInfer:
             num_workers=self.num_workers,
             shuffle=False,
         )
-        model.attn.comp_attn = self.head_agg == "mean_full"
+        model.attn.precomp_attn = self.head_agg == "mean_full"
         prevplot = model.doplot
-        if self.head_agg == "mean_full" and not self.comp_attn:
-            raise ValueError("mean_full is only supported for comp_attn")
+        if self.head_agg == "mean_full" and not self.precomp_attn:
+            raise ValueError("mean_full is only supported for precomp_attn")
 
         model.doplot = False
         model.on_predict_epoch_start()
         model.eval()
         model.attn.data = None
         # reparametrize the attn process
-        model.attn.comp_attn = self.comp_attn
+        model.attn.precomp_attn = self.precomp_attn
         if model.transformer.attn_type == "hyper":
             self.curr_genes = [i for i in model.genes if i in self.curr_genes]
             num = (1 if model.use_metacell_token else 0) + (
@@ -257,15 +255,15 @@ class GNInfer:
                     : (len(self.curr_genes) // 128 * 128) - num
                 ]
         if self.how != "random expr":
-            if self.num_genes > 10_000 and not self.comp_attn:
+            if self.num_genes > 10_000 and model.attn.precomp_attn:
                 raise ValueError("need less genes for a non-shared-qk version")
-            if not self.comp_attn:
+            if model.attn.precomp_attn:
                 model.attn.gene_dim = len(set(self.curr_genes) & set(model.genes))
                 model.attn.apply_softmax = self.preprocess == "softmax"
             else:
                 if subadata.obs["organism_ontology_term_id"].unique().shape[0] > 1:
                     raise ValueError(
-                        "only one organism at a time is supported for comp_attn"
+                        "only one organism at a time is supported for precomp_attn"
                     )
                 n = False
                 for i, k in col.start_idx.items():
@@ -275,9 +273,9 @@ class GNInfer:
                     if i == subadata.obs["organism_ontology_term_id"].unique()[0]:
                         model.attn.speciesloc = k
                         n = True
-        elif not self.comp_attn:
+        elif not model.attn.precomp_attn:
             raise ValueError(
-                "full attention (i.e. comp_attn=False) is not supported for random expr"
+                "full attention (i.e. precomp_attn=True) is not supported for random expr"
             )
         device = model.device.type
         # this is a debugger line
@@ -316,7 +314,7 @@ class GNInfer:
 
     def aggregate(self, model):
         attn, genes = model.attn.get(), model.genes
-        if self.head_agg == "mean_full" or not self.comp_attn:
+        if model.attn.precomp_attn:
             self.curr_genes = [i for i in genes if i in self.curr_genes]
             return attn.detach().cpu().numpy()
         if self.how == "random expr" and self.drop_unexpressed:

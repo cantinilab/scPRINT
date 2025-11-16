@@ -190,6 +190,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.vae_kl_scale = 0.05
         self.vae_kl_warmup_steps = 40_000  # Default value, can be adjusted
         self.save_expr = True
+        self.counter = 0
 
         # should be stored somehow
         self.d_model = d_model
@@ -794,17 +795,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             except RuntimeError as e:
                 if "scPrint is not attached to a `Trainer`." not in str(e):
                     raise e
-        # this is a debugger line
-        import pdb
-
-        pdb.set_trace()
-        if self.genes != checkpoints["hyper_parameters"]["genes"]:
+        if self._genes != checkpoints["hyper_parameters"]["genes"]:
             self._genes = checkpoints["hyper_parameters"]["genes"]
-            try:
-                self.trainer.datamodule.set_valid_genes_collator(self.genes)
-            except RuntimeError as e:
-                if "scPrint is not attached to a `Trainer`." not in str(e):
-                    raise e
+        try:
+            self.trainer.datamodule.set_valid_genes_collator(self.genes)
+        except RuntimeError as e:
+            if "scPrint is not attached to a `Trainer`." not in str(e):
+                raise e
 
         if not is_interactive():
             self.save_hyperparameters()
@@ -851,10 +848,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         Returns:
             Tensor: the encoded data
         """
-        # this is a debugger line
-        import pdb
-
-        pdb.set_trace()
         if expression is not None or neighbors is not None:
             if self.normalization in ["sum", "both"]:
                 expression = expression / expression.sum(1).unsqueeze(1)
@@ -1098,7 +1091,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 - "output_cell_emb": the concatenated compressed cell embedding output after compression (when using compression)
                 - "cls_output": the output of the classifier
         """
-        # this is a debugger line
         cell_embs, encoding = self._encoder(
             gene_pos,
             expression,
@@ -1366,11 +1358,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 encoder_layers.set_seq_parallel(True)
         for k, v in self.mat_labels_hierarchy.items():
             self.mat_labels_hierarchy[k] = v.to(self.device)
-        try:
-            if self.trainer.datamodule is not None:
-                self.trainer.datamodule.set_valid_genes_collator(self.genes)
-        except RuntimeError:
-            pass
 
     def training_step(
         self,
@@ -1943,19 +1930,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         optimizer.step(closure=optimizer_closure)
 
     def on_validation_start(self):
+        print("val start")
         for k, v in self.mat_labels_hierarchy.items():
             self.mat_labels_hierarchy[k] = v.to(self.device)
-        try:
-            if self.trainer.datamodule is not None:
-                self.trainer.datamodule.set_valid_genes_collator(self.genes)
-        except RuntimeError:
-            pass
 
     def on_validation_epoch_start(self):
-        try:
-            self.name = self.trainer._loggers[0].version
-        except:
-            print("not on wandb, could not set name")
         self.embs = None
         self.counter = 0
         self._store_adv_cls = self.do_adv_cls
@@ -2083,19 +2062,13 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 self.trainer.strategy.barrier()
         self.pred = None
 
-    def test_step(self, *args, **kwargs):
-        pass
+    def on_test_start(self):
+        """@see pl.LightningModule"""
+        print("test start")
+        for k, v in self.mat_labels_hierarchy.items():
+            self.mat_labels_hierarchy[k] = v.to(self.device)
 
     def on_test_epoch_end(self):
-        try:
-            if self.trainer.datamodule is not None:
-                self.trainer.datamodule.set_valid_genes_collator(self.genes)
-        except RuntimeError:
-            pass
-        try:
-            self.name = self.trainer._loggers[0].version
-        except:
-            print("not on wandb, could not set name")
         # Run the test only on global rank 0
         name = str(self.name) + "_step" + str(self.global_step) + "_test_metrics"
         import json
@@ -2132,10 +2105,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
     def on_predict_epoch_start(self):
         """@see pl.LightningModule"""
-        try:
-            self.name = self.trainer._loggers[0].version
-        except:
-            print("not on wandb, could not set name")
+        print("predict epoch start")
         self.embs = None
         self.attn.data = None
         self.attn.attn = None
@@ -2143,11 +2113,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if type(self.transformer) is FlashTransformer:
             for encoder_layers in self.transformer.blocks:
                 encoder_layers.set_seq_parallel(False)
-        try:
-            if self.trainer.datamodule is not None:
-                self.trainer.datamodule.set_valid_genes_collator(self.genes)
-        except RuntimeError:
-            pass
 
     def predict_step(self, batch, batch_idx):
         """
@@ -2183,7 +2148,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         get_attention_layer=None,
         depth_mult=1,
         keep_output=True,
-        max_size_in_mem=10_000,
+        max_size_in_mem=20_000,
         get_gene_emb=False,
         mask=None,
         metacell_token=None,
@@ -2209,6 +2174,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.pred_embedding (list, optional): the classes to predict. Defaults to [].
 
         """
+        self.keep_all_labels_pred = True
         if self.transformer.attn_type == "hyper":
             # seq len must be a multiple of 128
             num = (1 if self.use_metacell_token else 0) + (
@@ -2423,19 +2389,42 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             mdir = "data/"
         if not os.path.exists(mdir):
             os.makedirs(mdir)
-        adata, fig = utils.make_adata(
-            genes=self.genes,
-            embs=self.embs,
-            pos=self.pos if self.save_expr else None,
-            expr_pred=self.expr_pred if self.save_expr else None,
-            classes=self.classes,
-            pred=self.pred if not self.keep_all_labels_pred else None,
-            label_decoders=self.label_decoders,
-            labels_hierarchy=self.labels_hierarchy,
-            gtclass=gtclass,
-            doplot=self.doplot,
+        self.embs = (
+            torch.concat([v for k, v in self.embs.items()], dim=1)
+            .cpu()
+            .numpy()
+            .astype(np.float16)
         )
-        adata.write(
+
+        count = {
+            "cell_type_ontology_term_id": 3,
+            "tissue_ontology_term_id": 3,
+            "disease_ontology_term_id": 3,
+            "age_group": 3,
+            "assay_ontology_term_id": 3,
+            "self_reported_ethnicity_ontology_term_id": 3,
+            "sex_ontology_term_id": 1,
+            "organism_ontology_term_id": 3,
+            "cell_culture": 1,
+        }
+        tot = 0
+        locs = []
+        predloc = []
+        for val in self.classes:
+            num = self.hparams["classes"][val]
+            pred_slice = self.pred[:, tot : tot + num]
+            loc = pred_slice.argsort(-1)[:, -count[val] :].flip([-1])
+            top_k = torch.gather(pred_slice, 1, loc)
+            predloc.append(top_k.cpu().numpy().astype(np.float16))
+            locs.append(loc.cpu().numpy().astype(np.uint16))
+            tot += num
+        # this is a debugger line
+        import pdb
+
+        pdb.set_trace()
+        predloc = np.hstack(predloc)
+        locs = np.hstack(locs)
+        save = (
             str(mdir)
             + "/step_"
             + str(self.global_step)
@@ -2445,57 +2434,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             + str(name)
             + "_"
             + str(self.global_rank)
-            + ".h5ad"
         )
-        if self.doplot:
-            logged = False
-            try:
-                self.logger.experiment.add_figure(fig)
-                logged = True
-            except:
-                print("couldn't log to tensorboard")
-            try:
-                self.logger.log_image(key="umaps", images=[fig], step=self.global_step)
-                logged = True
-            except:
-                print("couldn't log to wandb")
-            if not logged:
-                fig.savefig(mdir + "/umap_" + self.name + "_" + name + ".png")
-
-        return adata
-
-    # def log_adata(self, gtclass=None, name=""):
-    #    """
-    #    log_adata will log an adata from predictions.
-    #    It will log to tensorboard and wandb if available
-
-    #    see @utils.log_adata
-    #    """
-    #    try:
-    #        mdir = self.logger.save_dir if self.logger.save_dir is not None else "/tmp"
-    #    except:
-    #        mdir = "data/"
-    #    if not os.path.exists(mdir):
-    #        os.makedirs(mdir)
-    #    self.embs = torch.concat([self.embs[cl] for cl in self.classes], dim=1).cpu().numpy().astype(np.float16)
-    #    self.pred = self.pred.cpu().numpy()
-    #    loc = self.pred.argsort()[:, -3:][::-1]
-    #    self.pred = self.pred[loc].astype(np.float16)
-    #    loc = loc.astype(np.uint16)
-    #    save = (
-    #        str(mdir)
-    #        + "/step_"
-    #        + str(self.global_step)
-    #        + "_"
-    #        + str(self.name)
-    #        + "_"
-    #        + str(name)
-    #        + "_"
-    #        + str(self.global_rank)
-    #    )
-    #    loc.save(save+"_top3.npz")
-    #    np.save(self.pred, save+"_pred.npz")
-    #    np.save(self.embs, save+"_embs.npz")
+        np.save(save + "_top3.npz", locs)
+        np.save(save + "_scores.npz", predloc)
+        np.save(save + "_embs.npz", self.embs)
 
     @property
     def genes(self):

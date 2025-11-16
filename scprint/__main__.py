@@ -24,7 +24,7 @@ class MySaveConfig(SaveConfigCallback):
                     log_graph=False,
                 )
                 if trainer.datamodule is not None:
-                    
+
                     trainer.logger.log_hyperparams({"datamodule": trainer.datamodule})
                     trainer.logger.log_hyperparams({"callbacks": trainer.callbacks})
             if trainer.is_global_zero:
@@ -43,6 +43,7 @@ def main(args: ArgsType = None):
         save_config_kwargs={"overwrite": True},
         save_config_callback=MySaveConfig,
     )
+
 
 if __name__ == "__main__":  # pragma: no cover
     main()

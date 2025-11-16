@@ -298,6 +298,13 @@ class MyCLI(LightningCLI):
 
             print(f"setting global pytorch distributed timeout to {TIMEOUT}s")
 
+    def after_instantiate_classes(self):
+        try:
+            self.model.name = self.trainer._loggers[0].version
+        except:
+            print("not on wandb, could not set name")
+        self.datamodule.set_valid_genes_collator(self.model.genes)
+
     def instantiate_trainer(self, **kwargs) -> Trainer:
         """Override to customize trainer instantiation"""
         # Modify strategy if it's DDP

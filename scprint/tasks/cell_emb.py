@@ -170,6 +170,7 @@ class Embedder:
                             pred if self.pred is None else torch.cat([self.pred, pred])
                         )
         model.log_adata(name="embed_" + rand + "_" + str(model.counter))
+        
         model.pos = None
         model.expr_pred = None
         model.embs = None
