@@ -33,10 +33,11 @@ class FinetuneBatchClass:
         max_len: int = 5000,
         predictor: Optional[torch.nn.Module] = None,
         emb_for_batchcorr: str = "cell_type_ontology_term_id",
-        learn_batches_on: str = None,
+        learn_batches_on: Optional[str] = None,
         num_workers: int = 8,
         batch_size: int = 16,
         num_epochs: int = 8,
+        do_mmd_on: Optional[str] = None,
         lr: float = 0.0002,
         ft_mode: str = "xpressor",
         frac_train: float = 0.8,
@@ -69,6 +70,7 @@ class FinetuneBatchClass:
         self.frac_train = frac_train
         self.batch_emb = None
         self.batch_encoder = {}
+        self.do_mmd_on = do_mmd_on
 
     def __call__(
         self,
@@ -115,7 +117,7 @@ class FinetuneBatchClass:
             for val in model.compressor.parameters():
                 val.requires_grad = True
             for val in self.predict_keys:
-                for val in model.label_decoders[val].parameters():
+                for val in model.cls_decoders[val].parameters():
                     val.requires_grad = True
         elif self.ft_mode == "full":
             for val in model.parameters():
@@ -135,40 +137,55 @@ class FinetuneBatchClass:
             print(f"Training data: {train_data.shape}")
             print(f"Validation data: {val_data.shape}")
 
-            mencoders = {}
-            for k, v in model.label_decoders.items():
-                mencoders[k] = {va: ke for ke, va in v.items()}
-            # this needs to remain its original name as it is expect like that by collator, otherwise need to send org_to_id as params
-            mencoders.pop("organism_ontology_term_id")
+        mencoders = {}
+        for k, v in model.label_decoders.items():
+            mencoders[k] = {va: ke for ke, va in v.items()}
+        # this needs to remain its original name as it is expect like that by collator, otherwise need to send org_to_id as params
 
+        for i in self.predict_keys:
+            if len(set(train_data.obs[i]) - set(mencoders[i].keys())) > 0:
+                print("missing labels for ", i)
+                train_data.obs[i] = train_data.obs[i].apply(
+                    lambda x: x if x in mencoders[i] else "unknown"
+                )
+        if "organism_ontology_term_id" not in self.predict_keys:
+            self.predict_keys.append("organism_ontology_term_id")
         # create datasets
+        self.batch_encoder = {
+            i: n
+            for n, i in enumerate(
+                train_data.obs[self.batch_key].astype("category").cat.categories
+            )
+        }
+        mencoders[self.batch_key] = self.batch_encoder
         train_dataset = SimpleAnnDataset(
             train_data,
             obs_to_output=self.predict_keys + [self.batch_key],
             get_knn_cells=model.expr_emb_style == "metacell",
             encoder=mencoders,
         )
-        self.batch_encoder = {
-            n: i
-            for n, i in enumerate(
-                train_data.obs[self.batch_key].astype("category").cat.categories
-            )
-        }
         if val_data is not None:
+            for i in self.predict_keys:
+                if i != "organism_ontology_term_id":
+                    if len(set(val_data.obs[i]) - set(mencoders[i].keys())) > 0:
+                        val_data.obs[i] = val_data.obs[i].apply(
+                            lambda x: x if x in mencoders[i] else "unknown"
+                        )
+            self.batch_encoder.update(
+                {
+                    i: n + len(self.batch_encoder)
+                    for n, i in enumerate(
+                        val_data.obs[self.batch_key].astype("category").cat.categories
+                    )
+                    if i not in self.batch_encoder
+                }
+            )
+            mencoders[self.batch_key] = self.batch_encoder
             val_dataset = SimpleAnnDataset(
                 val_data,
                 obs_to_output=self.predict_keys + [self.batch_key],
                 get_knn_cells=model.expr_emb_style == "metacell",
                 encoder=mencoders,
-            )
-            self.batch_encoder.update(
-                {
-                    n: i + len(self.batch_encoder)
-                    for n, i in enumerate(
-                        val_data.obs[self.batch_key].astype("category").cat.categories
-                    )
-                    if n not in self.batch_encoder
-                }
             )
 
         # Create collator
@@ -178,6 +195,7 @@ class FinetuneBatchClass:
             class_names=self.predict_keys + [self.batch_key],
             how="random expr",  # or "all expr" for full expression
             max_len=self.max_len,
+            org_to_id=mencoders.get("organism_ontology_term_id", {}),
         )
 
         # Create data loaders
@@ -187,7 +205,6 @@ class FinetuneBatchClass:
             batch_size=self.batch_size,  # Adjust based on GPU memory
             num_workers=self.num_workers,
             shuffle=True,
-            pin_memory=True,
         )
         if val_data is not None:
             val_loader = DataLoader(
@@ -196,7 +213,6 @@ class FinetuneBatchClass:
                 batch_size=self.batch_size,
                 num_workers=self.num_workers,
                 shuffle=False,
-                pin_memory=True,
             )
 
         if self.learn_batches_on is not None:
@@ -354,7 +370,6 @@ class FinetuneBatchClass:
         depth = batch["depth"].to(model.device)
         class_elem = batch["class"].long().to(model.device)
         total_loss = 0
-
         # Forward pass with automatic mixed precisio^n
         with torch.cuda.amp.autocast():
             # Forward pass
@@ -376,7 +391,7 @@ class FinetuneBatchClass:
             if self.learn_batches_on is not None:
                 batch_pos = model.classes.index(self.learn_batches_on) + 1
                 output["output_cell_embs"][:, batch_pos, :] = self.batch_emb(
-                    class_elem[:, 1]
+                    class_elem[:, -1]
                 )
 
             ## generate expr loss
@@ -410,17 +425,19 @@ class FinetuneBatchClass:
             # Add expression loss to total
             total_loss += loss_expr
 
-            # ct clss
-            cls_output = output.get("cls_output_cell_type_ontology_term_id")
-            # ct_output = output["output_cell_embs"][:, ctpos, :]
-            # cls_output = model.cls_decoders["cell_type_ontology_term_id"](ct_output)
-            cls_loss = loss.hierarchical_classification(
-                pred=cls_output,
-                cl=class_elem[:, 0],
-                labels_hierarchy=model.mat_labels_hierarchy.get(
-                    "cell_type_ontology_term_id"
-                ).to("cuda"),
-            )
+            # ct
+            cls_loss = 0
+            for clas in self.predict_keys:
+                cls_output = output.get("cls_output_cell_type_ontology_term_id")
+                # ct_output = output["output_cell_embs"][:, ctpos, :]
+                # cls_output = model.cls_decoders["cell_type_ontology_term_id"](ct_output)
+                cls_loss += loss.hierarchical_classification(
+                    pred=cls_output,
+                    cl=class_elem[:, self.predict_keys.index(clas)],
+                    labels_hierarchy=model.mat_labels_hierarchy.get(
+                        "cell_type_ontology_term_id"
+                    ).to("cuda"),
+                )
 
             # organ class
             # org_emb = output["compressed_cell_embs"][
@@ -431,28 +448,38 @@ class FinetuneBatchClass:
             #    target=class_elem[:, 1],
             # )
             total_loss += cls_loss
-
-            pos = model.classes.index("cell_type_ontology_term_id") + 1
-            # Apply gradient reversal to the input embedding
-            selected_emb = (
-                output["compressed_cell_embs"][pos]
-                if model.compressor is not None
-                else output["input_cell_embs"][:, pos, :]
-            )
-            X, Y = (
-                selected_emb[class_elem[:, 1] == 1],
-                selected_emb[class_elem[:, 1] == 0],
-            )
-
-            mmd = mmd_loss(X, Y)
-            if torch.isnan(mmd):
-                print("mmd nan")
-            mmd = mmd.item() if not torch.isnan(mmd) else 0
-
-            # Add adversarial loss to total loss
-            total_loss += mmd * 3
-            total_loss += output["vae_kl_loss"] * 0.5
-        return total_loss, cls_loss, mmd, loss_expr
+            tot_mmd = 0
+            if self.do_mmd_on is not None:
+                pos = model.classes.index(self.do_mmd_on) + 1
+                # Apply gradient reversal to the input embedding
+                selected_emb = (
+                    output["compressed_cell_embs"][pos]
+                    if model.compressor is not None
+                    else output["input_cell_embs"][:, pos, :]
+                )
+                for i in set(class_elem[:, -1].cpu().numpy()):
+                    if (class_elem[:, -1] == i).sum() < 2:
+                        # need at least 2 samples to compute mmd
+                        class_elem[class_elem[:, -1] == i, 1] = (
+                            -1
+                        )  # assign to dummy class
+                    # compare each batch to all other batches
+                for i in set(class_elem[:, -1].cpu().numpy()):
+                    if i == -1:
+                        continue
+                    X, Y = (
+                        selected_emb[class_elem[:, -1] == i],
+                        selected_emb[class_elem[:, -1] != i],
+                    )
+                    mmd = mmd_loss(X, Y)
+                    if torch.isnan(mmd):
+                        print("mmd nan")
+                    tot_mmd += mmd.item() if not torch.isnan(mmd) else 0
+                # Add adversarial loss to total loss
+                total_loss += tot_mmd * 3
+            if "vae_kl_loss" in output:
+                total_loss += output["vae_kl_loss"] * 0.5
+        return total_loss, cls_loss, tot_mmd, loss_expr
 
 
 def mmd_loss(X, Y):

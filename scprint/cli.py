@@ -51,9 +51,6 @@ class MyCLI(LightningCLI):
         parser.link_arguments(
             "data.n_bins", "model.n_input_bins", apply_on="instantiate"
         )
-        parser.link_arguments(
-            "data.metacell_mode", "model.use_metacell_token", apply_on="instantiate"
-        )
         parser.link_arguments("data.classes", "model.classes", apply_on="instantiate")
         parser.link_arguments(
             "data.organisms", "model.organisms", apply_on="instantiate"

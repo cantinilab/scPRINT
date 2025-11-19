@@ -2148,7 +2148,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         get_attention_layer=None,
         depth_mult=1,
         keep_output=True,
-        max_size_in_mem=20_000,
+        max_size_in_mem=100_000,
         get_gene_emb=False,
         mask=None,
         metacell_token=None,
@@ -2174,7 +2174,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.pred_embedding (list, optional): the classes to predict. Defaults to [].
 
         """
-        self.keep_all_labels_pred = True
+        # self.keep_all_labels_pred = True
         if self.transformer.attn_type == "hyper":
             # seq len must be a multiple of 128
             num = (1 if self.use_metacell_token else 0) + (
@@ -2389,42 +2389,19 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             mdir = "data/"
         if not os.path.exists(mdir):
             os.makedirs(mdir)
-        self.embs = (
-            torch.concat([v for k, v in self.embs.items()], dim=1)
-            .cpu()
-            .numpy()
-            .astype(np.float16)
+        adata, fig = utils.make_adata(
+            genes=self.genes,
+            embs=self.embs,
+            pos=self.pos if self.save_expr else None,
+            expr_pred=self.expr_pred if self.save_expr else None,
+            classes=self.classes,
+            pred=self.pred if not self.keep_all_labels_pred else None,
+            label_decoders=self.label_decoders,
+            labels_hierarchy=self.labels_hierarchy,
+            gtclass=gtclass,
+            doplot=self.doplot,
         )
-
-        count = {
-            "cell_type_ontology_term_id": 3,
-            "tissue_ontology_term_id": 3,
-            "disease_ontology_term_id": 3,
-            "age_group": 3,
-            "assay_ontology_term_id": 3,
-            "self_reported_ethnicity_ontology_term_id": 3,
-            "sex_ontology_term_id": 1,
-            "organism_ontology_term_id": 3,
-            "cell_culture": 1,
-        }
-        tot = 0
-        locs = []
-        predloc = []
-        for val in self.classes:
-            num = self.hparams["classes"][val]
-            pred_slice = self.pred[:, tot : tot + num]
-            loc = pred_slice.argsort(-1)[:, -count[val] :].flip([-1])
-            top_k = torch.gather(pred_slice, 1, loc)
-            predloc.append(top_k.cpu().numpy().astype(np.float16))
-            locs.append(loc.cpu().numpy().astype(np.uint16))
-            tot += num
-        # this is a debugger line
-        import pdb
-
-        pdb.set_trace()
-        predloc = np.hstack(predloc)
-        locs = np.hstack(locs)
-        save = (
+        adata.write(
             str(mdir)
             + "/step_"
             + str(self.global_step)
@@ -2434,10 +2411,24 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             + str(name)
             + "_"
             + str(self.global_rank)
+            + ".h5ad"
         )
-        np.save(save + "_top3.npz", locs)
-        np.save(save + "_scores.npz", predloc)
-        np.save(save + "_embs.npz", self.embs)
+        if self.doplot:
+            logged = False
+            try:
+                self.logger.experiment.add_figure(fig)
+                logged = True
+            except:
+                print("couldn't log to tensorboard")
+            try:
+                self.logger.log_image(key="umaps", images=[fig], step=self.global_step)
+                logged = True
+            except:
+                print("couldn't log to wandb")
+            if not logged:
+                fig.savefig(mdir + "/umap_" + self.name + "_" + name + ".png")
+
+        return adata
 
     @property
     def genes(self):
