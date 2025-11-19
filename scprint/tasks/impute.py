@@ -19,8 +19,6 @@ from tqdm import tqdm
 from scprint.model import utils
 from scprint.tasks.denoise import plot_cell_depth_wise_corr_improvement
 
-from . import knn_smooth
-
 FILE_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
@@ -127,7 +125,9 @@ class Imputer:
             generate_on = (
                 torch.Tensor([model.genes.index(i) for i in genes_to_impute])
                 .to(device=model.device)
-                .long().unsqueeze(0).repeat(self.batch_size, 1)
+                .long()
+                .unsqueeze(0)
+                .repeat(self.batch_size, 1)
             )
         else:
             raise ValueError("need to be one of generative or masking")
@@ -155,9 +155,11 @@ class Imputer:
                     gene_pos,
                     expression,
                     depth,
-                    knn_cells=batch["knn_cells"].to(device)
-                    if model.expr_emb_style == "metacell"
-                    else None,
+                    knn_cells=(
+                        batch["knn_cells"].to(device)
+                        if model.expr_emb_style == "metacell"
+                        else None
+                    ),
                     do_generate=self.method == "generative",
                     depth_mult=self.predict_depth_mult,
                     max_size_in_mem=self.save_every,

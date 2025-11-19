@@ -18,8 +18,6 @@ from tqdm import tqdm
 
 from scprint.model import utils
 
-from . import knn_smooth
-
 FILE_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
@@ -413,13 +411,6 @@ def mse(test_data, denoised_data, target_sum=1e4):
 
     print("Compute mse value", flush=True)
     return sklearn.metrics.mean_squared_error(test_data.X.todense(), denoised_data.X)
-
-
-def withknn(adata, k=10, **kwargs):
-    adata.layers["denoised"] = knn_smooth.knn_smoothing(
-        adata.X.transpose(), k=k, **kwargs
-    ).transpose()
-    return adata
 
 
 # from molecular_cross_validation.mcv_sweep import poisson_nll_loss

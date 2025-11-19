@@ -110,7 +110,7 @@ class FinetuneBatchClass:
 
             for val in model.cell_transformer.parameters():
                 val.requires_grad = True
-            for val in model.transformer.blocks[7].parameters():
+            for val in model.transformer.blocks[-1].parameters():
                 val.requires_grad = True
             for i in model.transformer.blocks:
                 i.cross_attn.requires_grad = True
@@ -428,15 +428,17 @@ class FinetuneBatchClass:
             # ct
             cls_loss = 0
             for clas in self.predict_keys:
-                cls_output = output.get("cls_output_cell_type_ontology_term_id")
+                cls_output = output.get("cls_output_" + clas)
                 # ct_output = output["output_cell_embs"][:, ctpos, :]
                 # cls_output = model.cls_decoders["cell_type_ontology_term_id"](ct_output)
                 cls_loss += loss.hierarchical_classification(
                     pred=cls_output,
                     cl=class_elem[:, self.predict_keys.index(clas)],
-                    labels_hierarchy=model.mat_labels_hierarchy.get(
-                        "cell_type_ontology_term_id"
-                    ).to("cuda"),
+                    labels_hierarchy=(
+                        model.mat_labels_hierarchy.get(clas).to("cuda")
+                        if clas in model.mat_labels_hierarchy
+                        else None
+                    ),
                 )
 
             # organ class
