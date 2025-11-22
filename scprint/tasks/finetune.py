@@ -41,6 +41,7 @@ class FinetuneBatchClass:
         lr: float = 0.0002,
         ft_mode: str = "xpressor",
         frac_train: float = 0.8,
+        loss_scalers: dict = {},
     ):
         """
         Embedder a class to embed and annotate cells using a model
@@ -71,6 +72,7 @@ class FinetuneBatchClass:
         self.batch_emb = None
         self.batch_encoder = {}
         self.do_mmd_on = do_mmd_on
+        self.loss_scalers = loss_scalers
 
     def __call__(
         self,
@@ -423,7 +425,7 @@ class FinetuneBatchClass:
                     target=torch.log(expression + 1),
                 )
             # Add expression loss to total
-            total_loss += loss_expr
+            total_loss += loss_expr * self.loss_scalers.get("expr", 0.5)
 
             # ct
             cls_loss = 0
@@ -439,7 +441,7 @@ class FinetuneBatchClass:
                         if clas in model.mat_labels_hierarchy
                         else None
                     ),
-                )
+                ) * self.loss_scalers.get(clas, 1)
 
             # organ class
             # org_emb = output["compressed_cell_embs"][
@@ -449,7 +451,7 @@ class FinetuneBatchClass:
             #    input=batch_cls(org_emb),
             #    target=class_elem[:, 1],
             # )
-            total_loss += cls_loss
+            total_loss += cls_loss * self.loss_scalers.get("class", 1)
             tot_mmd = 0
             if self.do_mmd_on is not None:
                 pos = model.classes.index(self.do_mmd_on) + 1
@@ -478,9 +480,9 @@ class FinetuneBatchClass:
                         print("mmd nan")
                     tot_mmd += mmd.item() if not torch.isnan(mmd) else 0
                 # Add adversarial loss to total loss
-                total_loss += tot_mmd * 3
+                total_loss += tot_mmd * self.loss_scalers.get("mmd", 3)
             if "vae_kl_loss" in output:
-                total_loss += output["vae_kl_loss"] * 0.5
+                total_loss += output["vae_kl_loss"] * self.loss_scalers.get("kl", 0.5)
         return total_loss, cls_loss, tot_mmd, loss_expr
 
 
