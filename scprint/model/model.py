@@ -3,7 +3,6 @@ import copy
 import datetime
 import os
 from functools import partial
-
 # from galore_torch import GaLoreAdamW
 from math import factorial
 from pathlib import Path
@@ -179,7 +178,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.name = ""
         self.set_step = None
         self.lrfinder_steps = 0
-        self.doplot = True
+        self.doplot = False
         self.get_attention_layer = None
         self.embs = None
         self.pred_log_adata = True
@@ -189,7 +188,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         self.mask_zeros = False
         self.vae_kl_scale = 0.05
         self.vae_kl_warmup_steps = 40_000  # Default value, can be adjusted
-        self.save_expr = True
+        self.save_expr = False
         self.counter = 0
 
         # should be stored somehow

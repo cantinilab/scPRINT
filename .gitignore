@@ -215,3 +215,4 @@ config/base_v3.yml
 *.npz
 *.pkl
 uniprot_function
+figures/datamapplot_*.zip
