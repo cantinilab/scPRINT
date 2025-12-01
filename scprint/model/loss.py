@@ -12,24 +12,30 @@ from torch.distributions import NegativeBinomial
 # from ot.gromov import gromov_wasserstein, fused_gromov_wasserstein
 
 
-def mse(input: Tensor, target: Tensor) -> Tensor:
-    """
-    Compute the MSE loss between input and target.
-    """
-    input = torch.log2(input + 1)
-    input = (input / torch.sum(input, dim=1, keepdim=True)) * 10000
-    target = torch.log2(target + 1)
-    target = target / torch.sum(target, dim=1, keepdim=True) * 10000
-    return F.mse_loss(input, target, reduction="mean")
-
-
 def masked_mse(input: Tensor, target: Tensor, mask: Tensor) -> Tensor:
     """
     Compute the masked MSE loss between input and target.
     """
     mask = mask.float()
+    input = torch.log2(input + 1)
+    input = (input / torch.sum(input, dim=1, keepdim=True)) * 10000
+    target = torch.log2(target + 1)
+    target = (target / torch.sum(target, dim=1, keepdim=True)) * 10000
     loss = F.mse_loss(input * mask, target * mask, reduction="sum")
     return loss / mask.sum()
+
+
+def mse(input: Tensor, target: Tensor, mask=False) -> Tensor:
+    """
+    Compute the MSE loss between input and target.
+    """
+    if mask:
+        return masked_mse(input, target, (target > 0))
+    input = torch.log2(input + 1)
+    input = (input / torch.sum(input, dim=1, keepdim=True)) * 10000
+    target = torch.log2(target + 1)
+    target = (target / torch.sum(target, dim=1, keepdim=True)) * 10000
+    return F.mse_loss(input, target, reduction="mean")
 
 
 def masked_mae(input: Tensor, target: Tensor, mask: Tensor) -> Tensor:
@@ -53,7 +59,7 @@ def masked_nb(input: Tensor, target: Tensor, mask: Tensor) -> Tensor:
 
 
 # FROM SCVI
-def nb(target: Tensor, mu: Tensor, theta: Tensor, eps=1e-8):
+def nb(target: Tensor, mu: Tensor, theta: Tensor, eps=1e-4):
     """
     Computes the negative binomial (NB) loss.
 
@@ -63,7 +69,7 @@ def nb(target: Tensor, mu: Tensor, theta: Tensor, eps=1e-8):
         target (Tensor): Ground truth data.
         mu (Tensor): Means of the negative binomial distribution (must have positive support).
         theta (Tensor): Inverse dispersion parameter (must have positive support).
-        eps (float, optional): Numerical stability constant. Defaults to 1e-8.
+        eps (float, optional): Numerical stability constant. Defaults to 1e-4.
 
     Returns:
         Tensor: NB loss value.
@@ -83,7 +89,7 @@ def nb(target: Tensor, mu: Tensor, theta: Tensor, eps=1e-8):
     return -res.mean()
 
 
-def nb_dist(x: Tensor, mu: Tensor, theta: Tensor, eps=1e-8):
+def nb_dist(x: Tensor, mu: Tensor, theta: Tensor, eps=1e-4):
     """
     nb_dist Computes the negative binomial distribution.
 
@@ -91,7 +97,7 @@ def nb_dist(x: Tensor, mu: Tensor, theta: Tensor, eps=1e-8):
         x (Tensor): Torch Tensor of observed data.
         mu (Tensor): Torch Tensor of means of the negative binomial distribution (must have positive support).
         theta (Tensor): Torch Tensor of inverse dispersion parameter (must have positive support).
-        eps (float, optional): Numerical stability constant. Defaults to 1e-8.
+        eps (float, optional): Numerical stability constant. Defaults to 1e-4.
 
     Returns:
         Tensor: Negative binomial loss value.
@@ -105,7 +111,8 @@ def zinb(
     mu: Tensor,
     theta: Tensor,
     pi: Tensor,
-    eps=1e-8,
+    eps=1e-4,
+    mask=False,
 ):
     """
     Computes zero-inflated negative binomial (ZINB) loss.
@@ -117,7 +124,7 @@ def zinb(
         mu (Tensor): Torch Tensor of means of the negative binomial (must have positive support).
         theta (Tensor): Torch Tensor of inverse dispersion parameter (must have positive support).
         pi (Tensor): Torch Tensor of logits of the dropout parameter (real support).
-        eps (float, optional): Numerical stability constant. Defaults to 1e-8.
+        eps (float, optional): Numerical stability constant. Defaults to 1e-4.
 
     Returns:
         Tensor: ZINB loss value.
@@ -143,6 +150,10 @@ def zinb(
 
     res = mul_case_zero + mul_case_non_zero
     # we want to minize the loss but maximize the log likelyhood
+    if mask:
+        mask = (target > 0).float()
+        res = res * mask
+        return -res.sum() / mask.sum()
     return -res.mean()
 
 
@@ -163,7 +174,7 @@ def masked_relative_error(
     Compute the masked relative error between input and target.
     """
     assert mask.any()
-    loss = torch.abs(input[mask] - target[mask]) / (target[mask] + 1e-6)
+    loss = torch.abs(input[mask] - target[mask]) / (target[mask] + 1e-5)
     return loss.mean()
 
 
@@ -230,31 +241,31 @@ def ecs(cell_emb: Tensor, ecs_threshold: float = 0.5) -> Tensor:
     return torch.mean(1 - (cos_sim - ecs_threshold) ** 2)
 
 
-def classification(
-    clsname: str,
+def hierarchical_classification(
     pred: torch.Tensor,
     cl: torch.Tensor,
-    maxsize: int,
-    labels_hierarchy: Optional[Dict[str, Dict[int, list[int]]]] = {},
+    labels_hierarchy: Optional[torch.Tensor] = None,
 ) -> torch.Tensor:
     """
     Computes the classification loss for a given batch of predictions and ground truth labels.
 
     Args:
-        clsname (str): The name of the label.
-        pred (Tensor): The predicted logits for the batch.
-        cl (Tensor): The ground truth labels for the batch.
-        maxsize (int): The number of possible labels.
-        labels_hierarchy (dict, optional): The hierarchical structure of the labels. Defaults to {}.
+        pred (Tensor): The predicted logits for the batch. Shape: (batch_size, n_labels)
+        cl (Tensor): The ground truth labels for the batch. Shape: (batch_size,)
+        labels_hierarchy (Tensor, optional): The hierarchical structure of the labels. Defaults to None.
+            A binary tensor of shape (number of parents, n_labels)
+            if not given, will act as a regular classification loss
 
     Raises:
-        ValueError: If the clsname is not found in the labels_hierarchy dictionary.
+        ValueError: If the labels_hierarchy is not found while the number of predicted
+        labels is smaller than the number of ground truth labels.
 
     Returns:
         Tensor: The computed binary cross entropy loss for the given batch.
     """
+    maxsize = pred.shape[1]
     newcl = torch.zeros(
-        (cl.shape[0], maxsize), device=cl.device
+        (pred.shape[0], maxsize), device=cl.device
     )  # batchsize * n_labels
     # if we don't know the label we set the weight to 0 else to 1
     valid_indices = (cl != -1) & (cl < maxsize)
@@ -262,42 +273,59 @@ def classification(
     newcl[valid_indices, valid_cl] = 1
 
     weight = torch.ones_like(newcl, device=cl.device)
+    # if we don't know the label we set the weight to 0 for all labels
     weight[cl == -1, :] = 0
-    inv = cl >= maxsize
     # if we have non leaf values, we don't know so we don't compute grad and set weight to 0
     # and add labels that won't be counted but so that we can still use them
-    if inv.any():
-        if clsname in labels_hierarchy.keys():
-            clhier = labels_hierarchy[clsname]
+    if labels_hierarchy is not None and (cl >= maxsize).any():
+        is_parent = cl >= maxsize
+        subset_parent_weight = weight[is_parent]
+        # we set the weight of the leaf elements for pred where we don't know the leaf, to 0
+        # i.e. the elements where we will compute the max
+        # in cl, parents are values past the maxsize
+        # (if there is 10 leafs labels, the label 10,14, or 15 is a parent at position
+        # row 0, 4, or 5 in the hierarchy matrix
+        subset_parent_weight[labels_hierarchy[cl[is_parent] - maxsize]] = 0
+        weight[is_parent] = subset_parent_weight
 
-            inv_weight = weight[inv]
-            # we set the weight of the elements that are not leaf to 0
-            # i.e. the elements where we will compute the max
-            inv_weight[clhier[cl[inv] - maxsize]] = 0
-            weight[inv] = inv_weight
+        # we set their lead to 1 (since the weight will be zero, not really usefull..)
+        subset_parent_newcl = newcl[is_parent]
+        subset_parent_newcl[labels_hierarchy[cl[is_parent] - maxsize]] = 1
+        newcl[is_parent] = subset_parent_newcl
 
-            addnewcl = torch.ones(
-                weight.shape[0], device=pred.device
-            )  # no need to set the other to 0 as the weight of the loss is set to 0
-            addweight = torch.zeros(weight.shape[0], device=pred.device)
-            addweight[inv] = 1
-            # computing hierarchical labels and adding them to cl
-            addpred = pred.clone()
-            # we only keep the elements where we need to compute the max,
-            # for the rest we set them to -inf, so that they won't have any impact on the max()
-            inv_addpred = addpred[inv]
-            inv_addpred[inv_weight.to(bool)] = torch.finfo(pred.dtype).min
-            addpred[inv] = inv_addpred
+        # all parental nodes that have a 1 in the labels_hierarchy matrix are set to 1
+        # for each parent label / row in labels_hierarchy matrix, the addnewcl is
+        # the max of the newcl values where the parent label is 1
+        newcl_expanded = newcl.unsqueeze(-1).expand(-1, -1, labels_hierarchy.shape[0])
+        addnewcl = torch.max(newcl_expanded * labels_hierarchy.T, dim=1)[0]
 
-            # differentiable max
-            addpred = torch.logsumexp(addpred, dim=-1)
+        # for their weight, it is decreasing based on number of children they have
+        # it is the same here as for parental labels, we don't want to compute
+        # gradients when they are 0 meaning not parents of the true leaf label.
+        # for now we weight related to how many labels they contain.
+        addweight = addnewcl.clone() / (labels_hierarchy.sum(1) ** 0.5)
+        
+        # except if it is the cl label we know about?
+        subset_parent_weight = addweight[is_parent]
+        subset_parent_weight[:, cl[is_parent] - maxsize] = 1
+        addweight[is_parent] = subset_parent_weight
+        
+        # we apply the same mask to the pred but now we want to compute
+        # logsumexp instead of max since we want to keep the gradients
+        # we also set to -inf since it is a more neutral element for logsumexp
+        pred_expanded = (
+            pred.clone().unsqueeze(-1).expand(-1, -1, labels_hierarchy.shape[0])
+        )
+        pred_expanded = pred_expanded * labels_hierarchy.T
+        pred_expanded[pred_expanded == 0] = torch.finfo(pred.dtype).min
+        addpred = torch.logsumexp(pred_expanded, dim=1)
 
-            # we add the new labels to the cl
-            newcl = torch.cat([newcl, addnewcl.unsqueeze(1)], dim=1)
-            pred = torch.cat([pred, addpred.unsqueeze(1)], dim=1)
-            weight = torch.cat([weight, addweight.unsqueeze(1)], dim=1)
-        else:
-            raise ValueError("need to use labels_hierarchy for this usecase")
+        # we add the new labels to the cl
+        newcl = torch.cat([newcl, addnewcl], dim=1)
+        weight = torch.cat([weight, addweight], dim=1)
+        pred = torch.cat([pred, addpred], dim=1)
+    elif labels_hierarchy is None and (cl >= maxsize).any():
+        raise ValueError("need to use labels_hierarchy for this usecase")
 
     myloss = torch.nn.functional.binary_cross_entropy_with_logits(
         pred, target=newcl, weight=weight

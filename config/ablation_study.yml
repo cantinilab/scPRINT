@@ -3,25 +3,23 @@ seed_everything: 50
 set_float32_matmul_precision: True
 wandblog: all
 ckpt_path: null
-log_freq: 200
-log_graph: True
 trainer:
   precision: 16-mixed
   gradient_clip_val: 40
   log_every_n_steps: 100
   limit_train_batches: 20000
+  limit_val_batches: 10000
   gradient_clip_algorithm: norm
-  limit_val_batches: 4000
   limit_test_batches: 1 # we don't perform tests this way
-  reload_dataloaders_every_n_epochs: 5
+  reload_dataloaders_every_n_epochs: 20
   max_epochs: 21
   accumulate_grad_batches: 1
   logger:
-    # - class_path: lightning.pytorch.loggers.WandbLogger
-    #   init_args:
-    #     project: ${project}
-    #     save_dir: ./data/log/ #/lustre/fswork/projects/rech/xeg/uat95fg/ #/pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #./data/log/
-    #     offline: False
+    - class_path: lightning.pytorch.loggers.WandbLogger
+      init_args:
+        project: ${project}
+        offline: False
+        save_dir: /pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/lustre/fswork/projects/rech/xeg/uat95fg/ #/pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/data/log/
   callbacks:
     #- class_path: lightning.pytorch.callbacks.StochasticWeightAveraging
     #  init_args:
@@ -29,71 +27,80 @@ trainer:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint
       init_args:
         monitor: val_loss
-        save_top_k: 3
+        save_top_k: 15
         save_last: True
 scprint_training:
   run_full_forward: False
   # noise: [0.6]
-  do_ecs: False
-  do_denoise: False
+  ecs_scale: 0
+  noise: []
   class_embd_diss_scale: 0.1
   do_generate: True
   test_every: 5
-  do_cce: False
+  cce_scale: 0
   mask_ratio: [0.3] #["TF"]
 model:
   dropout: 0.1
   num_heads_kv: 4
-  transformer: flash
-  mvc_decoder: inner product
+  attention: normal
   residual_in_fp32: True
   checkpointing: False
+  layers_cls: []
   cell_specific_blocks: False
   fused_dropout_add_ln: False
-  prenorm: True
   fused_mlp: False
   fused_bias_fc: False
   drop_path_rate: 0
   freeze_embeddings: True
+  finetune_gene_emb: False
   normalization: log
+  gene_pos_file: ./data/main/biomart_pos.parquet
+  precpt_gene_emb: ./data/main/gene_embs/ #./data/main/gene_embeddings.parquet # /lustre/fswork/projects/rech/xeg/uat95fg/gene_embeddings.parquet
   pred_embedding:
     - cell_type_ontology_term_id
+  #compress_class_dim:
+  #  default: 16
+  #  cell_type_ontology_term_id: 64
+  #  tissue_ontology_term_id: 32
+  #  disease_ontology_term_id: 16
+  #  age_group: 8
+  #  assay_ontology_term_id: 8
+  #  self_reported_ethnicity_ontology_term_id: 8
+  #  sex_ontology_term_id: 2
+  #  organism_ontology_term_id: 8
+  # cell_culture: 2
+  # total: 164
 data:
-  organisms:
-    - NCBITaxon:9606
-    - NCBITaxon:10090
-  gene_position_tolerance: 10_000
-  gene_embeddings: ./data/main/gene_embeddings.parquet
-  collection_name: scPRINT-V2 full #scPRINT-V2 (good quality)
+  collection_name: scPRINT-V2 (good quality) filtered #scPRINT-V2 (full)
   how: random expr
   max_len: 2200
   pin_memory: True
   prefetch_factor: 3
   #  metacell_mode: 0.2
   weight_scaler: 200
-  do_gene_pos: ./data/main/biomart_pos.parquet
-  add_zero_genes: 0
   validation_split: 0.05
-  n_samples_per_epoch: 200000
+  n_samples_per_epoch: 1_400_000
   test_split: 0.02
   batch_size: 64
-  num_workers: 20
-  hierarchical_clss:
+  num_workers: 10
+  hierarchical_clss: #['cell_type_ontology_term_id','tissue_ontology_term_id','disease_ontology_term_id','assay_ontology_term_id','self_reported_ethnicity_ontology_term_id']
     - cell_type_ontology_term_id
     - tissue_ontology_term_id
     - disease_ontology_term_id
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id
   clss_to_weight:
-    - cell_type_ontology_term_id
-    - tissue_ontology_term_id
+    - clust_cell_type
+    # - cell_type_ontology_term_id
+    # - tissue_ontology_term_id
     - disease_ontology_term_id
     - assay_ontology_term_id
-    - self_reported_ethnicity_ontology_term_id
+    # - self_reported_ethnicity_ontology_term_id
     - sex_ontology_term_id
     - organism_ontology_term_id
+    # - cell_culture
     # - nnz
-  clss_to_predict:
+  clss_to_predict: #['cell_type_ontology_term_id','tissue_ontology_term_id','disease_ontology_term_id','assay_ontology_term_id','self_reported_ethnicity_ontology_term_id','sex_ontology_term_id','organism_ontology_term_id']
     - cell_type_ontology_term_id
     - tissue_ontology_term_id
     - disease_ontology_term_id
@@ -101,3 +108,4 @@ data:
     - self_reported_ethnicity_ontology_term_id
     - sex_ontology_term_id
     - organism_ontology_term_id
+    # - cell_culture

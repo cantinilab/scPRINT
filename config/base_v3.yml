@@ -1,0 +1,128 @@
+project: scprint_v2
+seed_everything: 42
+set_float32_matmul_precision: True
+wandblog: parameters
+trainer:
+  precision: 16-mixed
+  strategy: ddp_find_unused_parameters_true
+  use_distributed_sampler: False
+  gradient_clip_val: 40
+  log_every_n_steps: 100
+  limit_train_batches: 20000
+  limit_val_batches: 20000
+  gradient_clip_algorithm: norm
+  limit_test_batches: 1 # we don't perform tests this way
+  accumulate_grad_batches: 1
+  logger:
+    - class_path: lightning.pytorch.loggers.WandbLogger
+      init_args:
+        project: ${project}
+        save_dir: /pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #/lustre/fswork/projects/rech/xeg/uat95fg/  #/data/log/
+        offline: False
+  callbacks:
+    #- class_path: lightning.pytorch.callbacks.StochasticWeightAveraging
+    #  init_args:
+    #    swa_lrs: 0.03
+    - class_path: lightning.pytorch.callbacks.ModelCheckpoint
+      init_args:
+        monitor: val_loss
+        save_top_k: 5
+        save_last: True
+scprint_training:
+  run_full_forward: True
+  noise: [0.8, 1.0]
+  mask_ratio: []
+  do_generate: True
+  test_every: 10
+  zinb_and_mse: True
+  var_context_length: True
+  cce_scale: 0.2
+  class_embd_diss_scale: 0.3
+  class_scale: 6
+  ecs_scale: 0.2
+  vae_kl_scale: 0.0002
+scprint_early_stopping:
+  patience: 6
+model:
+  dropout: 0.02
+  nhead: 4
+  precpt_gene_emb: ./data/main/gene_embs/
+  gene_pos_file: ./data/main/gene_locs/all_locs.parquet
+  num_heads_kv: 4
+  nlayers: 8
+  d_model: 256
+  expr_encoder_layers: 1 #3
+  expr_emb_style: metacell #continuous
+  attention: normal
+  residual_in_fp32: True
+  checkpointing: True
+  layers_cls: [256]
+  cell_specific_blocks: True
+  d_model_cell: 256
+  nhead_cell: 4
+  nlayers_cell: 6
+  num_heads_kv_cell: 4
+  fused_dropout_add_ln: False
+  fused_mlp: False
+  fused_bias_fc: False
+  drop_path_rate: 0
+  freeze_embeddings: True
+  finetune_gene_emb: True
+  normalization: log
+  pred_embedding:
+    - cell_type_ontology_term_id
+  compress_class_dim: #{'cell_type_ontology_term_id':64,'tissue_ontology_term_id':32,'disease_ontology_term_id':16,'age_group':8,'assay_ontology_term_id':8,'self_reported_ethnicity_ontology_term_id':8,'sex_ontology_term_id':2,'organism_ontology_term_id':8,'cell_culture':2}
+    cell_type_ontology_term_id: 64
+    tissue_ontology_term_id: 32
+    disease_ontology_term_id: 32
+    age_group: 8
+    assay_ontology_term_id: 12
+    self_reported_ethnicity_ontology_term_id: 8
+    sex_ontology_term_id: 2
+    organism_ontology_term_id: 8
+    cell_culture: 2
+    # total: 168
+data:
+  collection_name: scPRINT-V2 (all+tahoe+scbase) filtered #scPRINT-V2 (good quality) # scPRINT-V2 (some)
+  how: random expr
+  max_len: 3200
+  pin_memory: True
+  # persistent_workers: True
+  prefetch_factor: 3
+  metacell_mode: 0
+  get_knn_cells: True #False
+  weight_scaler: 500
+  n_samples_per_epoch: 1300000 # {data.batch_size*trainer.limit_train_batches}
+  validation_split: 0.05
+  test_split: 0.02
+  batch_size: 30
+  curiculum: 15
+  num_workers: 16
+  hierarchical_clss:
+    - cell_type_ontology_term_id
+    - tissue_ontology_term_id
+    - disease_ontology_term_id
+    - age_group
+    - assay_ontology_term_id
+    - self_reported_ethnicity_ontology_term_id
+  clss_to_weight: #['clust_cell_type','tissue_ontology_term_id','disease_ontology_term_id','assay_ontology_term_id','self_reported_ethnicity_ontology_term_id', 'sex_ontology_term_id', 'organism_ontology_term_id', 'cell_culture', 'nnz']
+    - clust_cell_type
+    - tissue_ontology_term_id
+    - disease_ontology_term_id
+    #- age_group
+    - assay_ontology_term_id
+    - self_reported_ethnicity_ontology_term_id
+    - sex_ontology_term_id
+    - organism_ontology_term_id
+    - cell_culture
+    - nnz
+  clss_to_predict:
+    - cell_type_ontology_term_id
+    - tissue_ontology_term_id
+    - disease_ontology_term_id
+    - age_group
+    - assay_ontology_term_id
+    - self_reported_ethnicity_ontology_term_id
+    - sex_ontology_term_id
+    - organism_ontology_term_id
+    - cell_culture

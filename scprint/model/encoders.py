@@ -4,6 +4,10 @@ from typing import Optional
 import numpy as np
 import torch
 from torch import Tensor, nn
+from torch.nn import functional as F
+from torch_geometric.data import Batch, Data
+from torch_geometric.nn import MLP, GATConv, GCNConv, SAGEConv
+from torch_geometric.nn.aggr import DeepSetsAggregation
 
 
 class GeneEncoder(nn.Module):
@@ -13,47 +17,119 @@ class GeneEncoder(nn.Module):
         embedding_dim: int,
         padding_idx: Optional[int] = None,
         weights: Optional[Tensor] = None,
+        weights_file: Optional[str] = None,
         freeze: bool = False,
     ):
         """
         Encodes gene sequences into a continuous vector space using an embedding layer.
-
-        The output is then normalized using a LayerNorm.
+        Uses memory mapping for efficient access to large embedding files.
 
         Args:
-            num_embeddings (int): The number of possible values.
-            embedding_dim (int): The dimension of the output vectors.
-            padding_idx (int, optional): The index of the padding token. Defaults to None.
-            weights (Tensor, optional): The initial weights for the embedding layer. Defaults to None.
-            dropout (float, optional): The dropout rate to apply to the output of the positional encoding. Defaults to 0.1.
-            freeze (bool, optional): Whether to freeze the weights of the embedding layer. Defaults to False.
-
-        Note: not used in the current version of scprint.
+            num_embeddings (int): The number of possible values
+            embedding_dim (int): The dimension of the output vectors
+            padding_idx (int, optional): The index of the padding token
+            weights (Tensor, optional): The initial weights for the embedding layer
+            weights_file (str, optional): Path to parquet file containing embeddings
+            freeze (bool, optional): Whether to freeze the weights of the embedding layer
         """
         super(GeneEncoder, self).__init__()
-        self.embeddings = nn.Embedding(
-            num_embeddings, embedding_dim, padding_idx=padding_idx, _freeze=freeze
-        )
+        self.output_dim = embedding_dim
 
-        if weights is not None:
-            # concat a zero vector to the weight
-            # this is to make the embedding of the padding token to be zero
-            # weights = torch.cat(
-            #    [torch.Tensor(weights), torch.zeros(1, embedding_dim)], dim=0
-            # )
-            self.embeddings.weight.data.copy_(torch.Tensor(weights))
+        if weights_file is not None:
+            self.memmap = True
+            if not freeze:
+                raise ValueError(
+                    "freeze must be True when using memory-mapped embeddings"
+                )
+            # Load the parquet file and create memory-mapped array
+            import os
+
+            import pandas as pd
+
+            # Create memory-mapped file path
+            self.mmap_file = f"{weights_file}.mmap"
+            self.loc = None
+            self.enc = None
+            # Only create the memory-mapped file if it doesn't exist
+            if not os.path.exists(self.mmap_file):
+                print(f"Creating memory-mapped file for embeddings at {self.mmap_file}")
+                df = pd.read_parquet(weights_file)
+                embeddings = torch.nn.AdaptiveAvgPool1d(self.output_dim)(
+                    torch.tensor(df.values)
+                )
+
+                # Create memory-mapped array
+                self.embeddings = np.memmap(
+                    self.mmap_file, dtype="float32", mode="w+", shape=embeddings.shape
+                )
+                # Copy data to memory-mapped array
+                self.embeddings[:] = embeddings.numpy()
+                #
+                self.embeddings.flush()
+
+                # Clean up memory
+                del df
+                del embeddings
+            else:
+                print(
+                    f"Loading existing memory-mapped embeddings from {self.mmap_file}"
+                )
+                # Load existing memory-mapped file
+                self.embeddings = np.memmap(
+                    self.mmap_file,
+                    dtype="float32",
+                    mode="r",  # Read-only mode since we don't need to modify
+                    shape=(num_embeddings, embedding_dim),
+                )
+        else:
+            self.memmap = False
+            self.embeddings = nn.Embedding(
+                num_embeddings, embedding_dim, padding_idx=padding_idx, _freeze=freeze
+            )
+            if weights is not None:
+                self.embeddings.weight.data.copy_(torch.Tensor(weights))
 
     def forward(self, x: Tensor) -> Tensor:
-        return self.embeddings(x)  # (batch, seq_len, embsize)
+        """
+        Forward pass of the encoder.
+
+        Args:
+            x (Tensor): Input tensor of indices [batch_size, seq_len]
+
+        Returns:
+            Tensor: Embedded vectors [batch_size, seq_len, embedding_dim]
+        """
+        if self.memmap:
+            if self.loc is None or not torch.all(x.sum(1) == self.loc):
+                self.enc = (
+                    torch.from_numpy(
+                        self.embeddings[x.reshape(-1).cpu().numpy()].copy()
+                    )
+                    .reshape(x.shape + (-1,))
+                    .to(x.device)
+                )
+                self.loc = x.sum(1)
+            return self.enc.clone()
+        else:
+            return self.embeddings(x)
+
+    def __del__(self):
+        """Cleanup method to ensure proper handling of memory-mapped file."""
+        if hasattr(self, "embeddings") and self.embeddings is not None:
+            try:
+                self.embeddings._mmap.close()
+            except:
+                pass
+
+    def _init_weights(self):
+        pass
 
 
 class PositionalEncoding(nn.Module):
     def __init__(
         self,
         d_model: int,
-        max_len: int,
-        token_to_pos: dict[str, int],  # [token, pos]
-        maxval=10000.0,
+        gene_pos_enc: list[str] = [],
     ):
         """
         The PositionalEncoding module applies a positional encoding to a sequence of vectors.
@@ -63,18 +139,20 @@ class PositionalEncoding(nn.Module):
 
         Args:
             d_model (int): The dimension of the input vectors.
-            dropout (float, optional): The dropout rate to apply to the output of the positional encoding.
-            max_len (int, optional): The maximum length of a sequence that this module can handle.
+            gene_pos_enc (list[str], optional): The gene position encoding to use.
 
         Note: not used in the current version of scprint.
         """
         super(PositionalEncoding, self).__init__()
+        self.gene_pos_enc = gene_pos_enc
+        max_len = max(gene_pos_enc)
         position = torch.arange(max_len).unsqueeze(1)
+        token_to_pos = {token: pos for token, pos in enumerate(gene_pos_enc)}
 
         # Create a dictionary to convert token to position
 
         div_term = torch.exp(
-            torch.arange(0, d_model, 2) * (-math.log(maxval) / d_model)
+            torch.arange(0, d_model, 2) * (-math.log(float(10_000)) / d_model)
         )
         pe = torch.zeros(max_len, 1, d_model)
         pe[:, 0, 0::2] = torch.sin(position * div_term)
@@ -183,6 +261,7 @@ class ContinuousValueEncoder(nn.Module):
         super(ContinuousValueEncoder, self).__init__()
         self.max_value = max_value
         self.encoder = nn.ModuleList()
+        self.output_dim = d_model
         # self.mask_value = nn.Embedding(1, d_model)
         self.encoder.append(nn.Linear(size, d_model))
         for _ in range(layers - 1):
@@ -207,6 +286,94 @@ class ContinuousValueEncoder(nn.Module):
             x = x.masked_fill_(mask.unsqueeze(-1), 0)
             # x = x.masked_fill_(mask.unsqueeze(-1), self.mask_value(0))
         return x
+
+    def _init_weights(self):
+        pass
+        # for m in self.encoder:
+        #    if isinstance(m, nn.Linear):
+        #        torch.nn.init.eye_(m.weight)
+
+
+class ExprBasedFT(nn.Module):
+    def __init__(
+        self,
+        d_model: int,
+        gene_encoder: nn.Module,
+        expr_encoder: nn.Module = nn.Identity(),
+        dropout: float = 0.1,
+        layers: int = 2,
+        intermediary_d: int = 256 + 64,
+    ):
+        """
+        Encode real number values to a vector using neural nets projection.
+
+        Args:
+            d_model (int): The dimension of the input vectors.
+            dropout (float, optional): The dropout rate to apply to the output of the positional encoding.
+            max_value (int, optional): The maximum value of the input. Defaults to 100_000.
+            layers (int, optional): The number of layers in the encoder. Defaults to 1.
+            size (int, optional): The size of the input. Defaults to 1.
+
+        Returns:
+            torch.Tensor: A tensor representing the encoded continuous values.
+        """
+        super(ExprBasedFT, self).__init__()
+        self.encoder = nn.ModuleList()
+        # self.mask_value = nn.Embedding(1, d_model)
+        self.add_module("gene_encoder", gene_encoder)
+        self.add_module("expr_encoder", expr_encoder)
+        expr_shape, gene_shape = (
+            self.expr_encoder.output_dim,
+            self.gene_encoder.output_dim,
+        )
+        self.encoder.append(nn.Linear(expr_shape + gene_shape, intermediary_d))
+        for i in range(layers - 1):
+            self.encoder.append(nn.LayerNorm(intermediary_d))
+            self.encoder.append(nn.ReLU())
+            self.encoder.append(nn.Dropout(p=dropout))
+            self.encoder.append(
+                nn.Linear(intermediary_d, intermediary_d if i < layers - 2 else d_model)
+            )
+
+    def forward(
+        self,
+        gene_pos: Tensor,
+        expr: Tensor = None,
+        mask: Tensor = None,
+        neighbors: Tensor = None,
+        neighbors_info: Tensor = None,
+    ) -> Tensor:
+        """
+        Args:
+            x: Tensor, shape [batch_size, seq_len]
+        """
+        # expand last dimension
+        if neighbors is None and expr is None:
+            expr = torch.zeros(
+                (gene_pos.shape[0], gene_pos.shape[1], self.expr_encoder.output_dim),
+                dtype=torch.float32,
+                device=gene_pos.device,
+            )
+            # if no expr information: consider that it is all masked
+        else:
+            expr = (
+                self.expr_encoder(expr, mask=mask)
+                if neighbors is None
+                else self.expr_encoder(expr, neighbors, neighbors_info, mask=mask)
+            )
+        gene_pos = self.gene_encoder(gene_pos)
+        x = torch.cat([expr, gene_pos], dim=-1)
+        for val in self.encoder:
+            x = val(x)
+        return x
+
+    def _init_weights(self):
+        pass
+
+    #    for m in self.encoder:
+    #        if isinstance(m, nn.Linear):
+    #            torch.nn.init.eye_(m.weight)
+    #    self.expr_encoder._init_weights()
 
 
 class CategoryValueEncoder(nn.Module):
@@ -234,5 +401,227 @@ class CategoryValueEncoder(nn.Module):
             num_embeddings, embedding_dim, padding_idx=padding_idx
         )
 
-    def forward(self, x: Tensor) -> Tensor:
-        return self.embedding(x.long())  # (batch, seq_len, embsize)
+    def forward(self, x: Tensor, mask: Tensor = None) -> Tensor:
+        x = self.embedding(x.long())  # (batch, seq_len, embsize)
+        if mask is not None:
+            x = x.masked_fill(mask.unsqueeze(-1), 0)
+        return x
+
+    def _init_weights(self):
+        pass
+
+
+class EasyExprGNN(nn.Module):
+    def __init__(
+        self,
+        self_dim: int = 64,
+        output_dim: int = 32,
+        self_layers: int = 2,
+        dropout: float = 0.1,
+        shared_layers: int = 2,
+        neighbors_layers: int = 2,
+    ):
+        super(EasyExprGNN, self).__init__()
+        self.output_dim = output_dim
+        self.self_dim = self_dim
+        # neighbors
+        self.neighbors_layers = nn.ModuleList()
+        self.neighbors_layers.append(nn.Linear(2, self_dim // 2))
+        for i in range(neighbors_layers - 1):
+            self.neighbors_layers.append(nn.LayerNorm(self_dim // 2))
+            self.neighbors_layers.append(nn.ReLU())
+            self.neighbors_layers.append(nn.Dropout(p=dropout))
+            self.neighbors_layers.append(nn.Linear(self_dim // 2, self_dim // 2))
+        # self
+        self.self_layers = nn.ModuleList()
+        self.self_layers.append(nn.Linear(1, self_dim // 2))
+        for i in range(self_layers - 1):
+            self.self_layers.append(nn.LayerNorm(self_dim // 2))
+            self.self_layers.append(nn.ReLU())
+            self.self_layers.append(nn.Dropout(p=dropout))
+            self.self_layers.append(nn.Linear(self_dim // 2, self_dim // 2))
+        # shared
+        self.shared_layers = nn.ModuleList()
+        for i in range(shared_layers - 1):
+            self.shared_layers.append(nn.Linear(self_dim, self_dim))
+            self.shared_layers.append(nn.LayerNorm(self_dim))
+            self.shared_layers.append(nn.ReLU())
+            self.shared_layers.append(nn.Dropout(p=dropout))
+        self.shared_layers.append(nn.Linear(self_dim, output_dim))
+
+    def forward(self, expr=None, neighbors=None, edge_info=None, mask=None):
+        # batch, seq_len, neighbs
+        if neighbors is None:
+            neighbors = torch.zeros(
+                (expr.shape[0], expr.shape[1], self.self_dim // 2), device=expr.device
+            )
+        else:
+            neighbors = neighbors.transpose(1, 2)
+            neighbors = torch.cat(
+                [neighbors.unsqueeze(-1), edge_info.unsqueeze(-1)], dim=-1
+            )
+            for i, layer in enumerate(self.neighbors_layers):
+                # batch, seq_len, neighbs, hidden_dim
+                neighbors = layer(neighbors)
+            neighbors = neighbors.sum(-2)
+        if expr is None:
+            expr = torch.zeros(
+                (neighbors.shape[0], neighbors.shape[1], 1), device=neighbors.device
+            )
+        else:
+            expr = expr.unsqueeze(-1)
+            for i, layer in enumerate(self.self_layers):
+                expr = layer(expr)
+        x = torch.cat([expr, neighbors], dim=-1)
+        for layer in self.shared_layers:
+            # batch, seq_len, neighbs, hidden_dim
+            x = layer(x)
+        if mask is not None:
+            x = x.masked_fill(mask.unsqueeze(-1), 0)
+        return x
+
+    def _init_weights(self):
+        pass
+        # for m in self.neighbors_layers:
+        #    if isinstance(m, nn.Linear):
+        #        torch.nn.init.zeros_(m.weight)
+        #        if m.bias is not None:
+        #            torch.nn.init.constant_(m.bias, 0)
+        # for m in self.self_layers:
+        #    if isinstance(m, nn.Linear):
+        #        torch.nn.init.eye_(m.weight)
+        #        if m.bias is not None:
+        #            torch.nn.init.constant_(m.bias, 0)
+        # for m in self.shared_layers:
+        #    if isinstance(m, nn.Linear):
+        #        torch.nn.init.eye_(m.weight)
+        #        if m.bias is not None:
+        #            torch.nn.init.constant_(m.bias, 0)
+        #
+
+
+class GNN(nn.Module):
+    def __init__(
+        self,
+        input_dim: int = 1,  # here, 1 or 2
+        merge_dim: int = 32,
+        output_dim: int = 256,
+        num_layers: int = 2,
+        dropout: float = 0.1,
+        gnn_type: str = "deepset",
+        add_connection_feature: bool = False,
+    ):
+        """
+        Graph Neural Network model
+
+        Args:
+            input_dim: Dimension of input node features
+            output_dim: Dimension of output node features
+            num_layers: Number of GNN layers
+            dropout: Dropout probability
+            gnn_type: Type of GNN layer ('gcn', 'gat', 'sage', or 'deepset')
+        """
+        super().__init__()
+
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        if num_layers == 1:
+            raise ValueError("num_layers must be greater than 1")
+        self.num_layers = num_layers
+        self.dropout = dropout
+        self.gnn_type = gnn_type
+        self.add_connection_feature = add_connection_feature
+
+        if gnn_type == "deepset":
+            # Local MLP (phi) for processing individual nodes
+            self.input_nn_layer = MLP(
+                in_channels=input_dim,
+                hidden_channels=merge_dim,
+                out_channels=merge_dim,
+                num_layers=num_layers,
+                dropout=dropout,
+                act="relu",
+                norm="layer_norm",
+            )
+
+            self.input_self_layer = MLP(
+                in_channels=input_dim,
+                hidden_channels=merge_dim + 2,
+                out_channels=merge_dim,
+                num_layers=num_layers - 1,
+                dropout=dropout,
+                act="relu",
+                norm="layer_norm",
+            )
+
+            # Global MLP (rho) for processing aggregated features
+            self.output_layer = MLP(
+                in_channels=(
+                    (merge_dim * 2) + 1 if add_connection_feature else merge_dim * 2
+                ),
+                hidden_channels=output_dim,
+                out_channels=output_dim,
+                num_layers=num_layers,
+                dropout=dropout,
+                act="relu",
+                norm="layer_norm",
+            )
+
+            return
+
+        # Select GNN layer type for other architectures
+        else:
+            if gnn_type == "gcn":
+                gnn_layer = GCNConv
+            elif gnn_type == "gat":
+                gnn_layer = GATConv
+            elif gnn_type == "sage":
+                gnn_layer = SAGEConv
+            else:
+                raise ValueError(f"Unknown GNN type: {gnn_type}")
+
+            self.gnn_layer = gnn_layer(
+                output_dim,
+                output_dim,
+                add_self_loops=False,
+                normalize=False,
+                aggr="mean",
+            )
+
+    def forward(self, x, neighbors, edge_info=None, batch=None, mask=None):
+        """
+        Forward pass
+
+        Args:
+            x: Node features [minibatch_size, ngenes]
+            neighbors: Neighbor nodes [minibatch_size, ngenes, n_neighbors] or [minibatch_size, ngenes, n_neighbors, 2]
+            edge_info:
+                - Graph connectivity [2, num_edges] if gnn_type != deepset
+                - Edge features [num_edges, 1] if gnn_type == deepset
+                - None if gnn_type == deepset and no edge features
+            batch: Batch assignment vector [num_nodes]
+
+        Returns:
+            Node embeddings [num_nodes, hidden_dim]
+        """
+
+        # Standard GNN forward pass
+        x = x.unsqueeze(-1)
+        neighbors = neighbors.unsqueeze(-1)
+        if self.gnn_type == "deepset":
+            neighbors = self.input_nn_layer(neighbors).sum(dim=-3)
+            x = self.input_self_layer(x)
+            x = torch.cat([x, neighbors], dim=-1)
+        else:
+            x = self.gnn_layer(x, edge_info)
+            neighbors = self.gnn_layer(neighbors, edge_info)
+            for layer in self.layers:
+                x = layer(x, edge_info)
+                x = F.relu(x)
+                x = F.dropout(x, p=self.dropout, training=self.training)
+            # TODO: to finish
+
+        x = self.output_layer(x)
+        if mask is not None:
+            x = x.masked_fill_(mask.unsqueeze(-1), 0)
+        return x

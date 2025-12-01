@@ -1,5 +1,20 @@
+trainer:
+  strategy: ddp
 model:
-  nhead: 4
-  nlayers: 8
-  layers_cls: [256]
-  d_model: 256
+  nhead: 8
+  num_heads_kv: 4
+  nlayers: 16 #used to be 12
+  d_model: 512
+  dropout: 0.1
+  d_model_cell: 256
+  nhead_cell: 4
+  nlayers_cell: 6
+data:
+  n_samples_per_epoch: 400000
+  batch_size: 16
+# model is 90M params
+scprint_training:
+  test_every: 10
+  weight_decay: 0.1
+  warmup_duration: 2000
+  lr_reduce_factor: 0.3

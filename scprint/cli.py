@@ -7,7 +7,6 @@ from lightning.pytorch.callbacks import (
     StochasticWeightAveraging,
 )
 from lightning.pytorch.cli import LightningCLI, _get_short_description
-from lightning.pytorch.strategies import DDPStrategy
 from lightning.pytorch.trainer import Trainer
 
 from scprint.tasks import Denoiser, Embedder, GNInfer
@@ -15,6 +14,7 @@ from scprint.tasks import Denoiser, Embedder, GNInfer
 from .trainer import TrainingMode
 
 TASKS = [("embed", Embedder), ("gninfer", GNInfer), ("denoise", Denoiser)]
+TIMEOUT = 3600 * 9  # 9 hours in seconds
 
 
 class MyCLI(LightningCLI):
@@ -32,6 +32,8 @@ class MyCLI(LightningCLI):
                 "scprint_early_stopping.monitor": "val_loss",
                 # patience is the number of consecutive epochs with no improvement after which learning rate will be reduced.
                 "scprint_early_stopping.patience": 5,
+                # Prevent early stopping from checking on train epoch end when val_loss isn't available yet
+                "scprint_early_stopping.check_on_train_epoch_end": False,
             }
         )
         parser.add_lightning_class_args(
@@ -39,10 +41,7 @@ class MyCLI(LightningCLI):
         )
         parser.set_defaults({"scprint_learning_rate_monitor.logging_interval": "epoch"})
         parser.add_lightning_class_args(TrainingMode, "scprint_training")
-        parser.link_arguments(
-            "data.gene_pos", "model.gene_pos_enc", apply_on="instantiate"
-        )
-        parser.link_arguments("data.genes", "model.genes", apply_on="instantiate")
+        parser.link_arguments("data.genes_dict", "model.genes", apply_on="instantiate")
         parser.link_arguments(
             "data.decoders", "model.label_decoders", apply_on="instantiate"
         )
@@ -50,22 +49,15 @@ class MyCLI(LightningCLI):
             "data.labels_hierarchy", "model.labels_hierarchy", apply_on="instantiate"
         )
         parser.link_arguments(
-            "data.metacell_mode", "model.use_metacell_token", apply_on="instantiate"
+            "data.n_bins", "model.n_input_bins", apply_on="instantiate"
         )
         parser.link_arguments("data.classes", "model.classes", apply_on="instantiate")
         parser.link_arguments(
-            "data.gene_embeddings", "model.precpt_gene_emb", apply_on="parse"
-        )
-        parser.link_arguments(
             "data.organisms", "model.organisms", apply_on="instantiate"
         )
-        parser.link_arguments(
-            "data.num_datasets", "model.num_batch_labels", apply_on="instantiate"
-        )
+
         parser.add_argument("--set_float32_matmul_precision", type=bool, default=False)
         parser.add_argument("--wandblog", type=str, default="")
-        parser.add_argument("--log_freq", type=int, default=500)
-        parser.add_argument("--log_graph", type=bool, default=False)
         parser.add_argument("--project", type=str)
 
     def _add_subcommands(self, parser, **kwargs) -> None:
@@ -127,15 +119,18 @@ class MyCLI(LightningCLI):
                 help=(
                     "If not included in the anndata under 'organism_ontology_term_id', the species of the dataset."
                 ),
-                required=True,
+                required=False,
             )
+            parser.add_argument("--use_raw", type=bool, default=False)
+            parser.add_argument("--skip_validate", type=bool, default=True)
+            parser.add_argument("--is_symbol", type=bool, default=False)
             parser.add_class_arguments(subcommand[1])
             added = parser.add_method_arguments(
                 subcommand[1],
                 "__call__",
                 skip=set(["model", "adata", "cell_type"]),
             )
-            
+
             self._subcommand_method_arguments[subcommand] = added
             self._subcommand_parsers[subcommand[0]] = parser
             parser_subcommands.add_subcommand(subcommand[0], parser, help=description)
@@ -158,35 +153,45 @@ class MyCLI(LightningCLI):
             import numpy as np
             import scanpy as sc
             from scdataloader import Preprocessor
-            from scdataloader.utils import load_genes 
+            from scdataloader.utils import load_genes
+
             from scprint import scPrint
-            import numpy as np
 
             adata = sc.read_h5ad(self.config_init[subcommand]["adata"])
             adata.obs.drop(columns="is_primary_data", inplace=True, errors="ignore")
-            adata.obs["organism_ontology_term_id"] = self.config_init[subcommand][
-                "species"
-            ]
+            if self.config_init[subcommand]["species"] is not None:
+                adata.obs["organism_ontology_term_id"] = self.config_init[subcommand][
+                    "species"
+                ]
             preprocessor = Preprocessor(
                 do_postp=False,
                 force_preprocess=True,
-                skip_validate=True,
+                skip_validate=self.config_init[subcommand].get("skip_validate", True),
+                use_raw=self.config_init[subcommand].get("use_raw", False),
+                is_symbol=self.config_init[subcommand].get("is_symbol", False),
             )
             adata = preprocessor(adata)
             conf = dict(self.config_init[subcommand])
             model_checkpoint_file = self.config_init[subcommand]["ckpt_path"]
             try:
                 m = torch.load(model_checkpoint_file)
-            except RuntimeError: 
-                m = torch.load(model_checkpoint_file, map_location=torch.device('cpu'))
+            except RuntimeError:
+                m = torch.load(model_checkpoint_file, map_location=torch.device("cpu"))
             transformer = "flash" if torch.cuda.is_available() else "normal"
-            if "prenorm" in m['hyper_parameters']:
-                m['hyper_parameters'].pop("prenorm")
+            if "prenorm" in m["hyper_parameters"]:
+                m["hyper_parameters"].pop("prenorm")
                 torch.save(m, model_checkpoint_file)
-            if "label_counts" in m['hyper_parameters']:
-                model = scPrint.load_from_checkpoint(model_checkpoint_file, precpt_gene_emb=None, classes=m['hyper_parameters']['label_counts'], transformer=transformer)
+            if "label_counts" in m["hyper_parameters"]:
+                model = scPrint.load_from_checkpoint(
+                    model_checkpoint_file,
+                    precpt_gene_emb=None,
+                    classes=m["hyper_parameters"]["label_counts"],
+                    transformer=transformer,
+                )
             else:
-                model = scPrint.load_from_checkpoint(model_checkpoint_file, precpt_gene_emb=None, transformer=transformer)
+                model = scPrint.load_from_checkpoint(
+                    model_checkpoint_file, precpt_gene_emb=None, transformer=transformer
+                )
             missing = set(model.genes) - set(load_genes(model.organisms).index)
             if len(missing) > 0:
                 print(
@@ -197,7 +202,7 @@ class MyCLI(LightningCLI):
                 model = model.to(torch.float32)
             dtype = torch.float16 if torch.cuda.is_available() else torch.float32
             conf["dtype"] = dtype
-            
+
             model = model.to("cuda" if torch.cuda.is_available() else "cpu")
             for key in [
                 "seed_everything",
@@ -271,17 +276,31 @@ class MyCLI(LightningCLI):
             if "set_float32_matmul_precision" in k:
                 if v:
                     torch.set_float32_matmul_precision("medium")
+        import os
+
+        simpler_f_hash = os.system("cd ../simpler_flash && git rev-parse HEAD")
+        scdata_v = os.system("cd ../scdataloader && git rev-parse HEAD")
+        print("scdata_v:", scdata_v)
+        print("simpler_f_hash:", simpler_f_hash)
         if "fit" in self.config and self.config["fit"]["trainer"]["strategy"] in [
             "ddp",
             "ddp_find_unused_parameters_true",
+            "fsdp",
         ]:
             import os
 
-            os.environ["NCCL_TIMEOUT"] = str(7000)  # 2 hours in seconds
-            os.environ["TORCH_DISTRIBUTED_TIMEOUT"] = str(7000)  # 2 hours in seconds
-            os.environ["PL_TRAINER_STRATEGY_TIMEOUT"] = str(7000)
+            os.environ["NCCL_TIMEOUT"] = str(TIMEOUT)  # 9 hours in seconds
+            os.environ["TORCH_DISTRIBUTED_TIMEOUT"] = str(TIMEOUT)  # 9 hours in seconds
+            os.environ["PL_TRAINER_STRATEGY_TIMEOUT"] = str(TIMEOUT)
 
-            print("setting global pytorch distributed timeout to 10000s")
+            print(f"setting global pytorch distributed timeout to {TIMEOUT}s")
+
+    def after_instantiate_classes(self):
+        try:
+            self.model.name = self.trainer._loggers[0].version
+        except:
+            print("not on wandb, could not set name")
+        self.datamodule.set_valid_genes_collator(self.model.genes)
 
     def instantiate_trainer(self, **kwargs) -> Trainer:
         """Override to customize trainer instantiation"""
@@ -290,13 +309,14 @@ class MyCLI(LightningCLI):
         if "fit" in self.config and self.config["fit"]["trainer"]["strategy"] in [
             "ddp",
             "ddp_find_unused_parameters_true",
+            "fsdp",
         ]:
             # Create DDPStrategy with custom timeout
             from datetime import timedelta
 
             # Update the config
             print("updating the config")
-            trainer.strategy._timeout = timedelta(seconds=7000)  # 2hours in second
+            trainer.strategy._timeout = timedelta(seconds=TIMEOUT)  # 9 hours in seconds
             trainer.strategy.setup_distributed()
         # Call parent method to create trainer
         return trainer

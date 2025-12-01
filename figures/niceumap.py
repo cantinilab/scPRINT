@@ -1,34 +1,39 @@
 # niceumap
 
-import scanpy as sc
-import datamapplot
-from anndata.experimental import concat_on_disk
-from umap import UMAP
 import os
 
+# import datamapplot
+import scanpy as sc
+from anndata.experimental import concat_on_disk
 
-
-name = "o2uniqsx"
+name = "18hebyht"
 # Assuming the data files are in the "./data/" directory
-data_directory = "./data/"
+data_directory = "/pasteur/appa/scratch/jkalfon/45322258/"
 file_list = os.listdir(data_directory)
 ## Filter out only the files with the 'h5ad' extension
-h5ad_files = [file for file in file_list if file.endswith('.h5ad') and "step_0_predict_part" in file]
+h5ad_files = [
+    file
+    for file in file_list
+    if file.endswith(".h5ad") and "step_0__predict_part_" in file
+]
 ## Sort the files to maintain order
 h5ad_files.sort()
 ## Update the list 'l' with the full paths of the 'h5ad' files
 h5ad_files = [os.path.join(data_directory, file) for file in h5ad_files]
 
-concat_on_disk(h5ad_files, data_directory+name+"_predict.h5ad", uns_merge="same", index_unique="_")
+concat_on_disk(
+    h5ad_files,
+    data_directory + name + "_predict.h5ad",
+    uns_merge="same",
+    index_unique="_",
+)
 adata = sc.read_h5ad(data_directory + name + "_predict.h5ad")
 # adata = adata[:100_000]
-# sc.pp.neighbors(adata, use_rep="X", n_neighbors=15)
-# sc.tl.louvain(adata, resolution=1.0, key_added="louvain_1.0")
-# sc.tl.louvain(adata, resolution=0.5, key_added="louvain_0.5")
-# sc.tl.louvain(adata, resolution=0.2, key_added="louvain_0.2")
-
-fit = UMAP(n_neighbors=15, min_dist=0.1, spread=1.4, metric="cosine")
-adata.obsm["X_umap"] = fit.fit_transform(adata.X)
+sc.pp.neighbors(adata, use_rep="scprint_emb_cell_type_ontology_term_id", n_neighbors=15)
+sc.tl.leiden(
+    adata, resolution=1.0, key_added="leiden_1.0", flavor="igraph", n_iterations=2
+)
+sc.tl.umap(adata, min_dist=0.1, spread=1.4)
 
 adata.write(data_directory + name + "_predict.h5ad")
 # fig, ax = datamapplot.create_plot(adata.obsm['X_umap'],

@@ -1,5 +1,4 @@
 import gc
-import json
 import math
 import os.path
 from collections import Counter
@@ -18,6 +17,7 @@ from torch import Tensor
 from torch.distributions import Gamma, Poisson
 
 from .. import utils
+from ..datasets import DENOISE_DATASETS, EMBEDDING_DATASETS
 from ..tasks import cell_emb as embbed_task
 from ..tasks import denoise as denoise_task
 from ..tasks import grn as grn_task
@@ -28,15 +28,14 @@ FILEDIR = os.path.dirname(os.path.realpath(__file__))
 
 
 def make_adata(
-    pos: Tensor,
-    expr_pred: Tensor,
     genes: List[str],
     embs: Tensor,
-    classes: List[str],
+    pos: Tensor = None,
+    expr_pred: Tensor = None,
+    classes: List[str] = None,
     pred: Tensor = None,
-    attention: Optional[Tensor] = None,
     label_decoders: Optional[Dict] = None,
-    labels_hierarchy: Dict = {},
+    labels_hierarchy: Optional[Dict] = None,
     gtclass: Optional[Tensor] = None,
     doplot: bool = True,
 ):
@@ -50,7 +49,6 @@ def make_adata(
         embs (torch.Tensor): Embeddings of the cells. The shape of the tensor is (n_cells, n_features).
         classes (list): List of classes.
         pred (torch.Tensor, optional): Predicted labels. The shape of the tensor is (n_cells, n_classes). Default is None.
-        attention (torch.Tensor, optional): Attention weights. Default is None.
         label_decoders (dict, optional): Dictionary to map class codes to class names. Default is None.
         labels_hierarchy (dict, optional): Dictionary representing the hierarchy of labels. Default is {}.
         gtclass (torch.Tensor, optional): Ground truth class. Default is None.
@@ -59,6 +57,7 @@ def make_adata(
     Returns:
         anndata.AnnData: The created AnnData object.
     """
+    print("logging the anndata")
     colname = ["pred_" + i for i in classes]
     if pred is not None:
         obs = np.array(pred.to(device="cpu", dtype=torch.int32))
@@ -83,52 +82,71 @@ def make_adata(
                 ).T
             obs = np.hstack([obs, nobs])
 
+    n_cells = embs[list(embs.keys())[0]].shape[0]
+    layers = None
     size = len(genes)
-    n_cells = pos.shape[0]
-    pos = pos.cpu().numpy()
-
-    # Create empty array with same shape as expr_pred[0]
-    mu_array = np.zeros((n_cells, size))
-    # Fill array with values from expr_pred[0]
-    for idx in range(n_cells):
-        mu_array[idx, pos[idx]] = expr_pred[0][idx].cpu().numpy()
-    layers = {
-        "scprint_mu": csr_matrix(mu_array),
-        #  "used_scprint": csr_matrix(pos),
-    }
-    if len(expr_pred) > 1:
-        theta_array = np.zeros((n_cells, size))
+    if pos is not None:
+        minval = pos.min()
+        maxval = pos.max()
+        genes = genes[minval : maxval + 1]
+        size = len(genes)
+        pos = pos - minval
+        mu_array = np.zeros((n_cells, size), dtype=np.float32)
+        pos = pos.cpu().numpy()
+        # Create empty array with same shape as expr_pred[0]
         # Fill array with values from expr_pred[0]
         for idx in range(n_cells):
-            theta_array[idx, pos[idx]] = expr_pred[1][idx].cpu().numpy()
-        layers["scprint_theta"] = csr_matrix(theta_array)
+            mu_array[idx, pos[idx]] = expr_pred[0][idx].cpu().numpy() + 1
+        exist = mu_array.sum(0) != 0
+        mu_array = mu_array[:, exist]
+        mu_array[mu_array == 1] = 0
+        layers = {
+            "scprint_mu": mu_array,
+            #  "used_scprint": csr_matrix(pos),
+        }
+        if len(expr_pred) > 1:
+            theta_array = np.zeros((n_cells, size), dtype=np.float32)
+            # Fill array with values from expr_pred[0]
+            for idx in range(n_cells):
+                theta_array[idx, pos[idx]] = expr_pred[1][idx].cpu().numpy()
+            layers["scprint_theta"] = theta_array[:, exist]
 
-        pi_array = np.zeros((n_cells, size))
-        # Fill array with values from expr_pred[0]
-        for idx in range(n_cells):
-            pi_array[idx, pos[idx]] = expr_pred[2][idx].cpu().numpy()
-        layers["scprint_pi"] = csr_matrix(pi_array)
-
+            pi_array = np.zeros((n_cells, size), dtype=np.float32)
+            # Fill array with values from expr_pred[0]
+            for idx in range(n_cells):
+                pi_array[idx, pos[idx]] = expr_pred[2][idx].cpu().numpy()
+            layers["scprint_pi"] = pi_array[:, exist]
+        genes = [n for i, n in enumerate(genes) if exist[i] > 0]
+    else:
+        genes = []
     adata = AnnData(
-        X=csr_matrix(mu_array.shape),
+        X=csr_matrix((n_cells, len(genes))),
         layers=layers,
-        obs=pd.DataFrame(
-            obs,
-            columns=colname,
-        )
-        if pred is not None
-        else None,
+        obs=(
+            pd.DataFrame(
+                obs,
+                columns=colname,
+            )
+            if pred is not None
+            else None
+        ),
+        var=pd.DataFrame(index=genes),
     )
-    adata.obsm["scprint_emb"] = embs.cpu().numpy()
-    adata.var_names = genes
+
+    for k, v in embs.items():
+        adata.obsm["scprint_emb_" + k] = v.cpu().numpy()
+        rep = "scprint_emb_" + k
+    del embs
     accuracy = {}
+    if labels_hierarchy is None:
+        labels_hierarchy = {}
     if pred is not None:
         for clss in classes:
             if gtclass is not None:
-                tr = translate(adata.obs[clss].tolist(), clss)
+                tr = translate(set(adata.obs[clss]), clss)
                 if tr is not None:
                     adata.obs["conv_" + clss] = adata.obs[clss].replace(tr)
-            tr = translate(adata.obs["pred_" + clss].tolist(), clss)
+            tr = translate(set(adata.obs["pred_" + clss]), clss)
             if tr is not None:
                 adata.obs["conv_pred_" + clss] = adata.obs["pred_" + clss].replace(tr)
             res = []
@@ -164,7 +182,7 @@ def make_adata(
         adata.obs = adata.obs.astype("category")
     print(adata)
     if doplot and adata.shape[0] > 100:
-        sc.pp.neighbors(adata, use_rep="scprint_emb")
+        sc.pp.neighbors(adata, use_rep=rep)
         sc.tl.umap(adata)
         sc.tl.leiden(adata, key_added="sprint_leiden")
         if gtclass is not None:
@@ -249,11 +267,16 @@ def make_adata(
                         acc = " (accuracy: {:.2f})".format(
                             accuracy[col.split("conv_")[-1]]
                         )
-                    axs[i].set_title(col + " UMAP" + acc)
+                    axs[i].set_title(col + " UMAP of " + rep + " embedding " + acc)
                     axs[i].set_xlabel("UMAP1")
                     axs[i].set_ylabel("UMAP2")
             else:
-                fig = sc.pl.umap(adata, color=color, show=False, return_fig=True)
+                fig = sc.pl.umap(
+                    adata,
+                    color=color,
+                    show=False,
+                    return_fig=True,
+                )
         plt.show()
     else:
         fig = None
@@ -340,22 +363,33 @@ def downsample_profile(mat: Tensor, dropout: float, method="new", randsamp=False
     # here we try to get the scale of the distribution so as to remove the right number of counts from each gene
     # https://genomebiology.biomedcentral.com/articles/10.1186/s13059-022-02601-5#:~:text=Zero%20measurements%20in%20scRNA%2Dseq,generation%20of%20scRNA%2Dseq%20data.
     if randsamp:
-        dropout = torch.rand(mat.shape, device=mat.device) * dropout
+        dropout = torch.rand(mat.shape[0], device=mat.device) * dropout
+        dropout = (
+            dropout.unsqueeze(1)
+            if len(mat.shape) == 2
+            else dropout.unsqueeze(1).unsqueeze(1)
+        )
     if method == "old":
-        totcounts = mat.sum(1)
-        batch = mat.shape[0]
-        ngenes = mat.shape[1]
+        totcounts = mat.sum(-1)
+        ngenes = mat.shape[-1]
         tnoise = 1 - (1 - dropout) ** (1 / 2)
         # we model the sampling zeros (dropping 30% of the reads)
         res = torch.poisson(
-            torch.rand((batch, ngenes)).to(device=mat.device)
-            * ((tnoise * totcounts.unsqueeze(1)) / (0.5 * ngenes))
+            torch.rand(mat.shape, device=mat.device)
+            * ((tnoise * totcounts.unsqueeze(-1)) / (0.5 * ngenes))
         ).int()
         # we model the technical zeros (dropping 50% of the genes)
-        drop = (torch.rand((batch, ngenes)) > tnoise).int().to(device=mat.device)
+        drop = (torch.rand(mat.shape, device=mat.device) > tnoise).int()
 
         mat = (mat - res) * drop
-        return torch.maximum(mat, torch.Tensor([[0]]).to(device=mat.device)).int()
+        return torch.maximum(
+            mat,
+            torch.zeros(
+                (1, 1) if len(mat.shape) == 2 else (1, 1, 1),
+                device=mat.device,
+                dtype=torch.int,
+            ),
+        )
     elif method == "jules":
         scaler = (1 - dropout) ** (1 / 2)
         notdrop = (
@@ -369,32 +403,33 @@ def downsample_profile(mat: Tensor, dropout: float, method="new", randsamp=False
         # apply the dropout after the poisson, right?
         return notdrop * torch.poisson(mat * scaler)
     elif method == "new":
-        batch = mat.shape[0]
-        ngenes = mat.shape[1]
         dropout = dropout * 1.1
         # we model the sampling zeros (dropping 30% of the reads)
         res = torch.poisson((mat * (dropout / 2))).int()
         # we model the technical zeros (dropping 50% of the genes)
-        notdrop = (
-            torch.rand((batch, ngenes), device=mat.device) >= (dropout / 2)
-        ).int()
+        notdrop = (torch.rand(mat.shape, device=mat.device) >= (dropout / 2)).int()
         mat = (mat - res) * notdrop
         return torch.maximum(
-            mat, torch.zeros((1, 1), device=mat.device, dtype=torch.int)
+            mat,
+            torch.zeros(
+                (1, 1) if len(mat.shape) == 2 else (1, 1, 1),
+                device=mat.device,
+                dtype=torch.int,
+            ),
         )
     else:
         raise ValueError(f"method {method} not recognized")
 
 
 def simple_masker(
-    shape: list[int],
+    shape: List[int],
     mask_ratio: float = 0.15,
 ) -> torch.Tensor:
     """
     Randomly mask a batch of data.
 
     Args:
-        shape (list[int]): The shape of the data.
+        shape (List[int]): The shape of the data.
         mask_ratio (float): The ratio of genes to mask, default to 0.15.
 
     Returns:
@@ -406,30 +441,28 @@ def simple_masker(
 class WeightedMasker:
     def __init__(
         self,
-        genes: list[str],
-        TFs: list[str] = utils.fileToList(FILEDIR + "/../../data/main/TFs.txt"),
-        inv_weight: float = 0.2,
+        genes: List[str],
+        TFs: List[str] = utils.fileToList(FILEDIR + "/../../data/main/TFs.txt"),
+        tf_weight: float = 10,
     ):
         """
         Randomly mask a batch of data.
 
         Args:
-            genes (list[str]): The list of genes the model might see.
-            TFs (list[str]): The list of TFs the model can drop.
-            inv_weight (float): How likely it is to drop a non TF compared to a TF.
+            genes (List[str]): The list of genes the model might see.
+            TFs (List[str]): The list of TFs the model can drop.
+            tf_weight (float): How likely it is to drop a non TF compared to a TF.
 
         Returns:
             torch.Tensor: A tensor of masked data.
         """
         TFs = set(TFs)
-        self.weights = torch.tensor(
-            [1 if gene in TFs else inv_weight for gene in genes]
-        )
-        self.max_to_drop = (self.weights == inv_weight).sum()
-        self.inv_weight = inv_weight
+        self.weights = torch.tensor([tf_weight if gene in TFs else 1 for gene in genes])
+        self.max_to_drop = (self.weights == tf_weight).sum()
+        self.tf_weight = tf_weight
 
     def __call__(self, ids: torch.Tensor, mask_ratio: float = 1.0) -> torch.Tensor:
-        if self.inv_weight == 0:
+        if self.tf_weight == 0:
             if mask_ratio * ids.shape[1] > self.max_to_drop:
                 raise ValueError("Cannot drop more than max_to_drop")
         # Create a tensor of probabilities for each position
@@ -484,8 +517,8 @@ class Attention:
     def __init__(
         self,
         gene_dim: int,
-        comp_attn: bool = False,
-        apply_softmax: bool = False,
+        precomp_attn: bool = False,
+        apply_softmax: bool = True,
         sum_heads: bool = True,
         additional_tokens: int = 0,
     ):
@@ -495,7 +528,7 @@ class Attention:
         Args:
             gene_dim (int): The dimension of the gene.
             additional_tokens (int): The number of additional tokens to add.
-            comp_attn (bool): Whether to compute attention or it is precomputed
+            precomp_attn (bool): Whether to compute attention or it is precomputed
             apply_softmax (bool): Whether to apply softmax to the attention.
             sum_heads (bool): Whether to sum the heads.
         """
@@ -505,10 +538,11 @@ class Attention:
         self.div: Optional[Tensor] = None
         self.apply_softmax: bool = apply_softmax
         self.sum_heads: bool = sum_heads
-        self.comp_attn: bool = True
+        self.precomp_attn: bool = precomp_attn
+        self.speciesloc: int = 0
 
     def add(self, *args, **kwargs) -> None:
-        if self.comp_attn:
+        if not self.precomp_attn:
             self.add_qk(*args, **kwargs)
         else:
             self.add_attn(*args, **kwargs)
@@ -517,7 +551,7 @@ class Attention:
         self, x: List[Tensor], pos: Tensor, expr: Optional[Tensor] = None
     ) -> None:
         """
-        Aggregate the attention or data based on the comp_attn flag.
+        Aggregate the attention or data based on the precomp_attn flag.
 
         Args:
             x (List[Tensor]): List of tensors to aggregate. Tensor of size (batch, seq_len, 2, heads, emb)
@@ -528,15 +562,12 @@ class Attention:
                 [
                     self.gene_dim + self.additional_tokens,
                     self.gene_dim + self.additional_tokens,
-                    len(x) * x[0].shape[3],
                 ],
                 device=pos.device,
                 dtype=torch.float32,
             )
             self.div = torch.zeros(1, device=pos.device, dtype=torch.float32)
-
         for i, elem in enumerate(x):
-            batch, seq_len, _, heads, _ = elem.shape
             if self.apply_softmax:
                 attn = torch.nn.functional.softmax(
                     elem[:, :, 0, :, :].permute(0, 2, 1, 3)
@@ -544,16 +575,22 @@ class Attention:
                     dim=-1,
                 )
                 if expr is not None:
-                    attn = attn * (expr > 0).float()
-                self.data[:, :, heads * i : heads * (i + 1)] += (
-                    attn.sum(0).permute(1, 2, 0) / batch
-                )
+                    attn[:, :, self.additional_tokens :, self.additional_tokens :] = (
+                        attn[:, :, self.additional_tokens :, self.additional_tokens :]
+                        * (expr > 0).float().unsqueeze(1).unsqueeze(-1)
+                        * (expr > 0).float().unsqueeze(1).unsqueeze(2)
+                    )
+                self.data += attn.sum(0).mean(0)
             else:
-                self.data[:, :, heads * i : heads * (i + 1)] += (
-                    elem[:, :, 0, :, :].permute(0, 2, 1, 3)
-                    @ elem[:, :, 1, :, :].permute(0, 2, 3, 1)
-                ).sum(0).permute(1, 2, 0) / batch
-        self.div += 1
+                self.data[:, :] += (
+                    (
+                        elem[:, :, 0, :, :].permute(0, 2, 1, 3)
+                        @ elem[:, :, 1, :, :].permute(0, 2, 3, 1)
+                    )
+                    .sum(0)
+                    .mean(0)
+                )
+            self.div += 1
 
     def add_qk(
         self, x: List[Tensor], pos: Tensor, expr: Optional[Tensor] = None
@@ -565,6 +602,7 @@ class Attention:
             x (List[Tensor]): List of tensors to add.
             pos (Tensor): Position tensor.
         """
+        # this is a debugger line
         if self.data is None:
             self.data = torch.zeros(
                 [len(x), self.gene_dim + self.additional_tokens] + list(x[0].shape[2:]),
@@ -573,14 +611,14 @@ class Attention:
             self.div = torch.zeros(
                 self.gene_dim + self.additional_tokens, device=pos.device
             )
-        for i in range(x[0].shape[0]):
+        for i in range(x[0].shape[0]):  # batch size
             loc = torch.cat(
                 [
                     torch.arange(self.additional_tokens, device=pos.device),
-                    pos[i] + self.additional_tokens,
+                    pos[i] + self.additional_tokens - self.speciesloc,
                 ]
             ).int()
-            for j in range(len(x)):
+            for j in range(len(x)):  # number of layers * heads
                 self.data[j, loc, :, :, :] += x[j][i]
             self.div[loc] += 1
 
@@ -591,7 +629,7 @@ class Attention:
         Returns:
             Optional[np.ndarray]: The aggregated attention or data.
         """
-        if self.comp_attn:
+        if not self.precomp_attn:
             if self.data is None:
                 return None
             # shape is (layers, genes, qkv, heads, emb)
@@ -604,7 +642,10 @@ class Attention:
 
 
 def test(
-    model: torch.nn.Module, name: str, filedir: str, do_class: bool = True
+    model: torch.nn.Module,
+    filedir: str,
+    do_class: bool = True,
+    maxcells_grn: int = 1024,
 ) -> None:
     """
     Test the given model on the full set of benchmarks and save the results to JSON files.
@@ -618,62 +659,61 @@ def test(
         None
     """
     metrics = {}
-    res = embbed_task.default_benchmark(
-        model, default_dataset="lung", do_class=do_class, coarse=False
-    )
-    f = open("metrics_" + name + ".json", "a")
-    f.write(json.dumps({"embed_lung": res}, indent=4))
-    f.close()
-    metrics.update(
-        {
-            "emb_lung/scib": float(res["scib"]["Total"]),
-            "emb_lung/ct_class": float(
-                res["classif"]["cell_type_ontology_term_id"]["accuracy"]
-                if do_class
-                else 0
-            ),
-        }
-    )
-    print(metrics)
-    res = embbed_task.default_benchmark(
-        model, default_dataset="pancreas", do_class=do_class, coarse=False
-    )
-    f = open("metrics_" + name + ".json", "a")
-    f.write(json.dumps({"embed_panc": res}, indent=4))
-    f.close()
-    metrics.update(
-        {
-            "emb_panc/scib": float(res["scib"]["Total"]),
-            "emb_panc/ct_class": float(
-                res["classif"]["cell_type_ontology_term_id"]["accuracy"]
-                if do_class
-                else 0
-            ),
-        }
-    )
-    print(metrics)
-    gc.collect()
-    res = denoise_task.default_benchmark(
-        model, filedir + "/../../data/gNNpgpo6gATjuxTE7CCp.h5ad"
-    )
-    metrics.update(
-        {
-            "denoise/reco2full_vs_noisy2full": float(
-                res["reco2full"] - res["noisy2full"]
-            ),
-        }
-    )
-    gc.collect()
-    print(metrics)
-    f = open("metrics_" + name + ".json", "a")
-    f.write(json.dumps({"denoise": res}, indent=4))
-    f.close()
+    tot = {}
+    for dataset, path in EMBEDDING_DATASETS.items():
+        res = embbed_task.default_benchmark(
+            model,
+            dataset=path,
+            do_class=do_class,
+            coarse=False,
+        )
+        tot["embed_" + dataset] = res
+        metrics.update(
+            {
+                "emb_" + dataset + "/scib": float(res["scib"]["Total"]),
+                "emb_" + dataset + "/scib_bio": float(res["scib"]["Bio conservation"]),
+                "emb_"
+                + dataset
+                + "/scib_batch": float(res["scib"]["Batch correction"]),
+                "emb_"
+                + dataset
+                + "/ct_class": float(
+                    res["classif"].get("cell_type_ontology_term_id", {}).get("macro", 0)
+                    if do_class
+                    else 0
+                ),
+                "emb_"
+                + dataset
+                + "/ct_class_macro": float(
+                    res["classif"].get("cell_type_ontology_term_id", {}).get("macro", 0)
+                    if do_class
+                    else 0
+                ),
+            }
+        )
+        print(metrics)
+        gc.collect()
+    for dataset, filepath in DENOISE_DATASETS.items():
+        res = denoise_task.default_benchmark(model, dataset=filepath)
+        tot["denoise_" + dataset] = res
+        metrics.update(
+            {
+                "denoise_"
+                + dataset
+                + "/reco2full_vs_noisy2full": float(
+                    res["reco2full"] - res["noisy2full"]
+                ),
+            }
+        )
+        print(metrics)
+        gc.collect()
     res = grn_task.default_benchmark(
-        model, "gwps", batch_size=32 if model.d_model <= 512 else 8
+        model,
+        "gwps",
+        batch_size=32 if model.d_model <= 512 else 8,
+        maxcells=maxcells_grn,
     )
-    f = open("metrics_" + name + ".json", "a")
-    f.write(json.dumps({"grn_gwps": res}, default=lambda o: str(o), indent=4))
-    f.close()
+    tot["grn_gwps"] = res
     metrics.update(
         {
             "grn_gwps/auprc_self": float(res["self"]["auprc"]),
@@ -686,151 +726,138 @@ def test(
     )
     print(metrics)
     gc.collect()
-    res = grn_task.default_benchmark(
-        model, "sroy", batch_size=32 if model.d_model <= 512 else 8
-    )
-    f = open("metrics_" + name + ".json", "a")
-    f.write(json.dumps({"grn_sroy": res}, default=lambda o: str(o), indent=4))
-    f.close()
-    metrics.update(
-        {
-            "grn_sroy/auprc_self": float(
-                np.mean(
-                    [
-                        i["auprc"]
-                        for k, i in res.items()
-                        if k.startswith("self_")
-                        and not any(
-                            x in k for x in ["chip_", "ko_", "classifier", "_base"]
-                        )
-                    ]
+    for dataset, filepath in {
+        "old_kidney": "https://datasets.cellxgene.cziscience.com/ede85b09-454b-4374-bf60-5f675e989b64.h5ad",
+        # "kidney": "https://datasets.cellxgene.cziscience.com/01bc7039-961f-4c24-b407-d535a2a7ba2c.h5ad",
+        "lung_smart": "https://datasets.cellxgene.cziscience.com/6ebba0e0-a159-406f-8095-451115673a2c.h5ad",
+        # filedir + "/../../data/yBCKp6HmXuHa0cZptMo7.h5ad",
+    }.items():
+        res = grn_task.default_benchmark(
+            model,
+            filepath,
+            # kidney dataset (2.87, 1.27) (0.00147, 0.00133)
+            batch_size=32 if model.d_model <= 512 else 8,
+            maxcells=maxcells_grn,
+            maxgenes=4000,
+        )
+        tot["grn_omni_" + dataset] = res
+        metrics.update(
+            {
+                "grn_omni_"
+                + dataset
+                + "/auprc_class": float(
+                    np.mean([i["auprc"] for k, i in res.items() if "_class" in k])
+                ),
+                "grn_omni_"
+                + dataset
+                + "/or_class": float(
+                    np.mean([i["odd_ratio"] for k, i in res.items() if "_class" in k])
+                ),
+                "grn_omni_"
+                + dataset
+                + "/tf_enr_class": float(
+                    np.sum(
+                        [
+                            i.get("TF_enr", False)
+                            for k, i in res.items()
+                            if "_class" in k
+                        ]
+                    )
+                ),
+                "grn_omni_"
+                + dataset
+                + "/tf_targ_enr_class": float(
+                    np.mean(
+                        [
+                            i["significant_enriched_TFtargets"]
+                            for k, i in res.items()
+                            if "_class" in k
+                        ]
+                    )
+                ),
+                "grn_omni_"
+                + dataset
+                + "/auprc": float(
+                    np.mean([i["auprc"] for k, i in res.items() if "_mean" in k])
+                ),
+                "grn_omni_"
+                + dataset
+                + "/epr": float(
+                    np.mean([i["epr"] for k, i in res.items() if "_mean" in k])
+                ),
+                "grn_omni_"
+                + dataset
+                + "/or": float(
+                    np.mean([i["odd_ratio"] for k, i in res.items() if "_mean" in k])
+                ),
+                "grn_omni_"
+                + dataset
+                + "/tf_enr": float(
+                    np.sum(
+                        [i.get("TF_enr", False) for k, i in res.items() if "_mean" in k]
+                    )
+                ),
+                "grn_omni_"
+                + dataset
+                + "/tf_targ_enr": float(
+                    np.mean(
+                        [
+                            i["significant_enriched_TFtargets"]
+                            for k, i in res.items()
+                            if "_mean" in k
+                        ]
+                    )
+                ),
+                # 'grn_omni/ct': res['classif']['cell_type_ontology_term_id']['accuracy'],
+            }
+        )
+        print(metrics)
+        gc.collect()
+    return metrics, tot
+
+
+def relabel_assay_for_adv(label_decoders, labels_hierarchy):
+    topred = [
+        "EFO:0700011",
+        "EFO:0008953",
+        "EFO:0030003",
+        "EFO:0700016",
+        "EFO:0700010",
+        "EFO:0022490",
+        "EFO:0008722",
+        "EFO:0010961",
+        "EFO:0008720",
+        "EFO:0010550",
+        "EFO:0030004",
+        "EFO:0008931",
+        "EFO:0010010",
+        "EFO:0008780",
+        "EFO:0009919",
+        "EFO:0010713",
+        "EFO:0030059",
+        "EFO:0008796",
+        "EFO:0030002",
+        "EFO:0030062",
+        "EFO:0008919",
+        "EFO:0008930",
+        "EFO:0010184",
+        "EFO:0008995",
+        "EFO:0030080",
+        "EFO:0700003",
+    ]
+    relab = {}
+    enc = {v: k for k, v in label_decoders["assay_ontology_term_id"].items()}
+    for i in enc.keys():
+        if i in topred:
+            relab[enc[i]] = topred.index(i)
+        else:
+            relab[enc[i]] = -1
+            prevlen = 10000
+            for val in topred:
+                li = labels_hierarchy["assay_ontology_term_id"].get(
+                    enc.get(val, ""), []
                 )
-            ),
-            "grn_sroy/epr_self": float(
-                np.mean(
-                    [
-                        i["epr"]
-                        for k, i in res.items()
-                        if k.startswith("self_")
-                        and not any(
-                            x in k for x in ["chip_", "ko_", "classifier", "_base"]
-                        )
-                    ]
-                )
-            ),
-            "grn_sroy/auprc_omni": float(
-                np.mean(
-                    [
-                        i["auprc"]
-                        for k, i in res.items()
-                        if k.startswith("omni_")
-                        and not any(
-                            x in k for x in ["chip_", "ko_", "classifier", "_base"]
-                        )
-                    ]
-                )
-            ),
-            "grn_sroy/epr_omni": float(
-                np.mean(
-                    [
-                        i["epr"]
-                        for k, i in res.items()
-                        if k.startswith("omni_")
-                        and not any(
-                            x in k for x in ["chip_", "ko_", "classifier", "_base"]
-                        )
-                    ]
-                )
-            ),
-            "grn_sroy/auprc": float(
-                np.mean(
-                    [
-                        i["auprc"]
-                        for k, i in res.items()
-                        if k.startswith("mean_")
-                        and not any(
-                            x in k for x in ["chip_", "ko_", "classifier", "_base"]
-                        )
-                    ]
-                )
-            ),
-            "grn_sroy/epr": float(
-                np.mean(
-                    [
-                        i["epr"]
-                        for k, i in res.items()
-                        if k.startswith("mean_")
-                        and not any(
-                            x in k for x in ["chip_", "ko_", "classifier", "_base"]
-                        )
-                    ]
-                )
-            ),
-        }
-    )
-    print(metrics)
-    gc.collect()
-    res = grn_task.default_benchmark(
-        model,
-        filedir + "/../../data/yBCKp6HmXuHa0cZptMo7.h5ad",
-        batch_size=32 if model.d_model <= 512 else 8,
-        cell_types=[
-            "kidney distal convoluted tubule epithelial cell",
-            "kidney loop of Henle thick ascending limb epithelial cell",
-            "kidney collecting duct principal cell",
-            "mesangial cell",
-            "blood vessel smooth muscle cell",
-            "podocyte",
-            "macrophage",
-            "leukocyte",
-            "kidney interstitial fibroblast",
-            "endothelial cell",
-        ],
-    )
-    f = open("metrics_" + name + ".json", "a")
-    f.write(json.dumps({"grn_omni": res}, default=lambda o: str(o), indent=4))
-    f.close()
-    metrics.update(
-        {
-            "grn_omni/auprc_class": float(
-                np.mean([i["auprc"] for k, i in res.items() if "_class" in k])
-            ),
-            "grn_omni/epr_class": float(
-                np.mean([i["epr"] for k, i in res.items() if "_class" in k])
-            ),
-            "grn_omni/tf_enr_class": float(
-                np.sum(
-                    [i.get("TF_enr", False) for k, i in res.items() if "_class" in k]
-                )
-            ),
-            "grn_omni/tf_targ_enr_class": float(
-                np.mean(
-                    [
-                        i["significant_enriched_TFtargets"]
-                        for k, i in res.items()
-                        if "_class" in k
-                    ]
-                )
-            ),
-            "grn_omni/auprc": float(
-                np.mean([i["auprc"] for k, i in res.items() if "_mean" in k])
-            ),
-            "grn_omni/epr": float(
-                np.mean([i["epr"] for k, i in res.items() if "_mean" in k])
-            ),
-            "grn_omni/tf_enr": float(
-                np.sum([i.get("TF_enr", False) for k, i in res.items() if "_mean" in k])
-            ),
-            "grn_omni/tf_targ_enr": float(
-                np.mean(
-                    [
-                        i["significant_enriched_TFtargets"]
-                        for k, i in res.items()
-                        if "_mean" in k
-                    ]
-                )
-            ),
-            # 'grn_omni/ct': res['classif']['cell_type_ontology_term_id']['accuracy'],
-        }
-    )
-    return metrics
+                if enc[i] in li and prevlen > len(li):
+                    relab[enc[i]] = topred.index(val)
+                    prevlen = len(li)
+    return relab

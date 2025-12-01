@@ -125,9 +125,6 @@ class FSQ(Module):
 
     def indices_to_codes(self, indices: Tensor, project_out=True) -> Tensor:
         """Inverse of `codes_to_indices`."""
-
-        is_img_or_video = indices.ndim >= (3 + int(self.keep_num_codebooks_dim))
-
         indices = rearrange(indices, "... -> ... 1")
         codes_non_centered = (indices // self._basis) % self._levels
         codes = self._scale_and_shift_inverse(codes_non_centered)
@@ -137,10 +134,6 @@ class FSQ(Module):
 
         if project_out:
             codes = self.project_out(codes)
-
-        if is_img_or_video:
-            codes = rearrange(codes, "b ... d -> b d ...")
-
         return codes
 
     def forward(self, z: Tensor) -> Tensor:
@@ -151,21 +144,12 @@ class FSQ(Module):
         d - feature dimension, which is also log2(codebook size)
         c - number of codebook dim
         """
-
-        is_img_or_video = z.ndim >= 4
-
-        # standardize image or video into (batch, seq, dimension)
-
-        if is_img_or_video:
-            z = rearrange(z, "b d ... -> b ... d")
-            z, ps = pack_one(z, "b * d")
-
         assert (
             z.shape[-1] == self.dim
         ), f"expected dimension of {self.dim} but found dimension of {z.shape[-1]}"
-        z = self.project_in(z)
+        small = self.project_in(z)
 
-        z = rearrange(z, "b (c d) -> b c d", c=self.num_codebooks)
+        z = rearrange(small, "b (c d) -> b c d", c=self.num_codebooks)
 
         codes = self.quantize(z)
         indices = self.codes_to_indices(codes)
@@ -174,18 +158,10 @@ class FSQ(Module):
 
         out = self.project_out(codes)
 
-        # reconstitute image or video dimensions
-
-        if is_img_or_video:
-            out = unpack_one(out, ps, "b * d")
-            out = rearrange(out, "b ... d -> b d ...")
-
-            indices = unpack_one(indices, ps, "b * c")
-
         if not self.keep_num_codebooks_dim:
             indices = rearrange(indices, "... 1 -> ...")
 
-        return out, indices
+        return out, indices, small
 
 
 if __name__ == "__main__":

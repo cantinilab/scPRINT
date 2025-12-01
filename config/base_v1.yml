@@ -1,0 +1,107 @@
+project: scprint_v2
+seed_everything: 42
+set_float32_matmul_precision: True
+wandblog: all
+trainer:
+  precision: 16-mixed
+  #  strategy: ddp_find_unused_parameters_true
+  gradient_clip_val: 10
+  log_every_n_steps: 100
+  limit_train_batches: 10000
+  gradient_clip_algorithm: norm
+  limit_val_batches: 5000 
+  limit_test_batches: 1 # we don't perform tests this way
+  accumulate_grad_batches: 1
+  logger:
+    - class_path: lightning.pytorch.loggers.WandbLogger
+      init_args:
+        project: ${project}
+        save_dir: /pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #./data/log/
+        offline: True
+  callbacks:
+    #- class_path: lightning.pytorch.callbacks.StochasticWeightAveraging
+    #  init_args:
+    #    swa_lrs: 0.03
+    - class_path: lightning.pytorch.callbacks.ModelCheckpoint
+      init_args:
+        monitor: val_loss
+        save_top_k: 10
+        save_last: True
+scprint_training:
+  noise: [0.6]
+  mask_ratio: []
+  ecs_scale: 0
+  cce_scale: 0
+  zinb_and_mse: False
+  var_context_length: False
+  do_generate: True
+  randsamp: False
+scprint_early_stopping:
+  patience: 2
+model:
+  num_heads_kv: 4
+  attention: normal
+  residual_in_fp32: True
+  layers_cls: [256]
+  finetune_gene_emb: False
+  cell_specific_blocks: False
+  precpt_gene_emb: ./data/main/gene_embeddings.parquet
+  gene_pos_file: ./data/main/biomart_pos.parquet
+  freeze_embeddings: True
+  normalization: log
+  pred_embedding:
+    - cell_type_ontology_term_id
+  #compress_class_dim:
+  #  cell_type_ontology_term_id: 18 # 20
+  #  tissue_ontology_term_id: 8
+  #  disease_ontology_term_id: 14
+  #  age_group: 8
+  #  assay_ontology_term_id: 5 #6
+  #  self_reported_ethnicity_ontology_term_id: 10
+  #  sex_ontology_term_id: 2
+  #  organism_ontology_term_id: 8
+  # class_compression: vae
+data:
+  collection_name: scPRINT-V2 (good quality) filtered # scPRINT-V2 (some) # (full)
+  how: random expr
+  max_len: 2200
+  pin_memory: True
+  prefetch_factor: 3
+  assays_to_drop:
+    - EFO:0008853
+    - EFO:0010961
+    - EFO:0030007
+    - EFO:0030062
+  metacell_mode: 0.2
+  weight_scaler: 200
+  n_samples_per_epoch: 2_800_000 # {data.batch_size*trainer.limit_train_batches}
+  validation_split: 0.05
+  test_split: 0.02
+  batch_size: 64
+  num_workers: 10
+  hierarchical_clss:
+    - cell_type_ontology_term_id
+    - tissue_ontology_term_id
+    - disease_ontology_term_id
+    - assay_ontology_term_id
+    - self_reported_ethnicity_ontology_term_id
+  clss_to_weight:
+    - clust_cell_type
+    #- tissue_ontology_term_id
+    - disease_ontology_term_id
+    #- age_group
+    - assay_ontology_term_id
+    - self_reported_ethnicity_ontology_term_id
+    - sex_ontology_term_id
+    - organism_ontology_term_id
+    # - nnz
+  clss_to_predict:
+    - cell_type_ontology_term_id
+    #- tissue_ontology_term_id
+    - disease_ontology_term_id
+    #- age_group
+    #- cell_culture
+    - assay_ontology_term_id
+    - self_reported_ethnicity_ontology_term_id
+    - sex_ontology_term_id
+    - organism_ontology_term_id

@@ -1,25 +1,22 @@
 project: scprint_v2
 seed_everything: 42
-ckpt_path: null
 set_float32_matmul_precision: True
 wandblog: all
-log_freq: 200
-log_graph: True
 trainer:
   precision: 16-mixed
-  gradient_clip_val: 40
+  #  strategy: ddp_find_unused_parameters_true
+  gradient_clip_val: 10
   log_every_n_steps: 100
   limit_train_batches: 20000
   gradient_clip_algorithm: norm
-  limit_val_batches: 2000
+  limit_val_batches: 10000
   limit_test_batches: 1 # we don't perform tests this way
-  reload_dataloaders_every_n_epochs: 5
   accumulate_grad_batches: 1
   logger:
     - class_path: lightning.pytorch.loggers.WandbLogger
       init_args:
         project: ${project}
-        save_dir: ./data/log/
+        save_dir: /pasteur/zeus/projets/p02/ml4ig_hot/Users/jkalfon/ #./data/log/
         offline: True
   callbacks:
     #- class_path: lightning.pytorch.callbacks.StochasticWeightAveraging
@@ -32,28 +29,20 @@ trainer:
         save_last: True
 scprint_training:
   run_full_forward: True
-  noise: [0.6]
-  do_ecs: True
-  do_cce: True
-  mask_ratio: ["TF"]
+  noise: [0.7]
+  ecs_scale: 0.2
+  cce_scale: 0.2
   zinb_and_mse: True
   var_context_length: True
 scprint_early_stopping:
-  patience: 4
+  patience: 3
 model:
-  dropout: 0.1
-  num_heads_kv: 2
-  transformer: flash
-  mvc_decoder: inner product
+  num_heads_kv: 4
+  attention: normal
   residual_in_fp32: True
-  checkpointing: True
   cell_specific_blocks: True
-  fused_dropout_add_ln: False
-  prenorm: True
-  depth_atinput: False
-  fused_mlp: False
-  fused_bias_fc: False
-  drop_path_rate: 0
+  precpt_gene_emb: ./data/main/gene_embeddings.parquet
+  gene_pos_file: ./data/main/biomart_pos.parquet
   freeze_embeddings: True
   normalization: log
   pred_embedding:
@@ -67,26 +56,20 @@ model:
   #  self_reported_ethnicity_ontology_term_id: 10
   #  sex_ontology_term_id: 2
   #  organism_ontology_term_id: 8
+  # class_compression: vae
 data:
-  organisms:
-    - NCBITaxon:9606
-    - NCBITaxon:10090
-  gene_position_tolerance: 10_000
-  gene_embeddings: ./data/main/gene_embeddings.parquet
   collection_name: scPRINT-V2 full #scPRINT-V2 (good quality) # scPRINT-V2 (some)
   how: random expr
-  max_len: 2200
+  max_len: 2600
   pin_memory: True
   prefetch_factor: 3
   metacell_mode: 0.2
   weight_scaler: 200
-  do_gene_pos: ./data/main/biomart_pos.parquet
-  add_zero_genes: 0
+  n_samples_per_epoch: 1_400_000 # {data.batch_size*trainer.limit_train_batches}
   validation_split: 0.05
-  n_samples_per_epoch: 2000000
   test_split: 0.02
   batch_size: 64
-  num_workers: 20
+  num_workers: 10
   hierarchical_clss:
     - cell_type_ontology_term_id
     - tissue_ontology_term_id
@@ -94,9 +77,10 @@ data:
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id
   clss_to_weight:
-    - cell_type_ontology_term_id
-    - tissue_ontology_term_id
+    - clust_cell_type
+    #- tissue_ontology_term_id
     - disease_ontology_term_id
+    #- age_group
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id
     - sex_ontology_term_id
@@ -106,6 +90,8 @@ data:
     - cell_type_ontology_term_id
     - tissue_ontology_term_id
     - disease_ontology_term_id
+    - age_group
+    #- cell_culture
     - assay_ontology_term_id
     - self_reported_ethnicity_ontology_term_id
     - sex_ontology_term_id

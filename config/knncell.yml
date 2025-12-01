@@ -1,0 +1,13 @@
+project: scprint_v2
+scprint_training:
+  noise: [0.7, 1.0]
+trainer:
+  reload_dataloaders_every_n_epochs: 20
+data:
+  collection_name: scPRINT-V2 (good quality)
+  get_knn_cells: True
+  metacell_mode: 0
+model:
+  expr_emb_style: metacell
+  expr_encoder_layers: 2
+  
