@@ -1,5 +1,5 @@
 project: scprint_v2
-seed_everything: 50
+seed_everything: 42
 set_float32_matmul_precision: True
 wandblog: parameters
 trainer:
@@ -38,6 +38,7 @@ scprint_training:
   var_context_length: True
   cce_scale: 0.2
   class_embd_diss_scale: 0.3
+  class_scale: 6
   ecs_scale: 0.2
   vae_kl_scale: 0.0002
 scprint_early_stopping:
@@ -89,12 +90,13 @@ data:
   # persistent_workers: True
   prefetch_factor: 3
   metacell_mode: 0
-  get_knn_cells: True
+  get_knn_cells: True #False
   weight_scaler: 500
   n_samples_per_epoch: 1300000 # {data.batch_size*trainer.limit_train_batches}
   validation_split: 0.05
   test_split: 0.02
   batch_size: 30
+  curiculum: 15
   num_workers: 16
   hierarchical_clss:
     - cell_type_ontology_term_id
