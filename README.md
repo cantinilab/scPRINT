@@ -11,7 +11,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14749466.svg)](https://doi.org/10.5281/zenodo.14749466)
 [![hugging face](https://huggingface.co/datasets/huggingface/badges/resolve/main/model-on-hf-md.svg)](https://huggingface.co/jkobject/scPRINT)
 
-![logo](docs/logo.png)
+<img src="docs/fig.png" alt="logo" width="600" />
 
 scPRINT-2 is a single-cell RNA-seq foundation model built from Kalfon et al. It
 uses novel architecture, encoding, decoding, training paradigms and losses.
@@ -47,7 +47,7 @@ analysis
 [Read the manuscript!]() if you would like to know more about scPRINT-2. Have a
 look at some of my [X-plainers](https://twitter.com/jkobject).
 
-![figure1](docs/figure1.png)
+<img src="docs/umap.png" alt="umap" width="600" />
 
 🎊 test scPRINT and scDataloader on this simple example
 [google collab](https://colab.research.google.com/drive/1CacoQDAwJn86tq2sBhUoZ6M-xAqsYFDI#scrollTo=Lb4E9IhQ7NK8)

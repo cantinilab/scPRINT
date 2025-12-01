@@ -16,7 +16,7 @@ nav:
       - model: model.md
       - tasks: tasks.md
       - cli: cli.md
-      - embedders: embedder.md
+      - tokenizers: tokenizers.md
       - utils: utils.md
 plugins:
   - search
