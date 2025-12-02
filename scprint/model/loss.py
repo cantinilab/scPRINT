@@ -304,12 +304,12 @@ def hierarchical_classification(
         # gradients when they are 0 meaning not parents of the true leaf label.
         # for now we weight related to how many labels they contain.
         addweight = addnewcl.clone() / (labels_hierarchy.sum(1) ** 0.5)
-        
+
         # except if it is the cl label we know about?
         subset_parent_weight = addweight[is_parent]
         subset_parent_weight[:, cl[is_parent] - maxsize] = 1
         addweight[is_parent] = subset_parent_weight
-        
+
         # we apply the same mask to the pred but now we want to compute
         # logsumexp instead of max since we want to keep the gradients
         # we also set to -inf since it is a more neutral element for logsumexp

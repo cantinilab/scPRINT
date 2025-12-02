@@ -672,19 +672,15 @@ def test(
             {
                 "emb_" + dataset + "/scib": float(res["scib"]["Total"]),
                 "emb_" + dataset + "/scib_bio": float(res["scib"]["Bio conservation"]),
-                "emb_"
-                + dataset
-                + "/scib_batch": float(res["scib"]["Batch correction"]),
-                "emb_"
-                + dataset
-                + "/ct_class": float(
+                "emb_" + dataset + "/scib_batch": float(
+                    res["scib"]["Batch correction"]
+                ),
+                "emb_" + dataset + "/ct_class": float(
                     res["classif"].get("cell_type_ontology_term_id", {}).get("macro", 0)
                     if do_class
                     else 0
                 ),
-                "emb_"
-                + dataset
-                + "/ct_class_macro": float(
+                "emb_" + dataset + "/ct_class_macro": float(
                     res["classif"].get("cell_type_ontology_term_id", {}).get("macro", 0)
                     if do_class
                     else 0
@@ -698,9 +694,7 @@ def test(
         tot["denoise_" + dataset] = res
         metrics.update(
             {
-                "denoise_"
-                + dataset
-                + "/reco2full_vs_noisy2full": float(
+                "denoise_" + dataset + "/reco2full_vs_noisy2full": float(
                     res["reco2full"] - res["noisy2full"]
                 ),
             }
@@ -743,19 +737,13 @@ def test(
         tot["grn_omni_" + dataset] = res
         metrics.update(
             {
-                "grn_omni_"
-                + dataset
-                + "/auprc_class": float(
+                "grn_omni_" + dataset + "/auprc_class": float(
                     np.mean([i["auprc"] for k, i in res.items() if "_class" in k])
                 ),
-                "grn_omni_"
-                + dataset
-                + "/or_class": float(
+                "grn_omni_" + dataset + "/or_class": float(
                     np.mean([i["odd_ratio"] for k, i in res.items() if "_class" in k])
                 ),
-                "grn_omni_"
-                + dataset
-                + "/tf_enr_class": float(
+                "grn_omni_" + dataset + "/tf_enr_class": float(
                     np.sum(
                         [
                             i.get("TF_enr", False)
@@ -764,9 +752,7 @@ def test(
                         ]
                     )
                 ),
-                "grn_omni_"
-                + dataset
-                + "/tf_targ_enr_class": float(
+                "grn_omni_" + dataset + "/tf_targ_enr_class": float(
                     np.mean(
                         [
                             i["significant_enriched_TFtargets"]
@@ -775,31 +761,21 @@ def test(
                         ]
                     )
                 ),
-                "grn_omni_"
-                + dataset
-                + "/auprc": float(
+                "grn_omni_" + dataset + "/auprc": float(
                     np.mean([i["auprc"] for k, i in res.items() if "_mean" in k])
                 ),
-                "grn_omni_"
-                + dataset
-                + "/epr": float(
+                "grn_omni_" + dataset + "/epr": float(
                     np.mean([i["epr"] for k, i in res.items() if "_mean" in k])
                 ),
-                "grn_omni_"
-                + dataset
-                + "/or": float(
+                "grn_omni_" + dataset + "/or": float(
                     np.mean([i["odd_ratio"] for k, i in res.items() if "_mean" in k])
                 ),
-                "grn_omni_"
-                + dataset
-                + "/tf_enr": float(
+                "grn_omni_" + dataset + "/tf_enr": float(
                     np.sum(
                         [i.get("TF_enr", False) for k, i in res.items() if "_mean" in k]
                     )
                 ),
-                "grn_omni_"
-                + dataset
-                + "/tf_targ_enr": float(
+                "grn_omni_" + dataset + "/tf_targ_enr": float(
                     np.mean(
                         [
                             i["significant_enriched_TFtargets"]

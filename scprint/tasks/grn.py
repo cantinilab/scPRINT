@@ -100,7 +100,9 @@ class GNInfer:
             "random expr",
             "some",
             "most expr",
-        ], "how must be one of 'most var within', 'most var across', 'random expr', 'some', 'most expr'"
+        ], (
+            "how must be one of 'most var within', 'most var across', 'random expr', 'some', 'most expr'"
+        )
         self.num_genes = num_genes
         self.preprocess = preprocess
         self.cell_type_col = cell_type_col

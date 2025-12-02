@@ -76,7 +76,11 @@ class Generate:
             else model.dtype
         )
         if self.embedding_to_use == ["all"]:
-            use = [i for i in adata.obsm.keys() if i.startswith("scprint_emb_") and i != "scprint_emb_other"]
+            use = [
+                i
+                for i in adata.obsm.keys()
+                if i.startswith("scprint_emb_") and i != "scprint_emb_other"
+            ]
         else:
             use = self.embedding_to_use
         res = []
@@ -84,50 +88,53 @@ class Generate:
             torch.no_grad(),
             torch.autocast(device_type=device, dtype=dtype),
         ):
-            
             gene_pos = torch.tensor(
                 [model.genes.index(g) for g in self.genelist],
             ).to(device=device)
             gene_pos = gene_pos.unsqueeze(0).repeat_interleave(self.batch_size, 0)
             req_depth = torch.tensor(adata.X.sum(1)).squeeze(-1).to(device=device)
-            
+
             for batch in tqdm(range(adata.shape[0] // self.batch_size + 1)):
                 embeddings = []
                 start = batch * self.batch_size
                 end = min((batch + 1) * self.batch_size, adata.shape[0])
                 for emb in use:
-                    embeddings.append(torch.tensor(adata.obsm[emb][start:end]).unsqueeze(1))
+                    embeddings.append(
+                        torch.tensor(adata.obsm[emb][start:end]).unsqueeze(1)
+                    )
                 embeddings = torch.concat(embeddings, dim=1).to(device=device)
 
                 output = model._generate(
-                    gene_pos=gene_pos[0:end-start,:],
+                    gene_pos=gene_pos[0 : end - start, :],
                     cell_embs=embeddings,
                     depth_mult=req_depth[start:end],
                     req_depth=req_depth[start:end],
                     metacell_token=None,
                 )
                 res.append(
-                    torch.concat([
-                        output["mean"].detach().cpu().unsqueeze(0),
-                        output["disp"].detach().cpu().unsqueeze(0),
-                        output["zero_logits"].detach().cpu().unsqueeze(0),
-                    ])
+                    torch.concat(
+                        [
+                            output["mean"].detach().cpu().unsqueeze(0),
+                            output["disp"].detach().cpu().unsqueeze(0),
+                            output["zero_logits"].detach().cpu().unsqueeze(0),
+                        ]
+                    )
                     if "disp" in output
                     else output["mean"].detach().cpu().unsqueeze(0)
                 )
                 torch.cuda.empty_cache()
         res = torch.concat(res, dim=1)
         pred_adata = AnnData(
-            X=res[0,:,:].numpy(),
+            X=res[0, :, :].numpy(),
             obs=adata.obs.copy(),
             var=pd.DataFrame(
-                index=pd.Index(
-                    self.genelist
-                ),
+                index=pd.Index(self.genelist),
             ),
-            layers=None if res.shape[1] == 1 else {
-                "disp": res[1,:,:].numpy(),
-                "zero_logits": res[2,:,:].numpy(),
-            }
+            layers=None
+            if res.shape[1] == 1
+            else {
+                "disp": res[1, :, :].numpy(),
+                "zero_logits": res[2, :, :].numpy(),
+            },
         )
         return pred_adata

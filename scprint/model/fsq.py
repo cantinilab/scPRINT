@@ -144,9 +144,9 @@ class FSQ(Module):
         d - feature dimension, which is also log2(codebook size)
         c - number of codebook dim
         """
-        assert (
-            z.shape[-1] == self.dim
-        ), f"expected dimension of {self.dim} but found dimension of {z.shape[-1]}"
+        assert z.shape[-1] == self.dim, (
+            f"expected dimension of {self.dim} but found dimension of {z.shape[-1]}"
+        )
         small = self.project_in(z)
 
         z = rearrange(small, "b (c d) -> b c d", c=self.num_codebooks)

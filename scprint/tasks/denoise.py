@@ -10,6 +10,7 @@ from anndata import AnnData, concat
 from scdataloader import Collator, Preprocessor
 from scdataloader.data import SimpleAnnDataset
 from scdataloader.utils import get_descendants, random_str
+from scipy.optimize import curve_fit
 from scipy.stats import spearmanr
 from simpler_flash import FlashTransformer
 from torch.nn import functional as F
@@ -445,9 +446,6 @@ def split_molecules(
     umis_Y = umis_Y_disjoint + overlap_factor
 
     return umis_X, umis_Y
-
-
-from scipy.optimize import curve_fit
 
 
 def plot_cell_depth_wise_corr_improvement(corr_coef, y):

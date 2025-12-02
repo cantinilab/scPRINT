@@ -24,7 +24,6 @@ class MySaveConfig(SaveConfigCallback):
                     log_graph=False,
                 )
                 if trainer.datamodule is not None:
-
                     trainer.logger.log_hyperparams({"datamodule": trainer.datamodule})
                     trainer.logger.log_hyperparams({"callbacks": trainer.callbacks})
             if trainer.is_global_zero:

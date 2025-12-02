@@ -464,9 +464,9 @@ class FinetuneBatchClass:
                 for i in set(class_elem[:, -1].cpu().numpy()):
                     if (class_elem[:, -1] == i).sum() < 2:
                         # need at least 2 samples to compute mmd
-                        class_elem[class_elem[:, -1] == i, 1] = (
-                            -1
-                        )  # assign to dummy class
+                        class_elem[
+                            class_elem[:, -1] == i, 1
+                        ] = -1  # assign to dummy class
                     # compare each batch to all other batches
                 for i in set(class_elem[:, -1].cpu().numpy()):
                     if i == -1:

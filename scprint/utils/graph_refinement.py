@@ -139,7 +139,7 @@ def zero_shot_annotation_with_refinement(
     metric: str = "euclidean",
     lambda_reg: float = 0.1,
     return_probabilities: bool = False,
-    return_raw: bool =False,
+    return_raw: bool = False,
 ) -> Union[np.ndarray, tuple]:
     """
     Perform zero-shot cell type annotation with graph refinement.
