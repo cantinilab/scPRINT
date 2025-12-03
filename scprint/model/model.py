@@ -1123,7 +1123,6 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
             # Extract only the needed values from sparse matrix
             batch_size = gene_pos.shape[0]
-            seq_len = gene_pos.shape[1]
 
             # Vectorized extraction from sparse matrix
             for b in range(batch_size):
@@ -1428,11 +1427,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             mask_ratio = [mask_ratio]
 
         # dynamically change the context length every 5 steps
-        other_expression = None
         if self.var_context_length and torch.rand(1).item() < 0.2:
             context_length = torch.randint(800, batch["x"].shape[1], (1,)).item()
-        #  other_expression = batch["x"][:, context_length:]
-        # other_gene_pos = batch["genes"][:, context_length:]
         else:
             context_length = batch["x"].shape[1]
         expression = batch["x"]
@@ -1638,18 +1634,14 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                     if not run_full_forward
                     else full_cell_embs
                 ),
-                gene_pos=gene_pos if other_expression is None else other_gene_pos,
-                depth_mult=(
-                    expression.sum(1)
-                    if other_expression is None
-                    else other_expression.sum(1)
-                ),
+                gene_pos=gene_pos,
+                depth_mult=(expression.sum(1)),
                 req_depth=total_count,
                 mask_zeros=mask_zeros,
             )
             l, tloss = self._compute_loss(
                 output,
-                expression if other_expression is None else other_expression,
+                expression,
                 clss,
                 batch_idx,
                 False,

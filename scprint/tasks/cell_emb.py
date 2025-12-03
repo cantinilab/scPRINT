@@ -676,22 +676,26 @@ def display_confusion_matrix(
     counts_percentage = counts_filled.div(counts_filled.sum(axis=1), axis=0) * 100
     counts_percentage = counts_percentage.iloc[:, counts_percentage.values.max(0) > 5]
 
-    sns.heatmap(
+    ax = sns.heatmap(
         counts_percentage,
         cmap="Blues",
         cbar_kws={"label": "Percentage (%)"},
         linewidths=0.5,
         square=True,
     )
+    # place the x-label on top
+    ax.xaxis.set_label_position("top")
+    ax.xaxis.tick_top()
+
     plt.title(
         "Confusion Matrix: " + true + " vs " + pred + " (Percentage)",
         fontsize=16,
         pad=20,
     )
-    plt.xlabel(pred, fontsize=12)
-    plt.ylabel(true + " (with counts)", fontsize=12)
-    plt.xticks(rotation=45, ha="right", fontsize=12)
-    plt.yticks(rotation=0, fontsize=14)
+    ax.set_xlabel(pred, fontsize=12)
+    ax.set_ylabel(true + " (with counts)", fontsize=12)
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="left", fontsize=12)
+    ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=14)
     plt.tight_layout()
     plt.show()
 
