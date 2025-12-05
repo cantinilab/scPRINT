@@ -23,45 +23,13 @@
       rel="stylesheet"
     />
     
-    <script src="https://unpkg.com/deck.gl@latest/dist.min.js" defer></script>
-    <script src="https://unpkg.com/apache-arrow@latest/Arrow.es2015.min.js" defer></script>
+    <script src="https://unpkg.com/deck.gl@latest/dist.min.js"></script>
+    <script src="https://unpkg.com/apache-arrow@latest/Arrow.es2015.min.js"></script>
     <style>
       .content-wrapper{top:0;left:0;width:100%;height:100%;z-index:1;padding:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;min-height:calc(100vh - 16px);pointer-events:none}.stack{display:flex;flex-direction:column;gap:0;padding:0;pointer-events:none;max-height:50vh;overflow-y:visible}.top-left{grid-column:1;grid-row:1;justify-self:start;align-self:start;align-items:start}.bottom-left{grid-column:1;grid-row:2;justify-self:start;align-self:end;align-items:start;display:flex;flex-direction:column-reverse;transform:scaleY(-1);z-index:2}.top-right{grid-column:2;grid-row:1;justify-self:end;justify-items:end;align-self:start;align-items:end}.bottom-right{grid-column:2;grid-row:2;justify-self:end;justify-items:end;align-self:end;align-items:end;display:flex;flex-direction:column-reverse;transform:scaleY(-1)}.stack.bottom-left .stack-box{transform:scaleY(-1)}.stack.bottom-right .stack-box{transform:scaleY(-1)}#loading{width:100%;height:100%;top:0px;left:0px;position:absolute;display:block;z-index:99}#loading-image{position:absolute;top:45%;left:47.5%;z-index:100}#title-container{top:0;left:0}
     </style><style>
       .datamapplot-progress-container{position:absolute;bottom:0;left:50%;transform:translate(-50%,0);width:512px;z-index:101}.datamapplot-progress-bar{width:100%;background-color:#e0e0e044;padding:3px;border-radius:6px;box-shadow:inset 0 1px 3px rgba(128,128,128,.2);margin-bottom:10px}.datamapplot-progress-bar-fill{display:block;height:12px;background-color:#659cef;border-radius:4px;transition:width 500ms ease-in-out}.datamapplot-progress-bar-text{color:white;text-align:center;line-height:12px;font-size:10px;overflow-x:visible;white-space:nowrap;vertical-align:top}
     </style>
-    <script>
-      // Wait for deck.gl to be fully loaded
-      function waitForDeck() {
-        return new Promise((resolve) => {
-          if (typeof deck !== 'undefined') {
-            resolve();
-          } else {
-            const checkInterval = setInterval(() => {
-              if (typeof deck !== 'undefined') {
-                clearInterval(checkInterval);
-                resolve();
-              }
-            }, 50);
-          }
-        });
-      }
-
-      // Wrap the initialization in an async function
-      async function initializeMap() {
-        await waitForDeck();
-        
-        // All your existing DataMap, DataSelectionManager code and initialization goes here
-        // ...existing code...
-      }
-
-      // Call initialization when DOM is ready
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeMap);
-      } else {
-        initializeMap();
-      }
-    </script>
     <style>
       body {
         margin: 0;
@@ -145,44 +113,44 @@
 
           
           <div id="search-container" class="container-box">
-  <script defer>
+            <input autocomplete="off" type="search" id="text-search" placeholder="🔍" />
+          </div>
+          
+          
+        </div>
+        <div class="stack top-right">
+          
+        </div>
+        <div class="stack bottom-right">
+        </div>
+        <div class="stack bottom-left"></div>
+      </div>
+      
+    </div>
+    <div id="progress-container" class="datamapplot-progress-container container-box" style="width: 500px; position: absolute;">
+      <div id="point-data-progress" class="datamapplot-progress-bar">
+        <span class="datamapplot-progress-bar-fill" style="width: 0%;">
+          <span class="datamapplot-progress-bar-text">Point Data: 0%</span>
+        </span>
+      </div>
+      <div id="label-data-progress" class="datamapplot-progress-bar">
+        <span class="datamapplot-progress-bar-fill" style="width: 0%;">
+          <span class="datamapplot-progress-bar-text">Label Data: 0%</span>
+        </span>
+      </div>
+      <div id="meta-data-progress" class="datamapplot-progress-bar">
+        <span class="datamapplot-progress-bar-fill" style="width: 0%;">
+          <span class="datamapplot-progress-bar-text">Meta Data: 0%</span>
+        </span>
+      </div>
+    </div>
+    </body>
+  <script>
     LAYER_ORDER=['imageLayer','dataPointLayer','boundaryLayer','labelLayer'];function getLayerIndex(object){return LAYER_ORDER.indexOf(object.id);}
 function isFontLoaded(fontName){return document.fonts.check(`12px "${fontName}"`);}
 function waitForFont(fontName,maxWait=500){return new Promise((resolve,reject)=>{if(isFontLoaded(fontName)){resolve();}else{const startTime=Date.now();const interval=setInterval(()=>{if(isFontLoaded(fontName)){clearInterval(interval);resolve();}else if(Date.now()-startTime>maxWait){clearInterval(interval);reject(new Error(`Font ${fontName} did not load within ${maxWait}ms`));}},50);}});}
 function getInitialViewportSize(){const width=document.documentElement.clientWidth;const height=document.documentElement.clientHeight;return{viewportWidth:width,viewportHeight:height};}
 function calculateZoomLevel(bounds,viewportWidth,viewportHeight,padding=0.5){const lngRange=bounds[1]-bounds[0];const latRange=bounds[3]-bounds[2];const centerLng=(bounds[0]+bounds[1])/2;const centerLat=(bounds[2]+bounds[3])/2;const zoomX=Math.log2(360/(lngRange/(viewportWidth/256)));const zoomY=Math.log2(180/(latRange/(viewportHeight/256)));const zoom=Math.min(zoomX,zoomY)-padding;return{zoomLevel:zoom,dataCenter:[centerLng,centerLat]};}
-class DataMap{constructor({container,bounds,searchItemId="text-search",lassoSelectionItemId="lasso-selection",}){this.container=container;this.searchItemId=searchItemId;this.lassoSelectionItemId=lassoSelectionItemId;this.pointData=null;this.labelData=null;this.metaData=null;this.layers=[];const{viewportWidth,viewportHeight}=getInitialViewportSize();const{zoomLevel,dataCenter}=calculateZoomLevel(bounds,viewportWidth,viewportHeight);this.deckgl=new deck.DeckGL({container:container,initialViewState:{latitude:dataCenter[1],longitude:dataCenter[0],zoom:zoomLevel},controller:{scrollZoom:{speed:0.01,smooth:true}},});this.updateTriggerCounter=0;this.dataSelectionManager=new DataSelectionManager(lassoSelectionItemId);}
-addPoints(pointData,{pointSize,pointOutlineColor=[250,250,250,128],pointLineWidth=0.001,pointHoverColor=[170,0,0,187],pointLineWidthMaxPixels=3,pointLineWidthMinPixels=0.001,pointRadiusMaxPixels=16,pointRadiusMinPixels=0.2,}){const numPoints=pointData.x.length;const positions=new Float32Array(numPoints*2);const colors=new Uint8Array(numPoints*4);const variableSize=pointSize<0;let sizes;if(variableSize){sizes=new Float32Array(numPoints);}else{sizes=null;}
-for(let i=0;i<numPoints;i++){positions[i*2]=pointData.x[i];positions[i*2+1]=pointData.y[i];colors[i*4]=pointData.r[i];colors[i*4+1]=pointData.g[i];colors[i*4+2]=pointData.b[i];colors[i*4+3]=pointData.a[i];if(variableSize){sizes[i]=pointData.size[i];}}
-this.originalColors=colors;this.selected=new Float32Array(numPoints).fill(1.0);this.pointSize=pointSize;this.pointOutlineColor=pointOutlineColor;this.pointLineWidth=pointLineWidth;this.pointHoverColor=pointHoverColor;this.pointLineWidthMaxPixels=pointLineWidthMaxPixels;this.pointLineWidthMinPixels=pointLineWidthMinPixels;this.pointRadiusMaxPixels=pointRadiusMaxPixels;this.pointRadiusMinPixels=pointRadiusMinPixels;let scatterAttributes={getPosition:{value:positions,size:2},getFillColor:{value:colors,size:4},getFilterValue:{value:this.selected,size:1}};if(variableSize){scatterAttributes.getRadius={value:sizes,size:1};}
-this.pointLayer=new deck.ScatterplotLayer({id:'dataPointLayer',data:{length:numPoints,attributes:scatterAttributes},getRadius:this.pointSize,getLineColor:this.pointOutlineColor,getLineWidth:this.pointLineWidth,highlightColor:this.pointHoverColor,lineWidthMaxPixels:this.pointLineWidthMaxPixels,lineWidthMinPixels:this.pointLineWidthMinPixels,radiusMaxPixels:this.pointRadiusMaxPixels,radiusMinPixels:this.pointRadiusMinPixels,radiusUnits:"common",lineWidthUnits:"common",autoHighlight:true,pickable:true,stroked:true,extensions:[new deck.DataFilterExtension({filterSize:1})],filterRange:[-0.5,1.5],filterSoftRange:[0.75,1.25],updateTriggers:{getFilterValue:this.updateTriggerCounter},instanceCount:numPoints,parameters:{depthTest:false}});this.layers.push(this.pointLayer);this.layers.sort((a,b)=>getLayerIndex(a)-getLayerIndex(b));this.deckgl.setProps({layers:[...this.layers]});}
-addLabels(labelData,{labelTextColor=d=>[d.r,d.g,d.b],textMinPixelSize=18,textMaxPixelSize=36,textOutlineWidth=8,textOutlineColor=[238,238,238,221],textBackgroundColor=[255,255,255,64],fontFamily="Roboto",fontWeight=900,lineSpacing=0.95,textCollisionSizeScale=3.0,pickable=false,}){const numLabels=labelData.length;this.labelTextColor=labelTextColor;this.textMinPixelSize=textMinPixelSize;this.textMaxPixelSize=textMaxPixelSize;this.textOutlineWidth=textOutlineWidth;this.textOutlineColor=textOutlineColor;this.textBackgroundColor=textBackgroundColor;this.fontFamily=fontFamily;this.fontWeight=fontWeight;this.lineSpacing=lineSpacing;this.textCollisionSizeScale=textCollisionSizeScale;waitForFont(this.fontFamily);this.labelLayer=new deck.TextLayer({id:'labelLayer',data:labelData,pickable:pickable,getPosition:d=>[d.x,d.y],getText:d=>d.label,getColor:this.labelTextColor,getSize:d=>d.size,sizeScale:1,sizeMinPixels:this.textMinPixelSize,sizeMaxPixels:this.textMaxPixelSize,outlineWidth:this.textOutlineWidth,outlineColor:this.textOutlineColor,getBackgroundColor:this.textBackgroundColor,getBackgroundPadding:[15,15,15,15],background:true,characterSet:"auto",fontFamily:this.fontFamily,fontWeight:this.fontWeight,lineHeight:this.lineSpacing,fontSettings:{"sdf":true},getTextAnchor:"middle",getAlignmentBaseline:"center",lineHeight:0.95,elevation:100,collisionEnabled:true,getCollisionPriority:d=>d.size,collisionTestProps:{sizeScale:this.textCollisionSizeScale,sizeMaxPixels:this.textMaxPixelSize*2,sizeMinPixels:this.textMinPixelSize*2},extensions:[new deck.CollisionFilterExtension()],instanceCount:numLabels,parameters:{depthTest:false}});this.layers.push(this.labelLayer);this.layers.sort((a,b)=>getLayerIndex(a)-getLayerIndex(b));this.deckgl.setProps({layers:[...this.layers]});}
-addBoundaries(boundaryData,{clusterBoundaryLineWidth=0.5}){const numBoundaries=boundaryData.length;this.clusterBoundaryLineWidth=clusterBoundaryLineWidth;this.boundaryLayer=new deck.PolygonLayer({id:'boundaryLayer',data:boundaryData,stroked:true,filled:false,getLineColor:d=>[d.r,d.g,d.b,d.a],getPolygon:d=>d.polygon,lineWidthUnits:"common",getLineWidth:d=>d.size*d.size,lineWidthScale:this.clusterBoundaryLineWidth*5e-5,lineJointRounded:true,lineWidthMaxPixels:4,lineWidthMinPixels:0.0,instanceCount:numBoundaries,parameters:{depthTest:false}});this.layers.push(this.boundaryLayer);this.layers.sort((a,b)=>getLayerIndex(a)-getLayerIndex(b));this.deckgl.setProps({layers:[...this.layers]});}
-addMetaData(metaData,{tooltipFunction=({index})=>this.metaData.hover_text[index],onClickFunction=null,searchField=null,}){this.metaData=metaData;this.tooltipFunction=tooltipFunction;this.onClickFunction=onClickFunction;this.searchField=searchField;if(this.metaData.hasOwnProperty('hover_text')){this.deckgl.setProps({getTooltip:this.tooltipFunction,});}
-if(this.onClickFunction){this.deckgl.setProps({onClick:this.onClickFunction,});}
-if(this.searchField){this.searchArray=this.metaData[this.searchField].map(d=>d.toLowerCase());}}
-connectHistogram(histogramItem){this.histogramItem=histogramItem;this.histogramItemId=histogramItem.state.chart.chartContainerId;}
-addBackgroundImage(image,bounds){this.imageLayer=new deck.BitmapLayer({id:'imageLayer',bounds:bounds,image:image,parameters:{depthTest:false}});this.layers.push(this.imageLayer);this.layers.sort((a,b)=>getLayerIndex(a)-getLayerIndex(b));this.deckgl.setProps({layers:[...this.layers]});}
-async addSelectionHandler(callback,selectionKind="lasso-selection",timeoutMs=60000){const startTime=Date.now();if(selectionKind==="lasso-selection"){while(!this.lassoSelector){if(Date.now()-startTime>timeoutMs){throw new Error('Timeout: lassoSelector did not become available within the specified timeout period');}
-await new Promise(resolve=>setTimeout(resolve,1000));}
-this.lassoSelector.registerSelectionHandler(callback);}else{if(!this.selectionCallbacks){this.selectionCallbacks={};}
-if(this.selectionCallbacks[selectionKind]){this.selectionCallbacks[selectionKind].push(callback);}
-this.selectionCallbacks[selectionKind]=[callback];}}
-highlightPoints(itemId){const selectedIndices=this.dataSelectionManager.getSelectedIndices();const semiSelectedIndices=this.dataSelectionManager.getBasicSelectedIndices();const hasSelectedIndices=selectedIndices.size!==0;const hasSemiSelectedIndices=semiSelectedIndices.size!==0;const hasLassoSelection=this.dataSelectionManager.hasSpecialSelection();if(hasLassoSelection){if(hasSelectedIndices){if(hasSemiSelectedIndices){this.selected.fill(-1.0);for(let i of semiSelectedIndices){this.selected[i]=0.0;}}else{this.selected.fill(0.0);}
-for(let i of selectedIndices){this.selected[i]=1.0;}}else{this.selected.fill(1.0);}}else{if(hasSelectedIndices){this.selected.fill(-1.0);for(let i of selectedIndices){this.selected[i]=1.0;}}else{this.selected.fill(1.0);}}
-this.updateTriggerCounter++;const sizeAdjust=1/(1+(Math.sqrt(selectedIndices.size)/Math.log2(this.selected.length)));const updatedPointLayer=this.pointLayer.clone({data:{...this.pointLayer.props.data,attributes:{...this.pointLayer.props.data.attributes,getFilterValue:{value:this.selected,size:1}}},radiusMinPixels:hasSelectedIndices?2*(this.pointRadiusMinPixels+sizeAdjust):this.pointRadiusMinPixels,updateTriggers:{getFilterValue:this.updateTriggerCounter,radiusMinPixels:this.updateTriggerCounter,}});const idx=this.layers.indexOf(this.pointLayer);this.layers=[...this.layers.slice(0,idx),updatedPointLayer,...this.layers.slice(idx+1)];this.deckgl.setProps({layers:this.layers});this.pointLayer=updatedPointLayer;if(this.histogramItem&&itemId!==this.histogramItemId){if(hasSelectedIndices){this.histogramItem.drawChartWithSelection(selectedIndices);}else{this.histogramItem.removeChartWithSelection(selectedIndices);}}}
-addSelection(selectedIndices,selectionKind){this.dataSelectionManager.addOrUpdateSelectedIndicesOfItem(selectedIndices,selectionKind);this.highlightPoints(selectionKind);if(this.selectionCallbacks&&this.selectionCallbacks[selectionKind]){const currentSelectedIndices=Array.from(this.dataSelectionManager.getSelectedIndices());for(let callback of this.selectionCallbacks[selectionKind]){callback(currentSelectedIndices);}}}
-removeSelection(selectionKind){this.dataSelectionManager.removeSelectedIndicesOfItem(selectionKind);this.highlightPoints(selectionKind);if(this.selectionCallbacks&&this.selectionCallbacks[selectionKind]){const currentSelectedIndices=Array.from(this.dataSelectionManager.getSelectedIndices());for(let callback of this.selectionCallbacks[selectionKind]){callback(currentSelectedIndices);}}}
-getSelectedIndices(){return this.dataSelectionManager.getSelectedIndices();}
-searchText(searchTerm){const searchTermLower=searchTerm.toLowerCase();const selectedIndices=this.searchArray.reduce((indices,d,i)=>{if(d.indexOf(searchTermLower)>=0){indices.push(i);}
-return indices;},[]);if(searchTerm===""){this.dataSelectionManager.removeSelectedIndicesOfItem(this.searchItemId);}else{this.dataSelectionManager.addOrUpdateSelectedIndicesOfItem(selectedIndices,this.searchItemId);}
-if(this.selectionCallbacks&&this.selectionCallbacks[this.searchItemId]){const currentSelectedIndices=Array.from(this.dataSelectionManager.getSelectedIndices());for(let callback of this.selectionCallbacks[this.searchItemId]){callback(currentSelectedIndices);}}
-this.highlightPoints(this.searchItemId);}
-recolorPoints(colorData,fieldName){if(!this.hasOwnProperty(`${fieldName}Colors`)){const numPoints=colorData[`${fieldName}_r`].length;const colors=new Uint8Array(numPoints*4);for(let i=0;i<numPoints;i++){colors[i*4]=colorData[`${fieldName}_r`][i];colors[i*4+1]=colorData[`${fieldName}_g`][i];colors[i*4+2]=colorData[`${fieldName}_b`][i];colors[i*4+3]=colorData[`${fieldName}_a`][i];}
-this[`${fieldName}Colors`]=colors;}
-const updatedPointLayer=this.pointLayer.clone({data:{...this.pointLayer.props.data,attributes:{...this.pointLayer.props.data.attributes,getFillColor:{value:this[`${fieldName}Colors`],size:4}}},transitions:{getFillColor:{duration:1500,easing:d3.easeCubicInOut}}});this.updateTriggerCounter++;const idx=this.layers.indexOf(this.pointLayer);this.layers=[...this.layers.slice(0,idx),updatedPointLayer,...this.layers.slice(idx+1)];this.deckgl.setProps({layers:this.layers});this.pointLayer=updatedPointLayer;}
-resetPointColors(){const updatedPointLayer=this.pointLayer.clone({data:{...this.pointLayer.props.data,attributes:{...this.pointLayer.props.data.attributes,getFillColor:{value:this.originalColors,size:4}}},transitions:{getFillColor:{duration:1500,easing:d3.easeCubicInOut}}});this.updateTriggerCounter++;const idx=this.layers.indexOf(this.pointLayer);this.layers=[...this.layers.slice(0,idx),updatedPointLayer,...this.layers.slice(idx+1)];this.deckgl.setProps({layers:this.layers});this.pointLayer=updatedPointLayer;}}
-  </script>
 class DataMap{constructor({container,bounds,searchItemId="text-search",lassoSelectionItemId="lasso-selection",}){this.container=container;this.searchItemId=searchItemId;this.lassoSelectionItemId=lassoSelectionItemId;this.pointData=null;this.labelData=null;this.metaData=null;this.layers=[];const{viewportWidth,viewportHeight}=getInitialViewportSize();const{zoomLevel,dataCenter}=calculateZoomLevel(bounds,viewportWidth,viewportHeight);this.deckgl=new deck.DeckGL({container:container,initialViewState:{latitude:dataCenter[1],longitude:dataCenter[0],zoom:zoomLevel},controller:{scrollZoom:{speed:0.01,smooth:true}},});this.updateTriggerCounter=0;this.dataSelectionManager=new DataSelectionManager(lassoSelectionItemId);}
 addPoints(pointData,{pointSize,pointOutlineColor=[250,250,250,128],pointLineWidth=0.001,pointHoverColor=[170,0,0,187],pointLineWidthMaxPixels=3,pointLineWidthMinPixels=0.001,pointRadiusMaxPixels=16,pointRadiusMinPixels=0.2,}){const numPoints=pointData.x.length;const positions=new Float32Array(numPoints*2);const colors=new Uint8Array(numPoints*4);const variableSize=pointSize<0;let sizes;if(variableSize){sizes=new Float32Array(numPoints);}else{sizes=null;}
 for(let i=0;i<numPoints;i++){positions[i*2]=pointData.x[i];positions[i*2+1]=pointData.y[i];colors[i*4]=pointData.r[i];colors[i*4+1]=pointData.g[i];colors[i*4+2]=pointData.b[i];colors[i*4+3]=pointData.a[i];if(variableSize){sizes[i]=pointData.size[i];}}
