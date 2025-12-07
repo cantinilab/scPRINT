@@ -1,12 +1,9 @@
 # from scprint.base.base_model import BaseModel
-import copy
-import datetime
 import os
 from functools import partial
+
 # from galore_torch import GaLoreAdamW
-from math import factorial
-from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, Optional
 
 import lightning as L
 import numpy as np
@@ -26,7 +23,6 @@ from torch import Tensor, nn, optim
 
 # from .linear_transformer import FastTransformerEncoderWrapper as FastTransformer
 from . import decoders, encoders, fsq, loss, utils
-from .loss import grad_reverse
 from .utils import WeightedMasker, simple_masker
 
 FILEDIR = os.path.dirname(os.path.realpath(__file__))
@@ -2166,6 +2162,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
 
         """
         # self.keep_all_labels_pred = True
+        # self.mask_zeros = True
         if self.transformer.attn_type == "hyper":
             # seq len must be a multiple of 128
             num = (1 if self.use_metacell_token else 0) + (
@@ -2378,6 +2375,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             mdir = self.logger.save_dir if self.logger.save_dir is not None else "/tmp"
         except:
             mdir = "data/"
+        # mdir = "/pasteur/appa/scratch/jkalfon/" + mdir
         if not os.path.exists(mdir):
             os.makedirs(mdir)
         adata, fig = utils.make_adata(
