@@ -1,8 +1,0 @@
-tools	denoising (+%) correlation. gNNpgpo6gATjuxTE7CCp	denoising (+%) correlation. R4ZHoQegxXdSFNFY5LGe	denoising (+%) correlation (REIyQZE6OMZm1S3W2Dxi)	denoising (+%) correlation (low cell count: 30). gNNpgpo6gATjuxTE7CCp	denoising (+%) correlation (low cell count: 30). R4ZHoQegxXdSFNFY5LGe	denoising (+%) correlation (low cell count: 30) (REIyQZE6OMZm1S3W2Dxi)	denoising (+%) correlation	denoising (+%) correlation (low cell count: 30)
-random model	-16.0	-16.0	-16.0	-16.0	-16.0	-16.0	-16.0	-16.0
-scPRINT-large (random expr)	25.8	32.0	30.1	X	X	X	29.3	X
-scPRINT-large + KNN	21.9	34.6	21.0	X	X	X	25.8	X
-scPRINT-large	19.1	33.9	17.1	22.5	26.6	16.6	23.4	21.9
-KNNsmoothing2	21.0	34.9	21.6	17.0	32.0	13.4	25.8	20.8
-magic	29.3	37.7	22.7	16.8	24.4	4.6	29.9	15.3
-magic (low cell dataset)	X	X	X	11.3	14.0	13.0	X	12.8

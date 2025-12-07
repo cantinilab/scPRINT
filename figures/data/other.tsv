@@ -1,7 +1,0 @@
-dataset	metrics	scGPT	GENIE3	scPRINT	scPRINT-class	GENIE3-TF
-GWPS	TF_enr	1	1	1	1	
-GWPS	TF_target_enr	7.8	11	11	22.6	11
-GWPS	celltype_pred	0	0	0	1	0
-SROY LIU	TF_enr	1	1	1	1	
-SROY LIU	TF_target_enr	4.5	0	2	25	2
-SROY LIU	celltype_pred	1	1	1	1	1
