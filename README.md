@@ -168,7 +168,7 @@ If you do not have gpus and loading from a checkpoint, you will need to specify 
 
 ```python
 model = scPrint.load_from_checkpoint(
-    '../data/temp/last.ckpt', precpt_gene_emb=None,
+    '../data/temp/last-v1.ckpt', precpt_gene_emb=None,
     transformer="normal")
 ```
 
@@ -181,7 +181,7 @@ To get a sense of how scPRINT works, have a look at our [get-started](https://ca
 To start you will also need to download a checkpoint of a pretrain model like v2-medium or some others from [hugging face](https://huggingface.co/jkobject/scPRINT/)
 
 ```bash
-$ hf download jkobject/scPRINT v2-medium.ckpt --local-dir .
+$ hf download jkobject/scPRINT medium-v1.5.ckpt --local-dir .
 ``` 
 
 ### scPRINT's basic commands
@@ -217,12 +217,12 @@ $ scprint fit/train/predict/test/denoise/embed/gninfer --config config/[medium|l
 ```
 to denoise a dataset:
 ```bash
-$ scprint denoise --adata my_human_anndata.h5ad --ckpt_path v2-medium.ckpt --species "NCBITaxon:9606" --output_filename denoised.h5ad
+$ scprint denoise --adata my_human_anndata.h5ad --ckpt_path medium-v1.5.ckpt --species "NCBITaxon:9606" --output_filename denoised.h5ad
 ```
 to do embedding and classification on a dataset:
 (the current version implies doing a PCA and Umap so it might need a lot of RAM if run as is)
 ```bash
-$ scprint embed --adata my_human_anndata.h5ad --ckpt_path v2-medium.ckpt --species "NCBITaxon:9606" --output_filename embedded.h5ad
+$ scprint embed --adata my_human_anndata.h5ad --ckpt_path medium-v1.5.ckpt --species "NCBITaxon:9606" --output_filename embedded.h5ad
 ```
 to do gene network inference on a dataset:
 ```bash
@@ -230,7 +230,7 @@ $ scprint gninfer --adata my_human_anndata.h5ad --ckpt_path v2-medium.ckpt --spe
 ```
 to finetune scPRINT on your data:
 ```bash
-$ scprint fit --config config/base_v2.yml --config config/pretrain_large.yml --ckpt_path large.ckpt
+$ scprint fit --config config/base_v2.yml --config config/pretrain_large.yml --ckpt_path large-v1.ckpt
 ```
 
 find out more about the commands by running `scprint --help` or `scprint [command] --help`.
@@ -337,7 +337,7 @@ If you think you need the gene embeddings file for loading the model from a chec
 
 ```python
 model = scPrint.load_from_checkpoint(
-    '../../data/temp/last.ckpt',
+    '../../data/temp/last-v1.ckpt',
     precpt_gene_emb=None,
 )
 ```
