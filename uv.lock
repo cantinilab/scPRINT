@@ -351,7 +351,7 @@ wheels = [
 
 [[package]]
 name = "bengrn"
-version = "1.3.0"
+version = "1.3.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anndata" },
@@ -360,6 +360,7 @@ dependencies = [
     { name = "ctxcore" },
     { name = "dask-expr" },
     { name = "decoupler" },
+    { name = "distributed" },
     { name = "gdown" },
     { name = "grnndata" },
     { name = "gseapy" },
@@ -374,9 +375,9 @@ dependencies = [
     { name = "seaborn" },
     { name = "setuptools" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/87/88/4b6247dfdf9c33b53e53a70d5dc262a1c396a9a96ac6fd5829d143930b19/bengrn-1.3.0.tar.gz", hash = "sha256:a94802b79948a913afff6d38619b1c687d6ebff7583983c44c507616c65acbbb", size = 23672688 }
+sdist = { url = "https://files.pythonhosted.org/packages/44/2c/6d40ced8721a89324419b225eabe79a60c5764c0ea5f5901548593a49d2c/bengrn-1.3.2.tar.gz", hash = "sha256:f57fed7f6a7c0db89acf34c549b4c74d6690d280935a2451981d608ef9351166", size = 24600461 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/05/19/314eb57a4544967ef2378db492c51e9273bc49e451ee1d3ff57c25bf41e9/bengrn-1.3.0-py3-none-any.whl", hash = "sha256:d255a893205de71c077d95605c3b26bbd46f9c40c76e86edb812547eeb299cbb", size = 5243480 },
+    { url = "https://files.pythonhosted.org/packages/b9/57/8c03505c311dee5a9b6ef360912217501c0d325e4132e182f80840f31b47/bengrn-1.3.2-py3-none-any.whl", hash = "sha256:0f55aa1f3869d770e28deed731f340d0abff0fd41f0cb1feec3759fcdd0240b5", size = 6220082 },
 ]
 
 [[package]]
@@ -1711,14 +1712,13 @@ wheels = [
 
 [[package]]
 name = "grnndata"
-version = "1.1.5"
+version = "1.3.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anndata" },
     { name = "d3graph" },
     { name = "gseapy" },
     { name = "leidenalg" },
-    { name = "louvain" },
     { name = "natsort" },
     { name = "networkx" },
     { name = "numba" },
@@ -1730,9 +1730,9 @@ dependencies = [
     { name = "scipy" },
     { name = "setuptools" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/85/51/62d32a56494fadb45807cd700cde85b1ac82135605fae8d41561db9727c0/grnndata-1.1.5.tar.gz", hash = "sha256:8f73d00488820389196a9550397b4af26cb17759008629d48302b3645a219dec", size = 13124181 }
+sdist = { url = "https://files.pythonhosted.org/packages/5c/29/7507d1e4ccc9e7d36feb15db6786196e8798e495d908f168aed6b8967833/grnndata-1.3.2.tar.gz", hash = "sha256:4bd0d2e9ffa34fb953d7bfdc1a55ea340d5a1b8e4d768fbed9c46760d0de3ade", size = 13113069 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/54/23/0f535a399d66ea82ac96cd7df4c9cc82f0e1234fb7b8337e6cb837aa5f5c/grnndata-1.1.5-py3-none-any.whl", hash = "sha256:57750cc6e29f4f00e028fab91a2bfe7f7e4cb10424db371f6c083e63a07edb69", size = 47735 },
+    { url = "https://files.pythonhosted.org/packages/7a/63/dedaea0161327a4b16c3d127d983df417239d7de21b0c4fc50fb4d6491c8/grnndata-1.3.2-py3-none-any.whl", hash = "sha256:9445e8f254e97883edace58a9de8eeec5853a708a492eab2dcc58e26681d5876", size = 38232 },
 ]
 
 [[package]]
@@ -2575,35 +2575,6 @@ dependencies = [
     { name = "setuptools" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f0/e3/8dc87471b34bc0db4e72f51a7aa0b454b3b9d551e15900862c022050aca3/loompy-3.0.7.tar.gz", hash = "sha256:b5cdf7b54734c6bed3a181d11947af70af2c6e0dcadc02fd0e871df232faa8f4", size = 4837617 }
-
-[[package]]
-name = "louvain"
-version = "0.8.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "igraph" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/4b/14/4bf2d8b73639ffedc8a949e6ad40cd2207e0dc4ed9720afeb3f69656c194/louvain-0.8.2.tar.gz", hash = "sha256:ce040bb0c5e349aead5a1e5e99738dcd9f2d10c22526d0633281b6ae230ee8d4", size = 4219094 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e8/30/73078108273bbda56fe67883fdd3f6ec66277d9b734e26cd1d9caf38c638/louvain-0.8.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:a2f6a07d4d5120d16e1ac81a65368e3607a77ff1c2ea7f2d6959f043349fe8cc", size = 207129 },
-    { url = "https://files.pythonhosted.org/packages/91/c7/becc3f0b6f338f5abca6db2e8eac79aee68caf9cd409f4c04f8b0e2e3a86/louvain-0.8.2-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:ac39e8a760ce620d53b1fac314a5c6c0cdc7bc471a4973b8acc3f566459f4d78", size = 185203 },
-    { url = "https://files.pythonhosted.org/packages/5c/48/25ef90b37625944ca7c7f988fb26e2c9efdb1a4242c14d2fa5f1bd86132b/louvain-0.8.2-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:17f59af1db73e5cfb49cd264bb57454a1f53f6287cde073844942e5d01898426", size = 1051667 },
-    { url = "https://files.pythonhosted.org/packages/33/1c/79271563445c4d6b3e8bd11e022b7fdfd7384ba400e3be4caf46db3991f5/louvain-0.8.2-cp310-cp310-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:e25e7c2242ba3ac3d998f12a6ee329d285ce0e286bdb29996cf43cf9f80774aa", size = 1056936 },
-    { url = "https://files.pythonhosted.org/packages/5c/01/83d1dc711209568dd5847e87a856ff0d1a9bee092626f59b7c732b3c3fa4/louvain-0.8.2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:9ffe980d7cfe7e00492eb4de8d847f7b46ce68ca2d1fa2d8c1598c03d773c66d", size = 1078284 },
-    { url = "https://files.pythonhosted.org/packages/84/7b/fb5d1f3581dd3ad67dc56a559213584a1403a67637d55279dccd8e3c4a23/louvain-0.8.2-cp310-cp310-musllinux_1_1_i686.whl", hash = "sha256:53dd1fa129025b71d0d5714af4ac09b85b35f9b0439e34cb36b71e8dd87e80ee", size = 1603157 },
-    { url = "https://files.pythonhosted.org/packages/4c/1c/e6d7ac9a0f4309745a5ec1b96c3dd185fb70a5121c33938f496a121895a9/louvain-0.8.2-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:5222b93da8be423507979cbdc875fff06987a56cc649717d4afa4b3042cfd800", size = 1589042 },
-    { url = "https://files.pythonhosted.org/packages/8a/d3/54ff2e5fb782e22a5aaa28a889b3d53fd43e79f5654e0613667ade7b500f/louvain-0.8.2-cp310-cp310-win32.whl", hash = "sha256:8c5f1362e38b821b77863a8a1173d3c135982ebc947f0313ba71fb5f2702144f", size = 82073 },
-    { url = "https://files.pythonhosted.org/packages/86/2d/6ef4192aa1fcced0cd8ad69a449090b3bc7834e5043231813d48b88ec252/louvain-0.8.2-cp310-cp310-win_amd64.whl", hash = "sha256:9573f1b3ac42a35ff709a52bd4652aef3dcd041a5bbd589df2a4e831e3d81931", size = 89850 },
-    { url = "https://files.pythonhosted.org/packages/4c/a0/b08b20e4a3366ef39555bcf390cc1489a1d12d76f53413c5cc4cc0e760a6/louvain-0.8.2-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:ad0f20e5e9ed22db3c0cfec25d5c5f004a4a2ca00f556779f5cdc421d816a250", size = 207124 },
-    { url = "https://files.pythonhosted.org/packages/fc/26/d99a77f5c17ef366bbd11b3509dfad47bcd968c4c1778bfccd4279e4ea25/louvain-0.8.2-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:3514682845c7b9d8f14e275f3826ad8aeaff079267eadaec1353a52629f1212e", size = 185202 },
-    { url = "https://files.pythonhosted.org/packages/ae/e4/9854d680fc4ae73bdc545544dc596d3a5f89f2a50abe597daded7140c4e2/louvain-0.8.2-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4dc11889d69b596f7f5755a4a197ef96da480b6e09959d3340717836ae3cc255", size = 1051707 },
-    { url = "https://files.pythonhosted.org/packages/99/15/dfa3d33935e4c90d5a45676e8d3bdf0cbd0c173e7a7f45dee23e7cc636bb/louvain-0.8.2-cp311-cp311-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:b7ae4a8b11f94acd90509972a2fc5d393ad2a6f327e5506be3ed5e97b6ec94ce", size = 1057039 },
-    { url = "https://files.pythonhosted.org/packages/3f/3e/b20691ad452187d88c247202cc144dd55babe0dba20f67fd9f715bb0e6fe/louvain-0.8.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:df66bf58b03ca257299e5652816bae0203a62447f31eec1008f719e0d5604b88", size = 1078332 },
-    { url = "https://files.pythonhosted.org/packages/b7/12/1e8a2748dbce63eae1b05ed938834ab1568a7d60da615cf247b8918d4a83/louvain-0.8.2-cp311-cp311-musllinux_1_1_i686.whl", hash = "sha256:f25d97fe0c4367ea9a9ca3edd731d742b6a0f420e922ea1b4ce4448b8caa0a3b", size = 1605109 },
-    { url = "https://files.pythonhosted.org/packages/c3/10/485c648c2dba47aae745f428f77728ec4e7188f77e16c8834e3aaa7c6342/louvain-0.8.2-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:a4968137c22004b7ffb465f87f798d2cff1efb456c0f4ad2cea98d2eae057ad1", size = 1591018 },
-    { url = "https://files.pythonhosted.org/packages/6e/8e/befb2f08063f1eef786b7c911f10588572bba11687b54056b79553730c93/louvain-0.8.2-cp311-cp311-win32.whl", hash = "sha256:5fee00958c0b45bfd43c20b9141370607c91e32cda28e04db4512187005616c9", size = 82079 },
-    { url = "https://files.pythonhosted.org/packages/46/a0/ab037cddff15b67fe747bcbb04ab6e2668c78b749e031514af0cee1c6071/louvain-0.8.2-cp311-cp311-win_amd64.whl", hash = "sha256:797fa410e2d0f208202eda27ecd686ebecefd2ce3631a754475408eb7ba01421", size = 89850 },
-]
 
 [[package]]
 name = "lxml"
@@ -5345,7 +5316,7 @@ flash = [
 requires-dist = [
     { name = "array-api-compat", specifier = ">=1.9.0" },
     { name = "attridict", specifier = ">=0.0.9" },
-    { name = "bengrn", specifier = ">=1.3.0" },
+    { name = "bengrn", specifier = ">=1.3.2" },
     { name = "biomart", specifier = ">=0.9.0" },
     { name = "bionty", specifier = ">=1.2.1" },
     { name = "biopython" },
@@ -5363,7 +5334,7 @@ requires-dist = [
     { name = "future", specifier = ">=1.0.0" },
     { name = "gget", specifier = ">=0.29.1" },
     { name = "gitchangelog", marker = "extra == 'dev'", specifier = ">=3.0.4" },
-    { name = "grnndata", specifier = ">=1.1.5" },
+    { name = "grnndata", specifier = ">=1.3.2" },
     { name = "gseapy", specifier = ">=1.1.8" },
     { name = "h5py", specifier = ">=3.12.1" },
     { name = "huggingface-hub", specifier = ">=0.10.0" },
@@ -5395,7 +5366,7 @@ requires-dist = [
     { name = "rich", specifier = ">=10.0.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6.4" },
     { name = "s3fs", specifier = ">=2024.10.0" },
-    { name = "scdataloader", specifier = ">=2.0.0" },
+    { name = "scdataloader", specifier = ">=2.0.2" },
     { name = "scib", specifier = ">=1.1.7" },
     { name = "scib-metrics", specifier = ">=0.5.1" },
     { name = "scikit-learn", specifier = "==1.6.0" },

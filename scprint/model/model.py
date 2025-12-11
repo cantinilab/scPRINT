@@ -1004,8 +1004,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             for i, clsname in enumerate(self.classes):
                 output.update(
                     {
-                        "cls_output_"
-                        + clsname: self.cls_decoders[clsname](
+                        "cls_output_" + clsname: self.cls_decoders[clsname](
                             output["compressed_cell_embs"][i + 1]
                             if self.compressor is not None
                             else output["input_cell_embs"][:, i + 1, :]
