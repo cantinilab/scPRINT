@@ -218,7 +218,7 @@ This is the a template of how you would go and use scPRINT most of the time:
 ```py
 # import stuff
 from lightning.pytorch import Trainer
-from scprint import scPrint
+from scprint2 import scPRINT2
 from scdataloader import DataModule
 
 # setup a datamodule to train scprint from scratch

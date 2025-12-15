@@ -1,14 +1,14 @@
 [project]
-name = "scprint"
-version = "2.3.5"
-description = "scPRINT is a Large Cell Model for Gene Network Inference, Denoising and more from scRNAseq data"
+name = "scprint2"
+version = "1.0.0"
+description = "scPRINT-2 is a Large Cell Model for Gene Network Inference, Denoising and more from scRNAseq data"
 authors = [
     {name = "jeremie kalfon", email = "jkobject@gmail.com"}
 ]
 license = "MIT"
 readme = "README.md"
 requires-python = ">=3.10, <3.13"
-keywords = ["scRNAseq", "transformer", "GRN", "gene regulatory network", "scPRINT", "large cell model", "foundation model"]
+keywords = ["scRNAseq", "transformer", "GRN", "gene regulatory network", "scPRINT-2", "large cell model", "foundation model"]
 dependencies = [
     "torch==2.8.0",
     "torchvision>=0.23.0",
@@ -96,10 +96,10 @@ flash = [
 ]
 
 [project.urls]
-repository = "https://github.com/jkobject/scPRINT"
+repository = "https://github.com/cantinilab/scPRINT-2"
 
 [project.scripts]
-scprint = "scprint.__main__:main"
+scprint2 = "scprint2.__main__:main"
 
 [tool.ruff]
 line-length = 88
@@ -110,7 +110,7 @@ ignore = ["E501", "E203", "E266", "E265", "F401", "F403", "E722", "E741", "E731"
 
 [tool.hatch.build.targets.sdist]
 only-include = [
-    "scprint",
+    "scprint2",
     "slurm",
     "config",
     "data/main/TFs.txt",
@@ -118,7 +118,7 @@ only-include = [
 
 [tool.hatch.build.targets.wheel]
 only-include = [
-    "scprint",
+    "scprint2",
     "slurm",
     "config",
     "data/main/TFs.txt",

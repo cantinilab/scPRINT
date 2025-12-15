@@ -23,16 +23,16 @@ install:          ## Install the project in dev mode.
 
 .PHONY: fmt
 fmt:              ## Format code using black & isort.
-	$(ENV_PREFIX)uv run ruff format scprint/ tests/
+	$(ENV_PREFIX)uv run ruff format scprint2/ tests/
 
 .PHONY: lint
 lint:             ## Run pep8, black, mypy linters.
 #most are due to flashattention...
-	$(ENV_PREFIX)uv run ruff check --fix scprint/ tests/
+	$(ENV_PREFIX)uv run ruff check --fix scprint2/ tests/
 
 .PHONY: test
 test: lint        ## Run tests and generate coverage report.
-	$(ENV_PREFIX)uv run pytest -v -x --cov-config .coveragerc --cov=scprint -l --tb=short --maxfail=1 tests/
+	$(ENV_PREFIX)uv run pytest -v -x --cov-config .coveragerc --cov=scprint2 -l --tb=short --maxfail=1 tests/
 	$(ENV_PREFIX)uv run coverage xml
 	$(ENV_PREFIX)uv run coverage html
 
@@ -70,10 +70,10 @@ release:          ## Create a new tag for release.
 	@echo "WARNING: This operation will create s version tag and push to github"
 	@read -p "Remote name? (e.g. origin) : " REMOTE
 	@read -p "Version? (provide the next x.y.z semver) : " TAG
-	@echo "$${TAG}" > scprint/VERSION
+	@echo "$${TAG}" > scprint2/VERSION
 	@sed -i 's/^version = .*/version = "'$${TAG}'"/' pyproject.toml
 	@$(ENV_PREFIX)gitchangelog > HISTORY.md
-	@git add scprint/VERSION HISTORY.md pyproject.toml
+	@git add scprint2/VERSION HISTORY.md pyproject.toml
 	@git commit -m "release: version $${TAG} 🚀"
 	@echo "creating git tag : $${TAG}"
 	@git tag $${TAG}
@@ -81,7 +81,7 @@ release:          ## Create a new tag for release.
 	@echo "Github Actions will detect the new tag and release the new version."
 	@mkdocs gh-deploy
 	@git push -f $${REMOTE} gh-pages
-	@echo "Documentation deployed to https://jkobject.github.io/scPRINT/"
+	@echo "Documentation deployed to https://jkobject.github.io/scPRINT-2/"
 
 .PHONY: docs
 docs:             ## Build the documentation.

@@ -10,11 +10,11 @@ import torch
 from lightning.pytorch import Trainer
 from scdataloader import DataModule, Preprocessor
 from scdataloader.utils import populate_my_ontology
-
-from scprint import scPrint
 from scprint.base import NAME
 from scprint.tasks import Denoiser, Embedder, GNInfer
 from scprint.trainer import TrainingMode
+
+from scprint2 import scPRINT2
 
 
 def test_base():

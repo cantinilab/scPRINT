@@ -1,14 +1,15 @@
-site_name: scprint
+site_name: scPRINT-2
 theme:
   name: readthedocs
   # analytics:
   # gtag: G-ABC123
-site_url: https://www.jkobject.com/scPRINT/
+site_url: https://www.jkobject.com/scPRINT-2/
 nav:
   - Home: index.md
   - structure: structure.md
   - pre-training: pretrain.md
   - usage example: usage.md
+  - 350M subset umap: umap/nice_umap_scprint2.html
   - example notebooks:
       - cancer usecase: notebooks/cancer_usecase.ipynb
       - cancer usecase part 2: notebooks/cancer_usecase_part2.ipynb

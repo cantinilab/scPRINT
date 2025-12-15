@@ -1,52 +1,78 @@
-# Pre-training scPRINT
+# Pre-training scPRINT-2
 
-scPRINT is a large model that can be pre-trained on a large dataset of single cell data.
+scPRINT-2 is a large model that can be pre-trained on a large dataset of single
+cell data.
 
-This pre-training is quite efficient for scPRINT and smaller models can be pretrained on any hardware with a 20GB NVIDIA GPU.
+This pre-training is quite efficient for scPRINT-2 and smaller models can be
+pretrained on any hardware with a 20GB NVIDIA GPU.
 
 ## Setup of the database
 
-To perform pretraining you will need a large dataset. We recommend using the [laminDB](https://lamin.ai) to assemble such a large database of dataset and to use our [scdataloader](https://github.com/jkobject/scDataLoader) package to perform the data loading to the model.
+To perform pretraining you will need a large dataset. We recommend using the
+[laminDB](https://lamin.ai) to assemble such a large database of dataset and to
+use our [scdataloader](https://github.com/jkobject/scDataLoader) package to
+perform the data loading to the model.
 
-In addition, you will need to preprocess your datasets. To make sure that the fields are all here, the genes are in the right format, the raw counts are used, etc... We recommend using the Preprocessor class of the `scdataloader` package.
+In addition, you will need to preprocess your datasets. To make sure that the
+fields are all here, the genes are in the right format, the raw counts are used,
+etc... We recommend using the Preprocessor class of the `scdataloader` package.
 
-Moreover scdataloader works with a set of ontologies. To install these, use the function `populate_my_ontologies` from the `scdataloader` package.
+Moreover scdataloader works with a set of ontologies. To install these, use the
+function `populate_my_ontologies` from the `scdataloader` package.
 
-If you do not have your own database of anndatas, we recommend the [cellxgene database](https://cellxgene.cziscience.com/) and our associated helper function to download and preprocess all of cellxgene in a single command with `scdataloader`.
+If you do not have your own database of anndatas, we recommend the
+[cellxgene database](https://cellxgene.cziscience.com/) and our associated
+helper function to download and preprocess all of cellxgene in a single command
+with `scdataloader`.
 
-Finally you might want to generate gene embeddings to use with scPRINT instead of learning these tokens from scratch. For this you can use the [gene_embedders](embedder.md) module of scPRINT, which usage is detailed in the `notebooks/generate_gene_embeddings.ipynb` notebook.
+Finally you might want to generate gene embeddings to use with scPRINT-2 instead
+of learning these tokens from scratch. For this you can use the
+[gene_embedders](embedder.md) module of scPRINT-2, which usage is detailed in
+the `notebooks/generate_gene_embeddings.ipynb` notebook.
 
 ## Pre-training
 
-to pretrain scPRINT we strongly recommend using command line as it can take multiple days (and using some HPC plateform like slurm or others). If on your own machine, use something like `screen` at least 😉.
+to pretrain scPRINT-2 we strongly recommend using command line as it can take
+multiple days (and using some HPC plateform like slurm or others). If on your
+own machine, use something like `screen` at least 😉.
 
-Most of the pre-training usage follows from [pytorch lightning](https://lightning.ai/docs/pytorch/stable/levels/intermediate.html) with `scprint fit` you will launch a training run. It will populate both the datamodule (see `scdataloader`), the model (see `model.py`), the trainer (see `pytorch lightning`) and the various callbacks.
+Most of the pre-training usage follows from
+[pytorch lightning](https://lightning.ai/docs/pytorch/stable/levels/intermediate.html)
+with `scprint-2 fit` you will launch a training run. It will populate both the
+datamodule (see `scdataloader`), the model (see `model.py`), the trainer (see
+`pytorch lightning`) and the various callbacks.
 
-But you might want to use additional parameters. For this, you can use the `config` folder and the `yaml` files in it. These files are used to store the main hyperparameters of the model and the training scheme.
+But you might want to use additional parameters. For this, you can use the
+`config` folder and the `yaml` files in it. These files are used to store the
+main hyperparameters of the model and the training scheme.
 
-More hyperparameters are given to the scPRINT model via a Trainer callback I created (see `trainer/trainer.py`). This is used to specify parameters to scPRINT that are used solely during training and are not part of the model definition itself, like lr, schedulers, optimizers, etc.. I use a callback as it is how pytorch lightning requires us to send training parameters to the model.
+More hyperparameters are given to the scPRINT-2 model via a Trainer callback I
+created (see `trainer/trainer.py`). This is used to specify parameters to
+scPRINT-2 that are used solely during training and are not part of the model
+definition itself, like lr, schedulers, optimizers, etc.. I use a callback as it
+is how pytorch lightning requires us to send training parameters to the model.
 
-Thus a full command line to train scPRINT on a slurm cluster might look like this:
+Thus a full command line to train scPRINT-2 on a slurm cluster might look like
+this:
 
 ```bash
-conda activate scprint
+conda activate scprint2
 ### slurm level stuff
-module load cuda/11.7
-srun 
+module load cuda/12.2
+srun
   -p gpu #gpu partition
   -q gpu #gpu queue
   --gres=gpu:A40:4,gmem:40G #gpu type (4 A40 with 40GB of GPU mem)
   --cpus-per-task 16
   --mem-per-gpu 90G #RAM per GPU
-  --ntasks-per-node=1 
+  --ntasks-per-node=1
 ####
-  # actuall scprint command
-  scprint fit 
-    --config config/base.yml #base config file (see below)
+  # actuall scprint-2 command
+  scprint2 fit
+    --config config/base_v3.yml #base config file (see below)
     --config config/pretrain_large.yml #the differences when training a large model
     --model.nhead 8 # changing this parameter from the large model directly in command line (cannot do 4 heads of 128dim with A40 GPUs...)
     --scprint_training.name o2uniqsx #an id for the model (not needed but useful)
-    --trainer.strategy auto #here the strategy selected will be "ddp_find_unused_parameters_true"
 ```
 
 with the base yaml file containing:
@@ -74,16 +100,14 @@ trainer: #training level params
     ...
 model: # model params
   dropout: 0.1
-  transformer: flash #flashattention is used
-  mvc_decoder: inner product
-  residual_in_fp32: True
+  transformer: normal #flashattention is used
   ...
 data: #datamodule params
   organisms: #we will use these 2 species
     - NCBITaxon:9606
     - NCBITaxon:10090
   gene_position_tolerance: 10_000 #gene location: if genes are closer than 10kb, they are considered as the same location
-  gene_embeddings: ./data/main/gene_embeddings.parquet #the embeddings of genes (see above  )
+  gene_embeddings: ./data/main/gene_embeddings/ #the embeddings of genes (see above  )
   collection_name: all no zhang13M # the name of the laminDB collection we will use
   how: random expr # how we collate the expression data (here random expressed genes)
   max_len: 2200 #how many genes we use in the model context during training
@@ -91,10 +115,16 @@ data: #datamodule params
   ...
 ```
 
-We use wanDB in our case and our previous wandb training runs are available [here](https://wandb.ai/ml4ig/scprint_scale/reports/scPRINT-trainings--Vmlldzo4ODIxMjgx?accessToken=80metwx7b08hhourotpskdyaxiflq700xzmzymr6scvkp69agybt79l341tv68hp), however scPRINT and pytorch lightning support a breadth of logging tools: [see loggers](https://lightning.ai/docs/pytorch/stable/api_references.html#loggers).
+We use wanDB in our case and our previous wandb training runs are available
+[here](https://wandb.ai/ml4ig/scprint_v2/reports/scPRINT-2-trainings--Vmlldzo4ODIxMjgx),
+however scPRINT-2 and pytorch lightning support a breadth of logging tools:
+[see loggers](https://lightning.ai/docs/pytorch/stable/api_references.html#loggers).
 
-We use slurm in our usecase here but scPRINT and pytorch lightning has been made to work in a breadth of environments [e.g.](https://lightning.ai/docs/pytorch/stable/levels/intermediate_level_7.html).
+We use slurm in our usecase here but scPRINT-2 and pytorch lightning has been
+made to work in a breadth of environments
+[e.g.](https://lightning.ai/docs/pytorch/stable/levels/intermediate_level_7.html).
 
 ## Fine-tuning
 
-For now scPRINT doesn't have a fine-tuning script. But PRs are very welcome on using LoRA and its alternatives to fine-tune scPRINT on novel tasks!
+For now scPRINT-2 doesn't have a fine-tuning script. But PRs are very welcome on
+using LoRA and its alternatives to fine-tune scPRINT-2 on novel tasks!

@@ -8,7 +8,7 @@
 
 # How to develop on this project
 
-scprint welcomes contributions from the community.
+scPRINT-2 welcomes contributions from the community.
 
 **You need PYTHON3!**
 
@@ -18,10 +18,10 @@ This instructions are for linux base systems. (Linux, MacOS, BSD, etc.)
 
 - On github interface click on `Fork` button.
 - Clone your fork of this repo.
-  `git clone git@github.com:YOUR_GIT_USERNAME/scPRINT.git`
-- Enter the directory `cd scPRINT`
+  `git clone git@github.com:YOUR_GIT_USERNAME/scPRINT-2.git`
+- Enter the directory `cd scPRINT-2`
 - Add upstream repo
-  `git remote add upstream https://github.com/jkobject/scPRINT`
+  `git remote add upstream https://github.com/jkobject/scPRINT-2`
 
 ## Setting up your own virtual environment
 

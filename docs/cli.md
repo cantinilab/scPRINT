@@ -1,10 +1,10 @@
 # Documentation for the `cli` modules
 
-::: scprint.__main__
+::: scprint2.__main__
     handler: python
 
-::: scprint.cli
+::: scprint2.cli
     handler: python
     
-::: scprint.trainer.trainer
+::: scprint2.trainer.trainer
     handler: python

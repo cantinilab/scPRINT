@@ -2,23 +2,26 @@
 
 ## model description
 
-::: scprint.model.model
+::: scprint2.model.model
     handler: python
 
 ## losses
 
-::: scprint.model.loss
+::: scprint2.model.loss
     handler: python
 
 ## utils
 
-::: scprint.model.utils
+::: scprint2.model.utils
     handler: python
 
 ## encoder and decoder modules
 
-::: scprint.model.encoders
+::: scprint2.model.encoders
     handler: python
 
-::: scprint.model.decoders
+::: scprint2.model.decoders
+    handler: python
+
+::: scprint2.model.fsq
     handler: python

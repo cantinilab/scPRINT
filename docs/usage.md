@@ -1,21 +1,28 @@
-# scPRINT usage
+# scPRINT-2 usage
 
-scPRINT can be used to denoise / embed (& predict labels) / infer gene networks on single-cell data.
+scPRINT-2 can be used to denoise / embed (& predict labels) / infer gene
+networks on single-cell data.
 
-Example of doing these tasks on a dataset is given in our manuscript and the [example notebooks](notebooks/cancer_usecase.ipynb).
+Example of doing these tasks on a dataset is given in our manuscript and the
+[example notebooks](notebooks/cancer_usecase.ipynb).
 
-But in a nutshell, here is the most minimal example of how scPRINT works: 
+But in a nutshell, here is the most minimal example of how scPRINT-2 works:
 
-1. once you have loaded an anndata object, make sure you preprocess it so everything is checked out. (number of genes mentioned, gene format, raw counts used, etc...) more information on the Preprocessor is available in the scDataLoader package ()
-2. Then you can denoise / embed / infer gn on this anndata using scPRINT and its helper classes. These classes follow a similar pattern to the trainer class in pytorch-lightning.
+1. once you have loaded an anndata object, make sure you preprocess it so
+   everything is checked out. (number of genes mentioned, gene format, raw
+   counts used, etc...) more information on the Preprocessor is available in the
+   scDataLoader package ()
+2. Then you can denoise / embed / infer gn on this anndata using scPRINT-2 and
+   its helper classes. These classes follow a similar pattern to the trainer
+   class in pytorch-lightning.
 
 Here is an example for denoising:
 
 ```py
-from scprint import scPrint
+from scprint2 import scPrint2
 from scdataloader import Preprocessor
 import scanpy as sc
-from scprint.tasks import Denoiser
+from scprint2.tasks import Denoiser
 
 #better to do it in lower precision
 import torch
@@ -25,7 +32,7 @@ adata = sc.read_h5ad("../data/temp.h5ad")
 #make sure we have this metadata
 adata.obs['organism_ontology_term_id'] = "NCBITaxon:9606"
 # load the model
-model = scPrint.load_from_checkpoint('../data/temp/last.ckpt', precpt_gene_emb=None)
+model = scPrint2.load_from_checkpoint('../data/temp/last.ckpt', precpt_gene_emb=None)
 
 # preprocess to make sure it looks good
 preprocessor = Preprocessor(do_postp=False)
@@ -67,7 +74,9 @@ adata.X = adata.X.tocsr()
 But you can do the same thing with a bash command line:
 
 ```bash
-$ scprint denoise --ckpt_path ../data/temp/last.ckpt --adata ../data/temp.h5ad --how "most var" --dtype "torch.bfloat16" --batch_size 20 --max_len 2000 --max_cells 100000 --num_workers 1 --predict_depth_mult 10 --doplot false --species "NCBITaxon:9606"
+$ scprint2 denoise --ckpt_path ../data/temp/last.ckpt --adata ../data/temp.h5ad --how "most var" --dtype "torch.bfloat16" --batch_size 20 --max_len 2000 --max_cells 100000 --num_workers 1 --predict_depth_mult 10 --doplot false --species "NCBITaxon:9606"
 ```
 
-However in this context you might have somewhat less options for the preprocessing of the anndataset. However, all parameters of the denoiser, embedder and gninfer classes are available in the cli interface as well!
+However in this context you might have somewhat less options for the
+preprocessing of the anndataset. However, all parameters of the denoiser,
+embedder and gninfer classes are available in the cli interface as well!

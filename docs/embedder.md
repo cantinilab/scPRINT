@@ -1,7 +1,7 @@
 # Documentation for the `tokenizers` module
 
-::: scprint.tokenizers.protein_embedder
+::: scprint2.tokenizers.protein_embedder
     handler: python
 
-::: scprint.tokenizers.embedder
+::: scprint2.tokenizers.embedder
     handler: python
