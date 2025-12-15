@@ -1,6 +1,7 @@
 import os
 import urllib.request
 
+import bionty as bt
 import lamindb as ln
 import numpy as np
 import pytest
@@ -28,10 +29,45 @@ def test_base():
         # diseases=None,
         # dev_stages=None,
     )
+    for i in set(
+        bt.Organism.using("laminlabs/arc-virtual-cell-atlas").df().ontology_id
+    ) - set(bt.Organism.filter().df().ontology_id):
+        print(i)
+        rec = (
+            bt.Organism.using("laminlabs/arc-virtual-cell-atlas")
+            .filter(ontology_id=i)
+            .first()
+        )
+        rec.save()
+    for i in set(
+        bt.Organism.using("laminlabs/arc-virtual-cell-atlas").df().ontology_id
+    ) - set(["NCBITaxon:10090", "NCBITaxon:9606"]):
+        print(i)
+        df = (
+            bt.Gene.using("laminlabs/arc-virtual-cell-atlas")
+            .filter(organism__ontology_id=i)
+            .all()
+            .df()
+        )
+        genes = []
+        org = bt.Organism.filter(ontology_id=i).one()
+        for row in df.to_dict(orient="records"):
+            row["organism_id"] = org.id
+            gene = bt.Gene(
+                ensembl_gene_id=row["ensembl_gene_id"],
+                stable_id=row["stable_id"],
+                description=row["description"],
+                symbol=row["symbol"],
+                biotype=row["biotype"],
+                organism=org,
+                _skip_validation=True,
+            )
+            genes.append(gene)
+        ln.save(genes)
     filepath = os.path.join(os.path.dirname(__file__), "test.h5ad")
-    ckpt_path = os.path.join(os.path.dirname(__file__), "small.ckpt")
+    ckpt_path = os.path.join(os.path.dirname(__file__), "small-v2.ckpt")
     if not os.path.exists(ckpt_path):
-        url = "https://huggingface.co/jkobject/scPRINT/resolve/main/small.ckpt"
+        url = "https://huggingface.co/jkobject/scPRINT/resolve/main/.ckpt"
         urllib.request.urlretrieve(url, ckpt_path)
 
     adata = sc.read_h5ad(filepath)
@@ -84,12 +120,12 @@ def test_base():
     )
     adata_emb, metrics = cell_embedder(model, adata[:10, :])
     assert "scprint_emb" in adata_emb.obsm, "Cell embedding failed"
-    assert np.isnan(adata_emb.obsm["scprint_emb"]).sum() == 0, (
-        "Cell embedding contains NaNs"
-    )
-    assert any(col.startswith("pred_") for col in adata_emb.obs.columns), (
-        "Classification failed"
-    )
+    assert (
+        np.isnan(adata_emb.obsm["scprint_emb"]).sum() == 0
+    ), "Cell embedding contains NaNs"
+    assert any(
+        col.startswith("pred_") for col in adata_emb.obs.columns
+    ), "Classification failed"
 
     # GRN inference
     grn_inferer = GNInfer(
@@ -185,9 +221,9 @@ def test_base():
         if initial_loss is None:
             initial_loss = current_loss
         else:
-            assert current_loss < initial_loss, (
-                f"Loss not decreasing: initial {initial_loss}, current {current_loss}"
-            )
+            assert (
+                current_loss < initial_loss
+            ), f"Loss not decreasing: initial {initial_loss}, current {current_loss}"
             initial_loss = current_loss
     # cli
     # get_Seq

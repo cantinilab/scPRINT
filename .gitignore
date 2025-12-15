@@ -215,3 +215,7 @@ config/base_v3.yml
 *.npz
 *.pkl
 uniprot_function
+notebooks/data/results_label.json
+grn_fromscprint.h5ad
+fine_tuned_emb_task3.h5ad
+notebooks/data/results_batch.json
