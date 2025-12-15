@@ -4,9 +4,9 @@ from lightning.pytorch import LightningModule, Trainer
 from lightning.pytorch.cli import ArgsType, SaveConfigCallback
 from lightning.pytorch.loggers import WandbLogger
 from scdataloader import DataModule
-from scprint.cli import MyCLI
 
 from scprint2 import scPRINT2
+from scprint2.cli import MyCLI
 
 
 class MySaveConfig(SaveConfigCallback):
@@ -35,7 +35,7 @@ class MySaveConfig(SaveConfigCallback):
 
 def main(args: ArgsType = None):
     cli = MyCLI(  # noqa: F841
-        scPrint,
+        scPRINT2,
         DataModule,
         args=args,
         parser_kwargs={"parser_mode": "omegaconf"},

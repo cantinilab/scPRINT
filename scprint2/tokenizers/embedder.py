@@ -3,12 +3,11 @@ import os
 import numpy as np
 import pandas as pd
 import torch
+from scprint import utils
 
 # from RNABERT import RNABERT
 from torch.nn import AdaptiveAvgPool1d
 from tqdm import tqdm
-
-from scprint import utils
 
 from .protein_embedder import ESM2
 

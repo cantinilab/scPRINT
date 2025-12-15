@@ -189,7 +189,7 @@ Most of the time, everything works out of the box, otherwise please send an
 issue
 
 ```python
-model = scPrint.load_from_checkpoint(
+model = scPRINT2.load_from_checkpoint(
     '../data/temp/last.ckpt', precpt_gene_emb=None)
 ```
 
@@ -421,7 +421,7 @@ checkpoint, you don't, as the embeddings are also stored in the model weights.
 You just need to load the weights like this:
 
 ```python
-model = scPrint.load_from_checkpoint(
+model = scPRINT2.load_from_checkpoint(
     '../../data/temp/last.ckpt',
     precpt_gene_emb=None,
 )

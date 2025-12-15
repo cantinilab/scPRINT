@@ -26,7 +26,7 @@ from simpler_flash import FlashTransformer
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from scprint.utils.sinkhorn import SinkhornDistance
+from scprint2.utils.sinkhorn import SinkhornDistance
 
 from .tmfg import tmfg
 

@@ -154,6 +154,7 @@ class MyCLI(LightningCLI):
             import scanpy as sc
             from scdataloader import Preprocessor
             from scdataloader.utils import load_genes
+
             from scprint2 import scPrint2
 
             adata = sc.read_h5ad(self.config_init[subcommand]["adata"])

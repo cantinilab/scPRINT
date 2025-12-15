@@ -10,15 +10,15 @@ import torch
 from lightning.pytorch import Trainer
 from scdataloader import DataModule, Preprocessor
 from scdataloader.utils import populate_my_ontology
-from scprint.base import NAME
-from scprint.tasks import Denoiser, Embedder, GNInfer
-from scprint.trainer import TrainingMode
 
 from scprint2 import scPRINT2
+from scprint2.base import NAME
+from scprint2.tasks import Denoiser, Embedder, GNInfer
+from scprint2.trainer import TrainingMode
 
 
 def test_base():
-    assert NAME == "scprint"
+    assert NAME == "scprint2"
     populate_my_ontology(
         organisms_clade=["vertebrates"],
         sex=["PATO:0000384", "PATO:0000383"],
@@ -79,7 +79,7 @@ def test_base():
     )
     adata = preprocessor(adata)
     # conf = dict(self.config_init[subcommand])
-    model = scPrint.load_from_checkpoint(
+    model = scPRINT2.load_from_checkpoint(
         ckpt_path,
         precpt_gene_emb=None,
         # triton gets installed so it must think it has cuda enabled
@@ -170,7 +170,7 @@ def test_base():
         test_split=0.1,
     )
     _ = datamodule.setup()
-    model = scPrint(
+    model = scPRINT2(
         genes=datamodule.genes,
         d_model=64,
         nhead=1,

@@ -4,7 +4,7 @@ import pandas as pd
 import torch
 from torch import load
 
-from scprint.utils.utils import run_command
+from scprint2.utils.utils import run_command
 
 # https://github.com/agemagician/ProtTrans
 # https://academic.oup.com/nargab/article/4/1/lqac012/6534363

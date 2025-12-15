@@ -17,7 +17,7 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from scprint.model import utils
+from scprint2.model import utils
 
 FILE_DIR = os.path.dirname(os.path.realpath(__file__))
 

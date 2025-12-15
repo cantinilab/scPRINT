@@ -16,8 +16,8 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from scprint.model import utils
-from scprint.tasks.denoise import plot_cell_depth_wise_corr_improvement
+from scprint2.model import utils
+from scprint2.tasks.denoise import plot_cell_depth_wise_corr_improvement
 
 FILE_DIR = os.path.dirname(os.path.realpath(__file__))
 

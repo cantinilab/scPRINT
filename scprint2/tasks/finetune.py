@@ -20,7 +20,7 @@ from sklearn.metrics import f1_score
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from scprint.model import loss
+from scprint2.model import loss
 
 FILE_LOC = os.path.dirname(os.path.realpath(__file__))
 

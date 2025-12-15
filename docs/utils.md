@@ -1,13 +1,13 @@
 # Documentation for the `utils` modules
 
-::: scprint.utils.sinkhorn
+::: scprint2.utils.sinkhorn
     handler: python
 
-::: scprint.utils.utils
+::: scprint2.utils.utils
     handler: python
 
-::: scprint.utils.get_seq
+::: scprint2.utils.get_seq
     handler: python
 
-::: scprint.utils.graph_refinement
+::: scprint2.utils.graph_refinement
     handler: python
