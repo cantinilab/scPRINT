@@ -44,10 +44,8 @@ Example of scPRINT-2 finetuning exist for:
 scPRINT-2 is a foundation model and can be fine-tuned to perform many other
 analysis
 
-[Read the manuscript!]() if you would like to know more about scPRINT-2. Have a
-look at some of my [X-plainers](https://twitter.com/jkobject).
-
-<img src="docs/umap.png" alt="umap" width="600" />
+[Read the manuscript!](https://www.biorxiv.org/content/10.64898/2025.12.11.693702v1) if you would like to know more about scPRINT-2. 
+Or Have a look at some of my [X-plainers](https://twitter.com/jkobject).
 
 🎊 test scPRINT and scDataloader on this simple example
 [google collab](https://colab.research.google.com/drive/1CacoQDAwJn86tq2sBhUoZ6M-xAqsYFDI#scrollTo=Lb4E9IhQ7NK8)
