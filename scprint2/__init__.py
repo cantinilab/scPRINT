@@ -3,7 +3,7 @@ from importlib.metadata import version
 __version__ = version("scprint")
 
 
-from .model.model import scPrint
+from .model.model import scPRINT2
 
 # from .data_collator import DataCollator
 # from .data_sampler import SubsetsBatchSampler

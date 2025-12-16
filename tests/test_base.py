@@ -22,6 +22,7 @@ def test_base():
     populate_my_ontology(
         organisms_clade=["vertebrates"],
         sex=["PATO:0000384", "PATO:0000383"],
+        organisms=["NCBITaxon:10090", "NCBITaxon:9606"],
         # celltypes=None,
         # ethnicities=None,
         # assays=None,
@@ -67,7 +68,7 @@ def test_base():
     filepath = os.path.join(os.path.dirname(__file__), "test.h5ad")
     ckpt_path = os.path.join(os.path.dirname(__file__), "small-v2.ckpt")
     if not os.path.exists(ckpt_path):
-        url = "https://huggingface.co/jkobject/scPRINT/resolve/main/.ckpt"
+        url = "https://huggingface.co/jkobject/scPRINT/resolve/main/18hebyht-final-small.ckpt"
         urllib.request.urlretrieve(url, ckpt_path)
 
     adata = sc.read_h5ad(filepath)
@@ -90,8 +91,8 @@ def test_base():
         batch_size=2,
         num_workers=1,
         max_len=300,
-        downsample=0.3,
-        predict_depth_mult=3,
+        downsample=0.7,
+        predict_depth_mult=10,
         dtype=torch.float32,
     )
     metrics, random_indices, adata_denoised = dn(
@@ -133,7 +134,7 @@ def test_base():
         batch_size=2,
         how="random expr",
         preprocess="softmax",
-        head_agg="mean",
+        head_agg="mean_full",
         filtration="none",
         forward_mode="none",
         num_genes=100,
@@ -150,9 +151,8 @@ def test_base():
     col.save()
     datamodule = DataModule(
         collection_name="test dataset",
-        gene_embeddings=os.path.join(os.path.dirname(__file__), "test_emb.parquet"),
+        gene_subset=os.path.join(os.path.dirname(__file__), "test_emb.parquet"),
         hierarchical_clss=[],
-        organisms=["NCBITaxon:9606"],  # , "NCBITaxon:10090"],
         how="most expr",
         max_len=200,
         add_zero_genes=0,

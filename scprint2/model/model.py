@@ -32,7 +32,7 @@ def is_interactive():
     return not hasattr(main, "__file__")
 
 
-class scPrint2(L.LightningModule, PyTorchModelHubMixin):
+class scPRINT2(L.LightningModule, PyTorchModelHubMixin):
 
     def __init__(
         self,

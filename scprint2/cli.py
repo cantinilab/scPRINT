@@ -155,7 +155,7 @@ class MyCLI(LightningCLI):
             from scdataloader import Preprocessor
             from scdataloader.utils import load_genes
 
-            from scprint2 import scPrint2
+            from scprint2 import scPRINT2
 
             adata = sc.read_h5ad(self.config_init[subcommand]["adata"])
             adata.obs.drop(columns="is_primary_data", inplace=True, errors="ignore")
@@ -173,7 +173,7 @@ class MyCLI(LightningCLI):
             adata = preprocessor(adata)
             conf = dict(self.config_init[subcommand])
             model_checkpoint_file = self.config_init[subcommand]["ckpt_path"]
-            model = scPrint2.load_from_checkpoint(
+            model = scPRINT2.load_from_checkpoint(
                 model_checkpoint_file, precpt_gene_emb=None
             )
             missing = set(model.genes) - set(load_genes(model.organisms).index)

@@ -19,7 +19,7 @@ But in a nutshell, here is the most minimal example of how scPRINT-2 works:
 Here is an example for denoising:
 
 ```py
-from scprint2 import scPrint2
+from scprint2 import scPRINT2
 from scdataloader import Preprocessor
 import scanpy as sc
 from scprint2.tasks import Denoiser
