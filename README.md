@@ -13,8 +13,8 @@
 
 <img src="docs/fig.png" alt="logo" width="600" />
 
-scPRINT-2 is a single-cell RNA-seq foundation model built from Kalfon et al. It
-uses novel architecture, encoding, decoding, training paradigms and losses.
+scPRINT-2 is a single-cell RNA-seq foundation model built by Jérémie Kalfon in the Cantini Lab. 
+It uses novel architecture, encoding, decoding, training paradigms and losses.
 
 scPRINT-2 has been pretrained on more than 350 million cells from more than
 22,000 datasets and 16 species.
@@ -36,16 +36,16 @@ scPRINT-2 can be used to perform the following analyses in a zero-shot mode:
 Example of scPRINT-2 finetuning exist for:
 
 - **new species**: finetune scPRINT-2 on a new organism
-- **fine tuning on the labels of your dataset / atlas**: finetune scPRINT-2 on
-  your own cell type /disease / age labels.
-- **fine tuning on batch correction of your datasets / atlas**: finetune
-  scPRINT-2 to integrate data across species, technologies, labs.
+- **classification**: finetune scPRINT-2 on
+  your own cell type /disease / age labels / more...
+- **batch correction of your datasets / atlas**: finetune
+  scPRINT-2 to integrate data across species, technologies, and labs.
 
 scPRINT-2 is a foundation model and can be fine-tuned to perform many other
 analysis
 
 [Read the manuscript!](https://www.biorxiv.org/content/10.64898/2025.12.11.693702v1) if you would like to know more about scPRINT-2. 
-Or Have a look at some of my [X-plainers](https://twitter.com/jkobject).
+Or have a look at some of my [X-plainers](https://twitter.com/jkobject).
 
 🎊 test scPRINT and scDataloader on this simple example
 [google collab](https://colab.research.google.com/drive/1CacoQDAwJn86tq2sBhUoZ6M-xAqsYFDI#scrollTo=Lb4E9IhQ7NK8)
@@ -93,8 +93,8 @@ Or Have a look at some of my [X-plainers](https://twitter.com/jkobject).
 
 ## Use `scPRINT-2`
 
-For the moment scPRINT-2 has been tested on MacOS and Linux (Ubuntu 20.04) with
-Python 3.10+. Its instalation takes on average 2 minutes in `uv` but longer on
+For the moment, scPRINT-2 has been tested on MacOS and Linux (Ubuntu 20.04) with
+Python 3.10+. Its installation takes on average 2 minutes in `uv` but longer on
 `conda`.
 
 Example of our previous generation
@@ -105,14 +105,14 @@ places (don't forget to star it as well!):
 
 [HERE](https://app.superbio.ai/apps/67333115ed44f27eb717cf84)
 
-### try scPRINT on a google colab notebook!
+### Try scPRINT on a Google Colab notebook!
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1CacoQDAwJn86tq2sBhUoZ6M-xAqsYFDI#scrollTo=Vj73HINSzKHL)
 
 ### To know about: lamin.ai
 
 To use scPRINT-2, you will need to use [lamin.ai](https://lamin.ai/). This is
-needed to load biological informations like genes, cell types, organisms.. (but
+required to load biological information like genes, cell types, organisms.. (but
 also to manage the pre-training datasets if this is something you want to set
 up)
 
@@ -132,16 +132,16 @@ uv pip install scprint2
 lamin init --storage ./testdb --name test --modules bionty
 ```
 
-⚠️ `./testdb` is set in this example but be mindful about where you want to
-store your data, this might get quite big as you use it and if you are on
+⚠️ `./testdb` is set in this example, but be mindful about where you want to
+store your data, this might get quite big as you use i,t and if you are on
 specific partition you want to consider this.
 
-if you start with lamin and had to do a `lamin init`, you will also need to
+If you start with lamin and have to do a `lamin init`, you will also need to
 populate your ontologies. This is because scPRINT-2 is using ontologies to
 define its cell types, diseases, sexes, ethnicities, etc.
 ([link to view ontologies](https://www.ebi.ac.uk/ols4/ontologies/cl/classes/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCL_0000057))
 
-you can do it via the command:
+You can do it via the command:
 
 `scdataloader populate all`
 
@@ -183,7 +183,7 @@ Please refer to their documentation for more information:
 scPRINT-2 can run on machines without GPUs, but it will be slow. It is highly
 recommended to use a GPU for inference.
 
-Most of the time, everything works out of the box, otherwise please send an
+Most of the time, everything works out of the box; otherwise, please send an
 issue
 
 ```python
@@ -191,7 +191,7 @@ model = scPrint.load_from_checkpoint(
     '../data/temp/last.ckpt', precpt_gene_emb=None)
 ```
 
-you will know more by following the
+You will know more by following the
 [get-started](https://cantinilab.github.io/scPRINT-2/notebooks/cancer_usecase/)
 notebook.
 
@@ -211,7 +211,7 @@ $ hf download jkobject/scPRINT v2-medium.ckpt --local-dir .
 
 ### scPRINT-2's basic commands
 
-This is the a template of how you would go and use scPRINT most of the time:
+This is a template of how you would go and use scPRINT most of the time:
 
 ```py
 # import stuff
@@ -236,13 +236,13 @@ denoiser(model, adata=adata)
 
 or, from a bash command line
 
-then finetune or analyse on your data
+Then fine-tune or analyse on your data
 
 ```bash
 $ scprint fit/train/predict/test/denoise/embed/gninfer --config config/[medium|large|vlarge] ...
 ```
 
-to denoise a dataset:
+To denoise a dataset:
 
 ```bash
 $ scprint denoise --adata my_human_anndata.h5ad --ckpt_path v2-medium.ckpt --species "NCBITaxon:9606" --output_filename denoised.h5ad
@@ -255,13 +255,13 @@ doing a PCA and Umap so it might need a lot of RAM if run as is)
 $ scprint embed --adata my_human_anndata.h5ad --ckpt_path v2-medium.ckpt --species "NCBITaxon:9606" --output_filename embedded.h5ad
 ```
 
-to do gene network inference on a dataset:
+To do gene network inference on a dataset:
 
 ```bash
 $ scprint gninfer --adata my_human_anndata.h5ad --ckpt_path v2-medium.ckpt --species "NCBITaxon:9606" --cell_type 'cell_type_name_from-cell_type-obs_col' --output_filename grn.h5ad
 ```
 
-to finetune scPRINT on your data:
+To finetune scPRINT on your data:
 
 ```bash
 $ scprint fit --config config/base_v2.yml --config config/pretrain_large.yml --ckpt_path large.ckpt
@@ -275,7 +275,7 @@ more examples of using the command line are available in the
 
 ## Documentation
 
-For more information on usage please see the documentation in
+For more information on usage, please see the documentation in
 [https://www.jkobject.com/scPRINT-2/](https://cantinilab.github.io/scPRINT-2)
 
 ## Docker
@@ -289,17 +289,17 @@ it from Docker Hub.
 Make sure that you have the `docker` command line interface installed on your
 system.
 
-A recommended way to install docker with the correct nvidia drivers on linux is
+A recommended way to install Docker with the correct NVIDIA drivers on Linux is
 to use this
 [script](https://gist.github.com/xueerchen1990/baad7baa545cb547e8633bc9e5b84786)
 
 /!\ A MORE UP TO DATE DOCKER IMAGE is made as part of the open-problems
-benchmark and available in their github for all tasks where scPRINT-2 is
+benchmark and available on their GitHub for all tasks where scPRINT-2 is
 benchmarked
 
 ### Simple tests:
 
-An instalation of scPRINT-2 and a simple test of the denoiser is performed
+An installation of scPRINT-2 and a simple test of the denoiser is performed
 during each commit to the main branch with a
 [Github action](https://github.com/cantinilab/scPRINT-2/actions) and
 [pytest workflow](.github/workflows/main.yml). It also provides an expected
@@ -314,7 +314,7 @@ usages of scPRINT-2:
 
 ### I have a dataset and want some more control over what is going on and which model to use:
 
-you will need to understand a few things like lamindb, scdataloader and
+You will need to understand a few things, like lamindb, scdataloade,r and
 scprint-2's inference tool.
 
 -> start with a quick intro using the
@@ -329,13 +329,13 @@ obs['organism_ontology_term_id'] (e.g. "NCBITaxon:9606"). It also needs to
 contain .var_names or .var.index with gene ids defined as ENSEMBL_IDs or
 HUGO_SYMBOL.
 
--> That's it. you can then follow the preprocessing steps from various example
+-> That's it. You can then follow the preprocessing steps from various example
 notebooks to align your anndata to our gene set, make sure that it fits our
 requirements and then send it to the model!
 
 ### I want to generate gene networks from scRNAseq data:
 
--> Refer to the section . gene network inference in
+-> Refer to the section. gene network inference in
 [this notebook](./docs/notebooks/cancer_usecase.ipynb#).
 
 -> More examples in this notebook
@@ -392,19 +392,19 @@ might want to really understand how the model
 ### how can I find if scPRINT-2 was trained on my data?
 
 If your data is available in cellxgene, scPRINT-2 was likely trained on it.
-However some cells, datasets were dropped due to low quality data and some were
-randomly removed to be part of the validation / test sets.
+However, some cells, and datasets were dropped due to low-quality data, and some were
+randomly removed to be part of the validation/test sets.
 
-### can I use scPRINT-2 on other organisms rather than human?
+### can I use scPRINT-2 on other organisms rather than humans?
 
-scPRINT-2 has been pretrained on both humans and mouse, and can be used on any
+scPRINT-2 has been pretrained on both humans and mice, and can be used on any
 organism with a similar gene set. If you want to use scPRINT-2 on very different
 organisms, you will need to generate gene embeddings for that organism and
 re-train scPRINT-2
 
-### how long does scPRINT-2 takes? what kind of resources do I need? (or in alternative: can i run scPRINT-2 locally?)
+### How long does scPRINT-2 take? What kind of resources do I need? (or in alternative: can I run scPRINT-2 locally?)
 
-please look at our supplementary tables in the
+Please look at our supplementary tables in the
 [manuscript](https://www.biorxiv.org/content/10.1101/2024.07.29.605556v1)
 
 ### I have different scRNASeq batches. Should I integrate my data before running scPRINT-2?
@@ -429,10 +429,10 @@ You can also recreate the gene embedding file through
 [this notebook](notebooks/generate_gene_embeddings.ipynb). Just call the
 functions, and it should recreate the file itself.
 
-the file itself is also available on
+The file itself is also available on
 [hugging face](https://huggingface.co/jkobject/scPRINT-2/tree/main)
 
-/!\ Please understand that what I mean by gene embedding are the immutable input
+/!\ Please understand that what I mean by gene embedding is the immutable input
 gene embeddings encoding the gene name. scPRINT-2 directly takes raw counts as
 input and takes care of doing the embedding on the fly. (it does similarly for a
 gene's location in the genome).
