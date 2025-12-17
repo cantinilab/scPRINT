@@ -2,15 +2,18 @@
 FROM openproblems/base_pytorch_nvidia:1
 
 # Install Python packages using pip
-RUN pip install git+https://github.com/cantinilab/scPRINT-2.git@d8cc270b099c8d5dacf6913acc26f2b696685b2b
-RUN pip install gseapy==1.1.2
-RUN pip install git+https://github.com/jkobject/scDataLoader.git@c67c24a2e5c62399912be39169aae76e29e108aa
+RUN pip install scprint2==1.0.0
 
 RUN lamin init --storage ./main --name main --schema bionty
 RUN lamin load anonymous/main
 
-RUN python -c 'import bionty as bt; bt.base.reset_sources(confirm=True); bt.core.sync_all_sources_to_latest()'
-RUN python -c 'from scdataloader.utils import populate_my_ontology; populate_my_ontology()'
+RUN python -c 'import bionty as bt; bt.base.reset_sources(confirm=True);\
+bt.core.sync_all_sources_to_latest()'
+RUN python -c 'from scdataloader.utils import populate_my_ontology;\
+populate_my_ontology(organisms_clade=["vertebrates"],\
+sex=["PATO:0000384", "PATO:0000383"],\
+organisms=["NCBITaxon:10090", "NCBITaxon:9606"],)'
+RUN python -c 'from scprint2.utils import add_scbasecamp_metadata; add_scbasecamp_metadata()'
 
 # Set the default command (can be overridden)
 CMD ["scprint2", "--help"]

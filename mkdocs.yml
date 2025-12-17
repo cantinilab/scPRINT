@@ -10,9 +10,6 @@ nav:
   - pre-training: pretrain.md
   - usage example: usage.md
   - 350M subset umap: umap/nice_umap_scprint2.html
-  - example notebooks:
-      - cancer usecase: notebooks/cancer_usecase.ipynb
-      - cancer usecase part 2: notebooks/cancer_usecase_part2.ipynb
   - documentation:
       - model: model.md
       - tasks: tasks.md
