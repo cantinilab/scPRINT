@@ -4,6 +4,12 @@ Changelog
 
 (unreleased)
 ------------
+- Cleanup. [jkobject]
+
+
+0.9.1 (2025-12-17)
+------------------
+- Release: version 0.9.1 🚀 [jkobject]
 - Merge branch 'main' of https://github.com/cantinilab/scPRINT-2.
   [jkobject]
 - Update README.md. [Jérémie Kalfon]
