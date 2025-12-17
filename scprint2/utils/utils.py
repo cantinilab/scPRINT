@@ -20,12 +20,11 @@ from bokeh.models.annotations import LabelSet
 from bokeh.palettes import Category10, Category20
 from bokeh.plotting import figure, save
 from IPython import get_ipython
-
 # What pops up on hover?
 from matplotlib import pyplot as plt
 
 
-def run_command(command: str, **kwargs):
+def run_command(command: str, **kwargs) -> int:
     """
     run_command runs a command in the shell and prints the output.
 

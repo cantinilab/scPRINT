@@ -2,10 +2,10 @@
 
 [![codecov](https://codecov.io/gh/cantinilab/scPRINT-2/branch/main/graph/badge.svg?token=GRnnData_token_here)](https://codecov.io/gh/cantinilab/scPRINT-2)
 [![CI](https://github.com/cantinilab/scPRINT-2/actions/workflows/main.yml/badge.svg)](https://github.com/cantinilab/scPRINT-2/actions/workflows/main.yml)
-[![PyPI version](https://badge.fury.io/py/scprint-2.svg)](https://badge.fury.io/py/scprint-2)
-[![Downloads](https://pepy.tech/badge/scprint-2)](https://pepy.tech/project/scprint-2)
-[![Downloads](https://pepy.tech/badge/scprint-2/month)](https://pepy.tech/project/scprint-2)
-[![Downloads](https://pepy.tech/badge/scprint-2/week)](https://pepy.tech/project/scprint-2)
+[![PyPI version](https://badge.fury.io/py/scprint-2.svg)](https://badge.fury.io/py/scprint2)
+[![Downloads](https://pepy.tech/badge/scprint2)](https://pepy.tech/project/scprint2)
+[![Downloads](https://pepy.tech/badge/scprint2/month)](https://pepy.tech/project/scprint2)
+[![Downloads](https://pepy.tech/badge/scprint2/week)](https://pepy.tech/project/scprint2)
 [![GitHub issues](https://img.shields.io/github/issues/cantinilab/scPRINT-2)](https://img.shields.io/github/issues/cantinilab/scPRINT-2)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14749466.svg)](https://doi.org/10.5281/zenodo.14749466)
@@ -91,7 +91,6 @@ if you would like to know more about scPRINT-2. Or have a look at some of my
     - [Pulling the Docker Image from Docker Hub](#pulling-the-docker-image-from-docker-hub)
     - [Running the Docker Container](#running-the-docker-container)
     - [Participate](#participate)
-  - [Work in progress (PR welcomed):](#work-in-progress-pr-welcomed)
 
 ## Use `scPRINT-2`
 
@@ -284,7 +283,7 @@ find out more about the commands by running `scprint2 --help` or
 `scprint2 [command] --help`.
 
 more examples of using the command line are available in the
-[docs](./docs/usage.md).
+[docs](<[https://](https://cantinilab.github.io/scPRINT-2)>).
 
 ### Example notebooks
 
@@ -571,14 +570,4 @@ Acknowledgement:
 [python template](https://github.com/rochacbruno/python-project-template)
 [laminDB](https://lamin.ai/) [lightning](https://lightning.ai/)
 
-## Work in progress (PR welcomed):
-
-1. remove the triton dependencies
-2. add version with additional labels (tissues, age) and organisms (mouse,
-   zebrafish) and more datasets from cellxgene
-3. version with separate transformer blocks for the encoding part of the
-   bottleneck learning and for the cell embeddings
-4. improve classifier to output uncertainties and topK predictions when unsure
-5. setup latest lamindb version
-
-Awesome Large Cell Model created by Jeremie Kalfon.
+Created by Jérémie Kalfon

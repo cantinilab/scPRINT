@@ -28,7 +28,8 @@ with `scdataloader`.
 Finally you might want to generate gene embeddings to use with scPRINT-2 instead
 of learning these tokens from scratch. For this you can use the
 [gene_embedders](embedder.md) module of scPRINT-2, which usage is detailed in
-the `notebooks/generate_gene_embeddings.ipynb` notebook.
+the `notebooks/generate_gene_embeddings.ipynb` notebook and also gene locations
+using the additional notebook `notebooks/genelocs.ipynb`
 
 ## Pre-training
 
@@ -59,7 +60,7 @@ this:
 conda activate scprint2
 ### slurm level stuff
 module load cuda/12.2
-srun
+sbatch
   -p gpu #gpu partition
   -q gpu #gpu queue
   --gres=gpu:A40:4,gmem:40G #gpu type (4 A40 with 40GB of GPU mem)
@@ -68,11 +69,12 @@ srun
   --ntasks-per-node=1
 ####
   # actuall scprint-2 command
-  scprint2 fit
-    --config config/base_v3.yml #base config file (see below)
-    --config config/pretrain_large.yml #the differences when training a large model
+  slurm/submit.sh 'fit
+    --config config/base_v1.yml #base config file (see below)
+    --config config/pretrain_medium.yml #the differences when training a large model
     --model.nhead 8 # changing this parameter from the large model directly in command line (cannot do 4 heads of 128dim with A40 GPUs...)
     --scprint_training.name o2uniqsx #an id for the model (not needed but useful)
+    '
 ```
 
 with the base yaml file containing:
@@ -115,16 +117,10 @@ data: #datamodule params
   ...
 ```
 
-We use wanDB in our case and our previous wandb training runs are available
-[here](https://wandb.ai/ml4ig/scprint_v2/reports/scPRINT-2-trainings--Vmlldzo4ODIxMjgx),
-however scPRINT-2 and pytorch lightning support a breadth of logging tools:
+We use wanDB in our case, however scPRINT-2 and pytorch lightning support a
+breadth of logging tools:
 [see loggers](https://lightning.ai/docs/pytorch/stable/api_references.html#loggers).
 
 We use slurm in our usecase here but scPRINT-2 and pytorch lightning has been
 made to work in a breadth of environments
 [e.g.](https://lightning.ai/docs/pytorch/stable/levels/intermediate_level_7.html).
-
-## Fine-tuning
-
-For now scPRINT-2 doesn't have a fine-tuning script. But PRs are very welcome on
-using LoRA and its alternatives to fine-tune scPRINT-2 on novel tasks!

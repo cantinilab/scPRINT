@@ -404,7 +404,7 @@ class CategoryValueEncoder(nn.Module):
             padding_idx (int, optional): The index of the padding token. Defaults to None.
 
         Returns:
-            torch.Tensor: A tensor representing the encoded categorical values.
+            Tensor: A tensor representing the encoded categorical values.
 
         Note: not used in the current version of scprint-2.
         """
@@ -475,7 +475,13 @@ class EasyExprGNN(nn.Module):
             self.shared_layers.append(nn.Dropout(p=dropout))
         self.shared_layers.append(nn.Linear(self_dim, output_dim))
 
-    def forward(self, expr=None, neighbors=None, edge_info=None, mask=None):
+    def forward(
+        self,
+        expr: Optional[Tensor] = None,
+        neighbors: Optional[Tensor] = None,
+        edge_info: Optional[Tensor] = None,
+        mask: Optional[Tensor] = None,
+    ) -> Tensor:
         """
         Forward pass of the Easy Expression GNN
 

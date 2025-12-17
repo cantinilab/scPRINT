@@ -62,7 +62,7 @@ class ESM2:
                 )
         return self.read_results(output_folder)
 
-    def read_results(self, output_folder):
+    def read_results(self, output_folder: str):
         """
         Read multiple .pt files in a folder and convert them into a DataFrame.
 

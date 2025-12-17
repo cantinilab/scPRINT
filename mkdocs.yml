@@ -8,13 +8,12 @@ nav:
   - Home: index.md
   - structure: structure.md
   - pre-training: pretrain.md
-  - usage example: usage.md
   - 350M subset umap: umap/nice_umap_scprint2.html
   - documentation:
       - model: model.md
       - tasks: tasks.md
       - cli: cli.md
-      - tokenizers: tokenizers.md
+      - tokenizers: embedder.md
       - utils: utils.md
 plugins:
   - search

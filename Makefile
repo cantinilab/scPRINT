@@ -79,7 +79,7 @@ release:          ## Create a new tag for release.
 	@git tag $${TAG}
 	@git push -u $${REMOTE} HEAD --tag
 	@echo "Github Actions will detect the new tag and release the new version."
-	@mkdocs gh-deploy
+	@mkdocs gh-deploy --remote-name $${REMOTE}
 	@git push -f $${REMOTE} gh-pages
 	@echo "Documentation deployed to https://jkobject.github.io/scPRINT-2/"
 

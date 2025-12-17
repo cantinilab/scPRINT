@@ -51,7 +51,6 @@ class TrainingMode(Callback):
             ecs_threshold (float): Threshold for ECS. Defaults to 0.3.
             ecs_scale (float): Scaling factor for ECS loss. Defaults to 0.05.
             mvc_scale (float): Scaling factor for MVC loss. Defaults to 1.0.
-            do_adv_cls (bool): Whether to apply adversarial classification during training. Defaults to False.
             do_generate (bool): Whether to do the bottleneck learning task. Defaults to True.
             class_scale (float): Scaling factor for classification loss. Defaults to 1.5.
             mask_ratio (List[float]): List of mask ratios to apply during training. Defaults to [], meaning no masking is applied during pretraining.

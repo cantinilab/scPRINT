@@ -1,20 +1,10 @@
 # scPRINT-2: 🏃🏃Your next-gen single cell foundation model
 
-[![codecov](https://codecov.io/gh/cantinilab/scPRINT-2/branch/main/graph/badge.svg?token=GRnnData_token_here)](https://codecov.io/gh/cantinilab/scPRINT-2)
-[![CI](https://github.com/cantinilab/scPRINT-2/actions/workflows/main.yml/badge.svg)](https://github.com/cantinilab/scPRINT-2/actions/workflows/main.yml)
-[![PyPI version](https://badge.fury.io/py/scprint-2.svg)](https://badge.fury.io/py/scprint-2)
-[![Downloads](https://pepy.tech/badge/scprint-2)](https://pepy.tech/project/scprint-2)
-[![Downloads](https://pepy.tech/badge/scprint-2/month)](https://pepy.tech/project/scprint-2)
-[![Downloads](https://pepy.tech/badge/scprint-2/week)](https://pepy.tech/project/scprint-2)
-[![GitHub issues](https://img.shields.io/github/issues/cantinilab/scPRINT-2)](https://img.shields.io/github/issues/cantinilab/scPRINT-2)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14749466.svg)](https://doi.org/10.5281/zenodo.14749466)
-[![hugging face](https://huggingface.co/datasets/huggingface/badges/resolve/main/model-on-hf-md.svg)](https://huggingface.co/jkobject/scPRINT)
-
 <img src="docs/fig.png" alt="logo" width="600" />
 
-scPRINT-2 is a single-cell RNA-seq foundation model built from Kalfon et al. It
-uses novel architecture, encoding, decoding, training paradigms and losses.
+scPRINT-2 is a single-cell RNA-seq foundation model built by Jérémie Kalfon in
+the Cantini Lab. It uses novel architecture, encoding, decoding, training
+paradigms and losses.
 
 scPRINT-2 has been pretrained on more than 350 million cells from more than
 22,000 datasets and 16 species.
@@ -36,18 +26,17 @@ scPRINT-2 can be used to perform the following analyses in a zero-shot mode:
 Example of scPRINT-2 finetuning exist for:
 
 - **new species**: finetune scPRINT-2 on a new organism
-- **fine tuning on the labels of your dataset / atlas**: finetune scPRINT-2 on
-  your own cell type /disease / age labels.
-- **fine tuning on batch correction of your datasets / atlas**: finetune
-  scPRINT-2 to integrate data across species, technologies, labs.
+- **classification**: finetune scPRINT-2 on your own cell type /disease / age
+  labels / more...
+- **batch correction of your datasets / atlas**: finetune scPRINT-2 to integrate
+  data across species, technologies, and labs.
 
 scPRINT-2 is a foundation model and can be fine-tuned to perform many other
 analysis
 
-[Read the manuscript!]() if you would like to know more about scPRINT-2. Have a
-look at some of my [X-plainers](https://twitter.com/jkobject).
-
-<img src="docs/umap.png" alt="umap" width="600" />
+[Read the manuscript!](https://www.biorxiv.org/content/10.64898/2025.12.11.693702v1)
+if you would like to know more about scPRINT-2. Or have a look at some of my
+[X-plainers](https://twitter.com/jkobject).
 
 🎊 test scPRINT and scDataloader on this simple example
 [google collab](https://colab.research.google.com/drive/1CacoQDAwJn86tq2sBhUoZ6M-xAqsYFDI#scrollTo=Lb4E9IhQ7NK8)
@@ -57,13 +46,15 @@ look at some of my [X-plainers](https://twitter.com/jkobject).
 - [scPRINT-2: 🏃🏃Your next-gen single cell foundation model](#scprint-2-your-next-gen-single-cell-foundation-model)
   - [Table of Contents](#table-of-contents)
   - [Use `scPRINT-2`](#use-scprint-2)
-    - [try scPRINT in superbio.ai!](#try-scprint-in-superbioai)
-    - [try scPRINT on a google colab notebook!](#try-scprint-on-a-google-colab-notebook)
+    - [try scPRINT-1 in superbio.ai!](#try-scprint-1-in-superbioai)
+    - [Try scPRINT-1 on a Google Colab notebook!](#try-scprint-1-on-a-google-colab-notebook)
     - [To know about: lamin.ai](#to-know-about-laminai)
     - [install](#install)
     - [pytorch and GPUs](#pytorch-and-gpus)
   - [Usage](#usage)
     - [scPRINT-2's basic commands](#scprint-2s-basic-commands)
+    - [scPRINT-2's basic command line](#scprint-2s-basic-command-line)
+    - [Example notebooks](#example-notebooks)
   - [Documentation](#documentation)
   - [Docker](#docker)
     - [Simple tests:](#simple-tests)
@@ -71,19 +62,17 @@ look at some of my [X-plainers](https://twitter.com/jkobject).
     - [I have a dataset and want a quick analysis:](#i-have-a-dataset-and-want-a-quick-analysis)
     - [I have a dataset and want some more control over what is going on and which model to use:](#i-have-a-dataset-and-want-some-more-control-over-what-is-going-on-and-which-model-to-use)
     - [What does my anndata need to contain to be run with scPRINT-2](#what-does-my-anndata-need-to-contain-to-be-run-with-scprint-2)
-    - [I want to generate gene networks from scRNAseq data:](#i-want-to-generate-gene-networks-from-scrnaseq-data)
-    - [I want to generate cell embeddings and cell label predictions from scRNAseq data:](#i-want-to-generate-cell-embeddings-and-cell-label-predictions-from-scrnaseq-data)
-    - [I want to denoise my scRNAseq dataset:](#i-want-to-denoise-my-scrnaseq-dataset)
     - [I want to generate an atlas-level embedding](#i-want-to-generate-an-atlas-level-embedding)
     - [I need to generate gene tokens using pLLMs](#i-need-to-generate-gene-tokens-using-pllms)
     - [I want to re-train scPRINT-2 from scratch on my own data](#i-want-to-re-train-scprint-2-from-scratch-on-my-own-data)
+    - [I want to regenerate the scPRINT-2 training corpus](#i-want-to-regenerate-the-scprint-2-training-corpus)
     - [I want to fine-tune scPRINT-2 on my own data](#i-want-to-fine-tune-scprint-2-on-my-own-data)
     - [how can I find if scPRINT-2 was trained on my data?](#how-can-i-find-if-scprint-2-was-trained-on-my-data)
-    - [can I use scPRINT-2 on other organisms rather than human?](#can-i-use-scprint-2-on-other-organisms-rather-than-human)
-    - [how long does scPRINT-2 takes? what kind of resources do I need? (or in alternative: can i run scPRINT-2 locally?)](#how-long-does-scprint-2-takes-what-kind-of-resources-do-i-need-or-in-alternative-can-i-run-scprint-2-locally)
+    - [can I use scPRINT-2 on other organisms rather than humans?](#can-i-use-scprint-2-on-other-organisms-rather-than-humans)
+    - [How long does scPRINT-2 take? What kind of resources do I need? (or in alternative: can I run scPRINT-2 locally?)](#how-long-does-scprint-2-take-what-kind-of-resources-do-i-need-or-in-alternative-can-i-run-scprint-2-locally)
     - [I have different scRNASeq batches. Should I integrate my data before running scPRINT-2?](#i-have-different-scrnaseq-batches-should-i-integrate-my-data-before-running-scprint-2)
+    - [I have new labels for my data that scPRINT-2 doesn't predict, how can I fine-tune it to predict them?](#i-have-new-labels-for-my-data-that-scprint-2-doesnt-predict-how-can-i-fine-tune-it-to-predict-them)
     - [where to find the input gene embeddings?](#where-to-find-the-input-gene-embeddings)
-    - [I want to extract output gene embeddings from scPRINT-2](#i-want-to-extract-output-gene-embeddings-from-scprint-2)
   - [Development](#development)
     - [dev install](#dev-install)
     - [Reproducibility](#reproducibility)
@@ -91,30 +80,30 @@ look at some of my [X-plainers](https://twitter.com/jkobject).
     - [Pulling the Docker Image from Docker Hub](#pulling-the-docker-image-from-docker-hub)
     - [Running the Docker Container](#running-the-docker-container)
     - [Participate](#participate)
-  - [Work in progress (PR welcomed):](#work-in-progress-pr-welcomed)
 
 ## Use `scPRINT-2`
 
 For the moment scPRINT-2 has been tested on MacOS and Linux (Ubuntu 20.04) with
-Python 3.10+. Its instalation takes on average 2 minutes in `uv` but longer on
-`conda`.
+Python 3.10+. Its instalation takes on average 2 minutes in `uv` but much longer
+on `conda`. We highly recommend using `uv` to manage your python virtual
+environments!!
 
-Example of our previous generation
-[scPRINT-1](https://github.com/cantinilab/scPRINT) model exist in multiple
-places (don't forget to star it as well!):
+Here is a link to our --still maintained-- previous generation model which
+contains larger size models: [scPRINT-1](https://github.com/cantinilab/scPRINT)
+(don't forget to star it as well!):
 
-### try scPRINT in superbio.ai!
+### try scPRINT-1 in superbio.ai!
 
 [HERE](https://app.superbio.ai/apps/67333115ed44f27eb717cf84)
 
-### try scPRINT on a google colab notebook!
+### Try scPRINT-1 on a Google Colab notebook!
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1CacoQDAwJn86tq2sBhUoZ6M-xAqsYFDI#scrollTo=Vj73HINSzKHL)
 
 ### To know about: lamin.ai
 
 To use scPRINT-2, you will need to use [lamin.ai](https://lamin.ai/). This is
-needed to load biological informations like genes, cell types, organisms.. (but
+required to load biological information like genes, cell types, organisms.. (but
 also to manage the pre-training datasets if this is something you want to set
 up)
 
@@ -132,18 +121,19 @@ uv pip install scprint2
 #OR pip install scprint2[dev,flash]
 
 lamin init --storage ./testdb --name test --modules bionty
+lamin connect anonymous/testdb
 ```
 
-⚠️ `./testdb` is set in this example but be mindful about where you want to
-store your data, this might get quite big as you use it and if you are on
+⚠️ `./testdb` is set in this example, but be mindful about where you want to
+store your data, this might get quite big as you use i,t and if you are on
 specific partition you want to consider this.
 
-if you start with lamin and had to do a `lamin init`, you will also need to
+If you start with lamin and have to do a `lamin init`, you will also need to
 populate your ontologies. This is because scPRINT-2 is using ontologies to
 define its cell types, diseases, sexes, ethnicities, etc.
 ([link to view ontologies](https://www.ebi.ac.uk/ols4/ontologies/cl/classes/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCL_0000057))
 
-you can do it via the command:
+You can do it via the command:
 
 `scdataloader populate all`
 
@@ -154,10 +144,10 @@ or with this function:
 ```python
 from scdataloader.utils import populate_my_ontology
 
-populate_my_ontology() #to populate everything (recommended) (can take 2-10mns)
+populate_my_ontology() #to populate everything (can take 2-10mns)
 
-populate_my_ontology( #the minimum for scprint2 to run some inferences (denoising, grn inference)
-organisms: List[str] = ["NCBITaxon:10090", "NCBITaxon:9606"],
+populate_my_ontology( #the minimum for scPRINT-1 to run some inferences (denoising, grn inference)
+    organisms: List[str] = ["NCBITaxon:10090", "NCBITaxon:9606"],
     sex: List[str] = ["PATO:0000384", "PATO:0000383"],
     celltypes = None,
     ethnicities = None,
@@ -166,7 +156,11 @@ organisms: List[str] = ["NCBITaxon:10090", "NCBITaxon:9606"],
     diseases = None,
     dev_stages = None,
 )
+_adding_scbasecamp_genes()  #to add when using scPRINT-2
 ```
+
+A notebook for setting-up scPRINT-2 and lamin is also available
+[here](https://github.com/cantinilab/scPRINT-2/tree/main/notebooks/prepare_scprint2.ipynb)
 
 We make use of some additional packages we developed alongside scPRINT-2 (they
 are also shipped with scprint-2 already).
@@ -179,41 +173,42 @@ Please refer to their documentation for more information:
   gene networks from single cell data.
 - [benGRN](https://github.com/jkobject/benGRN): a package to benchmark gene
   network inference methods from single cell data.
+- [simpler-flash](https://github.com/jkobject/simpler-flash): a package to
+  easily use different versions of flash attention in pytorch models.
+- [hierarchical-classifier](https://gist.github.com/jkobject/5b36bc4807edb440b86644952a49781e):
+  a package to do hierarchical classification with pytorch when your labels can
+  be mapped to a graph.
 
 ### pytorch and GPUs
 
 scPRINT-2 can run on machines without GPUs, but it will be slow. It is highly
 recommended to use a GPU for inference.
 
-Most of the time, everything works out of the box, otherwise please send an
+Most of the time, everything works out of the box; otherwise, please send an
 issue
 
 ```python
 model = scPRINT2.load_from_checkpoint(
-    '../data/temp/last.ckpt', precpt_gene_emb=None)
+    '../data/temp/last.ckpt', precpt_gene_emb=None, )
 ```
 
-you will know more by following the
-[get-started](https://cantinilab.github.io/scPRINT-2/notebooks/cancer_usecase/)
+You will know more about scPRINT-1 and scPRINT-2 in general by following the
+[get-started](https://cantinilab.github.io/scPRINT/notebooks/cancer_usecase/)
 notebook.
 
 ## Usage
 
-To get a sense of how scPRINT-2 works, have a look at our
-[get-started](https://cantinilab.github.io/scPRINT-2/notebooks/cancer_usecase/)
-notebook.
-
 To start you will also need to download a checkpoint of a pretrain model like
-v2-medium or some others from
+18hebyht-final-small or some others from
 [hugging face](https://huggingface.co/jkobject/scPRINT-2/)
 
 ```bash
-$ hf download jkobject/scPRINT v2-medium.ckpt --local-dir .
+$ hf download jkobject/scPRINT 18hebyht-final-small.ckpt --local-dir .
 ```
 
 ### scPRINT-2's basic commands
 
-This is the a template of how you would go and use scPRINT most of the time:
+This is a template of how you would go and use scPRINT most of the time:
 
 ```py
 # import stuff
@@ -221,10 +216,10 @@ from lightning.pytorch import Trainer
 from scprint2 import scPRINT2
 from scdataloader import DataModule
 
-# setup a datamodule to train scprint from scratch
+# setup a datamodule to train scprint2 from scratch
 datamodule = DataModule(...)
 # setup a model parameter
-model = scPrint(...)
+model = scPRINT2(...)
 # to train / fit / test the model setup a trainer
 trainer = Trainer(...)
 # call the fit function
@@ -236,48 +231,73 @@ denoiser(model, adata=adata)
 ...
 ```
 
-or, from a bash command line
+### scPRINT-2's basic command line
 
-then finetune or analyse on your data
+Then fine-tune or analyse on your data
 
 ```bash
-$ scprint fit/train/predict/test/denoise/embed/gninfer --config config/[medium|large|vlarge] ...
+$ scprint2 fit/train/predict/test/denoise/embed/gninfer/impute/gene_emb/generate/finetune --config config/[medium|large|vlarge] ...
 ```
 
-to denoise a dataset:
+To denoise a dataset:
 
 ```bash
-$ scprint denoise --adata my_human_anndata.h5ad --ckpt_path v2-medium.ckpt --species "NCBITaxon:9606" --output_filename denoised.h5ad
+$ scprint2 denoise --adata my_human_anndata.h5ad --ckpt_path v2-medium.ckpt --species "NCBITaxon:9606" --output_filename denoised.h5ad
 ```
 
 to do embedding and classification on a dataset: (the current version implies
 doing a PCA and Umap so it might need a lot of RAM if run as is)
 
 ```bash
-$ scprint embed --adata my_human_anndata.h5ad --ckpt_path v2-medium.ckpt --species "NCBITaxon:9606" --output_filename embedded.h5ad
+$ scprint2 embed --adata my_human_anndata.h5ad --ckpt_path v2-medium.ckpt --species "NCBITaxon:9606" --output_filename embedded.h5ad
 ```
 
-to do gene network inference on a dataset:
+To do gene network inference on a dataset:
 
 ```bash
-$ scprint gninfer --adata my_human_anndata.h5ad --ckpt_path v2-medium.ckpt --species "NCBITaxon:9606" --cell_type 'cell_type_name_from-cell_type-obs_col' --output_filename grn.h5ad
+$ scprint2 gninfer --adata my_human_anndata.h5ad --ckpt_path v2-medium.ckpt --species "NCBITaxon:9606" --cell_type 'cell_type_name_from-cell_type-obs_col' --output_filename grn.h5ad
 ```
 
-to finetune scPRINT on your data:
+To re-train scPRINT-2 from scratch or from a checkpoint:
 
 ```bash
-$ scprint fit --config config/base_v2.yml --config config/pretrain_large.yml --ckpt_path large.ckpt
+$ scprint2 fit --config config/base_v2.yml --config config/pretrain_large.yml --ckpt_path large.ckpt
 ```
 
-find out more about the commands by running `scprint --help` or
-`scprint [command] --help`.
+find out more about the commands by running `scprint2 --help` or
+`scprint2 [command] --help`.
 
 more examples of using the command line are available in the
-[docs](./docs/usage.md).
+[docs](https://cantinilab.github.io/scPRINT-2).
+
+### Example notebooks
+
+1. [get-started](https://github.com/cantinilab/scPRINT-2/tree/main/notebooks/prepare_scprint2.ipynb):
+   how to set things up
+2. [run scPRINT-2 on a new species](https://github.com/cantinilab/scPRINT-2/tree/main/notebooks/scPRINT-2-repro-notebooks/unknown_species_classification.ipynb):
+   how to fine-tune scPRINT-2 on a new organism. you will also need to generate
+   embeddings and gene locations for your organism, see the FAQ below.
+3. [do gene-network inference with scPRINT-2](https://github.com/cantinilab/scPRINT-2/tree/main/notebooks/scPRINT-2-repro-notebooks/gene_networks.ipynb):
+   how to use scPRINT-2 to infer gene regulatory networks from your scRNAseq
+   data (the first part is about getting ground truth data with benGRN)
+4. [generate cell embeddings and cell label predictions from my data](https://github.com/cantinilab/scPRINT-2/tree/main/notebooks/scprint_inference/):
+   how to use scPRINT-2 to generate cell embeddings and predict cell type
+5. [generate gene output embeddings from my gene expressiond data](https://github.com/cantinilab/scPRINT-2/tree/main/notebooks/gene_embeddings/):
+   how to use scPRINT-2 to generate gene embeddings from your scRNAseq data
+6. [do counterfactual gene expression prediction with scPRINT-2](https://github.com/cantinilab/scPRINT-2/tree/main/notebooks/counterfactual_imputation/):
+   how to use scPRINT-2 to impute gene expression under different conditions
+7. [do denoising with scPRINT-2](https://github.com/cantinilab/scPRINT-2/tree/main/notebooks/denoising/):
+   how to use scPRINT-2 to denoise your scRNAseq data
+8. [do imputation with scPRINT-2 (e.g. on Xenium Panel data)](https://github.com/cantinilab/scPRINT-2/tree/main/notebooks/imputation/):
+   how to use scPRINT-2 to impute missing genes in your scRNAseq data
+9. [run scPRINT-2 on some Xenium spatial transcriptomics data](https://github.com/cantinilab/scPRINT-2/tree/main/notebooks/xenium_spatial_transcriptomics/):
+   how to use scPRINT-2 to analyse spatial transcriptomics data
+10. [fine-tune scPRINT-2 for cell type classification and/or batch correction](https://github.com/cantinilab/scPRINT-2/tree/main/notebooks/finetune_celltype_classification/):
+    how to fine-tune scPRINT-2 on your own cell type labels
 
 ## Documentation
 
-For more information on usage please see the documentation in
+For more information on usage, please see the documentation in
 [https://www.jkobject.com/scPRINT-2/](https://cantinilab.github.io/scPRINT-2)
 
 ## Docker
@@ -291,36 +311,36 @@ it from Docker Hub.
 Make sure that you have the `docker` command line interface installed on your
 system.
 
-A recommended way to install docker with the correct nvidia drivers on linux is
+A recommended way to install Docker with the correct NVIDIA drivers on Linux is
 to use this
 [script](https://gist.github.com/xueerchen1990/baad7baa545cb547e8633bc9e5b84786)
 
 /!\ A MORE UP TO DATE DOCKER IMAGE is made as part of the open-problems
-benchmark and available in their github for all tasks where scPRINT-2 is
+benchmark and available on their GitHub for all tasks where scPRINT-2 is
 benchmarked
 
 ### Simple tests:
 
-An instalation of scPRINT-2 and a simple test of the denoiser is performed
+An installation of scPRINT-2 and a simple test of the denoiser is performed
 during each commit to the main branch with a
 [Github action](https://github.com/cantinilab/scPRINT-2/actions) and
-[pytest workflow](.github/workflows/main.yml). It also provides an expected
-runtime for the installation and run of scPRINT-2. We now explore the different
-usages of scPRINT-2:
+[pytest workflow](https://github.com/cantinilab/scPRINT-2/tree/main/.github/workflows/main.yml).
+It also provides an expected runtime for the installation and run of scPRINT-2.
+We now explore the different usages of scPRINT-2:
 
 ## FAQ
 
 ### I have a dataset and want a quick analysis:
 
--> use [superbio](#try-scprint-in-superbioai)
+-> use [superbio](#try-scprint-1-in-superbioai)
 
 ### I have a dataset and want some more control over what is going on and which model to use:
 
-you will need to understand a few things like lamindb, scdataloader and
+You will need to understand a few things, like lamindb, scdataloader, and
 scprint-2's inference tool.
 
 -> start with a quick intro using the
-[google collab notebook](#try-scprint-on-a-google-colab-notebook)
+[google collab notebook](#try-scprint-1-on-a-google-colab-notebook)
 
 -> look at the other FAQ element based on your desired use-case
 
@@ -331,34 +351,14 @@ obs['organism_ontology_term_id'] (e.g. "NCBITaxon:9606"). It also needs to
 contain .var_names or .var.index with gene ids defined as ENSEMBL_IDs or
 HUGO_SYMBOL.
 
--> That's it. you can then follow the preprocessing steps from various example
+-> That's it. You can then follow the preprocessing steps from various example
 notebooks to align your anndata to our gene set, make sure that it fits our
 requirements and then send it to the model!
 
-### I want to generate gene networks from scRNAseq data:
-
--> Refer to the section . gene network inference in
-[this notebook](./docs/notebooks/cancer_usecase.ipynb#).
-
--> More examples in this notebook
-[./notebooks/assessments/bench_omni.ipynb](./notebooks/bench_omni.ipynb).
-
-### I want to generate cell embeddings and cell label predictions from scRNAseq data:
-
--> Refer to the embeddings and cell annotations section in
-[this notebook](./docs/notebooks/cancer_usecase.ipynb#).
-
-### I want to denoise my scRNAseq dataset:
-
--> Refer to the Denoising of B-cell section in
-[this notebook](./docs/notebooks/cancer_usecase.ipynb).
-
--> More example in our benchmark notebook
-[./notebooks/assessments/bench_denoising.ipynb](./notebooks/bench_denoising.ipynb).
-
 ### I want to generate an atlas-level embedding
 
--> Refer to the notebook [nice_umap.ipynb](./figures/nice_umap.ipynb).
+-> Refer to the notebook
+[nice_umap_explain.ipynb](https://github.com/cantinilab/scPRINT-2/tree/main/figures/nice_umap_explain.ipynb).
 
 ### I need to generate gene tokens using pLLMs
 
@@ -368,57 +368,100 @@ parquet file of the precomputed set of embeddings for each gene name to
 scPRINT-2 via "precpt_gene_emb"
 
 -> To generate this file please refer to the notebook
-[generate_gene_embeddings](notebooks/generate_gene_embeddings.ipynb).
+[generate_gene_embeddings](https://github.com/cantinilab/scPRINT-2/tree/main/notebooks/generate_gene_embeddings.ipynb).
 
 ### I want to re-train scPRINT-2 from scratch on my own data
 
--> Refer to the documentation page [pretrain scprint-2](docs/pretrain.md)
+-> Refer to the documentation page [pretrain scprint-2](./pretrain.md)
+
+### I want to regenerate the scPRINT-2 training corpus
+
+-> Have a look at the
+[scDataLoader](https://github.com/cantinilab/scDataLoader)'s README to
+understand how to do this.
 
 ### I want to fine-tune scPRINT-2 on my own data
 
--> make sure that you did a few run of scPRINT-2's inference e.g.
-[this one](#i-want-to-generate-cell-embeddings-and-cell-label-predictions-from-scrnaseq-data)
+-> make sure that you a run of scPRINT-2's inference e.g.
+[this one](#example-notebooks)
 
--> make sure that you read the [pretrain scprint-2](docs/pretrain.md)
-documentation
-
--> re-use the same logic as in the
-[scprint-train](notebooks/scprint_train.ipynb) notebook but apply the necessary
-modification in term of tasks, learning rate or parameter-efficient-fine-tuning
-method, if you think you will need it (given the small size of the model, this
-not necessary at all). This is the step where you will get your hands dirty. you
-might want to really understand how the model
-[collates](https://www.jkobject.com/scDataLoader/collator/) data, and
-[train](https://cantinilab.github.io/scPRINT-2/model/#scprint.model.model.scPrint.training_step)
+-> then please refine your question: do you want finetuning to predict labels?
+do batch correction? or make scprint work on your species? Have a look at the
+[usage](#usage) section and the rest of the [FAQ](#faq) to find the relevant
+information.
 
 ### how can I find if scPRINT-2 was trained on my data?
 
-If your data is available in cellxgene, scPRINT-2 was likely trained on it.
-However some cells, datasets were dropped due to low quality data and some were
-randomly removed to be part of the validation / test sets.
+If your data is available in [cellxgene](https://cellxgene.cziscience.com/), or
+is listed in
+[Arc's scBaseCount](https://github.com/ArcInstitute/arc-virtual-cell-atlas/tree/main/scBaseCount),
+scPRINT-2 was likely trained on it. However, some cells, and datasets were
+dropped due to low-quality data, and some were randomly removed to be part of
+the validation/test sets.
 
-### can I use scPRINT-2 on other organisms rather than human?
+### can I use scPRINT-2 on other organisms rather than humans?
 
-scPRINT-2 has been pretrained on both humans and mouse, and can be used on any
-organism with a similar gene set. If you want to use scPRINT-2 on very different
-organisms, you will need to generate gene embeddings for that organism and
-re-train scPRINT-2
+scPRINT-2 has been pretrained on 16 organisms, check in the model.organisms or
+in our manuscript that yours isn't one of them, or highly related first. If so
+uses these and make sure that the gene names can be easily mapped by
+scdataloader's preprocess function.
 
-### how long does scPRINT-2 takes? what kind of resources do I need? (or in alternative: can i run scPRINT-2 locally?)
+If not, scPRINT-2 can be used on other organisms that are not part of its
+training set, for this have a look at
+[this notebook](https://github.com/cantinilab/scPRINT-2/tree/main/notebooks/scPRINT-2-repro-notebooks/unknown_species_classification.ipynb).
+You will also need to compute
+[gene embeddings](https://github.com/cantinilab/scPRINT-2/tree/main/notebooks/generate_gene_embeddings.ipynb)
+and
+[gene locations](https://github.com/cantinilab/scPRINT-2/tree/main/notebooks/genelocs.ipynb)
+for your organism's genetic data. Have a look at both notebooks.
 
-please look at our supplementary tables in the
-[manuscript](https://www.biorxiv.org/content/10.1101/2024.07.29.605556v1)
+If you want to use scPRINT-2 on very different organisms than what it was
+trained on, you might need to then apply some finetuning, have a look at the
+[finetuning notebook](https://github.com/cantinilab/scPRINT-2/tree/main/notebooks/scPRINT-2-repro-notebooks/fine_tuning_cross_species_emb_mmd.ipynb)
+too.
+
+### How long does scPRINT-2 take? What kind of resources do I need? (or in alternative: can I run scPRINT-2 locally?)
+
+Please look at our
+[manuscript table 1 and supplementary Table 1 - 2](https://www.biorxiv.org/content/10.64898/2025.12.11.693702v1)
+to know more about computational ressources. But know that you will likely need
+at least one high performance GPU.
 
 ### I have different scRNASeq batches. Should I integrate my data before running scPRINT-2?
 
 scPRINT-2 takes raw count as inputs, so please don't use integrated data. Just
-give the raw counts to scPRINT-2 and it will take care of the rest.
+give the raw counts to scPRINT-2 and it will take care of the rest. For better
+results you can apply some finetuning of scPRINT-2 on your batches to better
+integrate them. See the
+[finetuning notebook](https://github.com/cantinilab/scPRINT-2/tree/main/notebooks/scPRINT-2-repro-notebooks/fine_tuning_cross_species_emb_mmd.ipynb.ipynb).
+You can replace the cross-species MMD loss with a cross-batch MMD loss.
+
+### I have new labels for my data that scPRINT-2 doesn't predict, how can I fine-tune it to predict them?
+
+First have a look at scPRINT-2's inference capabilities and checkout the
+finetuning notebooks.
+
+In your case, what you will need to do is to reuse the finetuning notebook but
+also update the output layers of the classifier to predict your new labels. You
+can do this by changing the number of output classes in the classifier head to
+match the number of new labels you have. You will also need to update the
+scPRINT-2's `mat_labels_hierarchy` attribute to include your new labels and
+their relationships if they are hierarchical and you want this to happen,
+otherwise update it with an empty vector.
+
+Make sure also to update the `label_decoders` attribute in the model to include
+at the right index your new label decoder / classifier, the name of your new
+labels.
+
+Then you can proceed with the finetuning as usual, using your dataset with the
+new labels in the `obs` of your anndata. (I am sure chatgpt can help you with it
+too)
 
 ### where to find the input gene embeddings?
 
 If you think you need the gene embeddings file for loading the model from a
-checkpoint, you don't, as the embeddings are also stored in the model weights.
-You just need to load the weights like this:
+checkpoint, you don't need to recompute them, as the embeddings are also stored
+in the model weights. You just need to load the weights like this:
 
 ```python
 model = scPRINT2.load_from_checkpoint(
@@ -427,23 +470,17 @@ model = scPRINT2.load_from_checkpoint(
 )
 ```
 
-You can also recreate the gene embedding file through
-[this notebook](notebooks/generate_gene_embeddings.ipynb). Just call the
-functions, and it should recreate the file itself.
+But if you want to, you can also recreate the gene embedding file through
+[this notebook](https://github.com/cantinilab/scPRINT-2/tree/main/notebooks/generate_gene_embeddings.ipynb).
+Just call the functions, and it should recreate the file itself.
 
-the file itself is also available on
+The file itself is also available on
 [hugging face](https://huggingface.co/jkobject/scPRINT-2/tree/main)
 
-/!\ Please understand that what I mean by gene embedding are the immutable input
+/!\ Please understand that what I mean by gene embedding is the immutable input
 gene embeddings encoding the gene name. scPRINT-2 directly takes raw counts as
 input and takes care of doing the embedding on the fly. (it does similarly for a
 gene's location in the genome).
-
-### I want to extract output gene embeddings from scPRINT-2
-
-I created a novel task script that should work similarly to the other ones (make
-sure that you understood how they work by running at least one inference
-notebook) in [scprint/tasks/gene_emb.py](scprint/tasks/gene_emb.py) `
 
 ## Development
 
@@ -489,8 +526,8 @@ If you don't want to build the image yourself, you can pull it directly from
 Docker Hub:
 
 ```bash
-docker pull jkobject/scprint2:1.2.0
-docker tag jkobject/scprint2:1.2.0 scprint2:latest
+docker pull jkobject/scprint2:1.0.0
+docker tag jkobject/scprint2:1.0.0 scprint2:latest
 ```
 
 ### Running the Docker Container
@@ -507,10 +544,12 @@ folders using the -v option to access them inside the container.
 
 ### Participate
 
-Read the [CONTRIBUTING.md](CONTRIBUTING.md) file.
+Read the
+[CONTRIBUTING.md](https://github.com/cantinilab/scPRINT-2/tree/main/CONTRIBUTING.md)
+file.
 
 Read the
-[training runs](https://wandb.ai/ml4ig/scprint_scale/reports/scPRINT-trainings--Vmlldzo4ODIxMjgx?accessToken=80metwx7b08hhourotpskdyaxiflq700xzmzymr6scvkp69agybt79l341tv68hp)
+[training runs](https://wandb.ai/ml4ig/scprint_ablation/reports/scPRINT-2-additive-benchmark--VmlldzoxNTIyOTYwNA?accessToken=0mzwwu64py309mds6zzbgcxllrgcdnd10laivhs3ykh9pqmbs0wxutcu60py2bld)
 document to know more about how pre-training was performed and the its behavior.
 
 code coverage is not right as I am using the command line interface for
@@ -520,14 +559,4 @@ Acknowledgement:
 [python template](https://github.com/rochacbruno/python-project-template)
 [laminDB](https://lamin.ai/) [lightning](https://lightning.ai/)
 
-## Work in progress (PR welcomed):
-
-1. remove the triton dependencies
-2. add version with additional labels (tissues, age) and organisms (mouse,
-   zebrafish) and more datasets from cellxgene
-3. version with separate transformer blocks for the encoding part of the
-   bottleneck learning and for the cell embeddings
-4. improve classifier to output uncertainties and topK predictions when unsure
-5. setup latest lamindb version
-
-Awesome Large Cell Model created by Jeremie Kalfon.
+Created by Jérémie Kalfon

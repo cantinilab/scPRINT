@@ -89,7 +89,7 @@ def nb(target: Tensor, mu: Tensor, theta: Tensor, eps=1e-4):
     return -res.mean()
 
 
-def nb_dist(x: Tensor, mu: Tensor, theta: Tensor, eps=1e-4):
+def nb_dist(x: Tensor, mu: Tensor, theta: Tensor, eps=1e-4) -> Tensor:
     """
     nb_dist Computes the negative binomial distribution.
 
@@ -113,7 +113,7 @@ def zinb(
     pi: Tensor,
     eps=1e-4,
     mask=False,
-):
+) -> Tensor:
     """
     Computes zero-inflated negative binomial (ZINB) loss.
 
@@ -436,7 +436,7 @@ def grad_reverse(x: Tensor, lambd: float = 1.0) -> Tensor:
 #        return within_sample(cell_embs)
 
 
-def within_sample(cell_embs):
+def within_sample(cell_embs: Tensor):
     """
     Compute dissimilarity between embeddings within each sample
     using a combination of cosine and L2 distance
