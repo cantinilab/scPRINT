@@ -1,6 +1,6 @@
 [project]
 name = "scprint2"
-version = "1.0.0"
+version = "0.9.0"
 description = "scPRINT-2 is a Large Cell Model for Gene Network Inference, Denoising and more from scRNAseq data"
 authors = [
     {name = "jeremie kalfon", email = "jkobject@gmail.com"}
@@ -17,7 +17,7 @@ dependencies = [
     "torchmetrics>=1.6.0",
     "torchdata>=0.7.1",
     "lamindb[bionty,jupyter,zarr]==1.6.2",
-    "scDataLoader>=2.0.2",
+    "scDataLoader>=2.0.3",
     "simpler_flash>=1.2.0",
     "GRnnData>=1.3.2",
     "BenGRN>=1.3.2",

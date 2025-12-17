@@ -1,49 +1,28 @@
-import functools
-import io
 import json
 import os
 import random
 import subprocess
-import urllib.request
 from collections import OrderedDict
 from itertools import repeat
-from math import pi
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import List
 
 import bionty as bt
-import bokeh
 import colorcet as cc
+import lamindb as ln
 import numpy as np
 import pandas as pd
-import seaborn as sns
 import torch
-from anndata import AnnData
-from biomart import BiomartServer
 from bokeh.io import export_svg, show
-from bokeh.layouts import column, layout, row
-from bokeh.models import (
-    BasicTicker,
-    ColorBar,
-    ColumnDataSource,
-    CustomJS,
-    HoverTool,
-    LinearColorMapper,
-    LogColorMapper,
-    PrintfTickFormatter,
-    TextInput,
-)
+from bokeh.layouts import column
+from bokeh.models import ColumnDataSource, CustomJS, HoverTool, TextInput
 from bokeh.models.annotations import LabelSet
 from bokeh.palettes import Category10, Category20
 from bokeh.plotting import figure, save
-from bokeh.transform import linear_cmap
-from bokeh.util.hex import hexbin
 from IPython import get_ipython
 
 # What pops up on hover?
-from matplotlib import cm
 from matplotlib import pyplot as plt
-from PIL import Image, ImageDraw, ImageFont
 
 
 def run_command(command: str, **kwargs):

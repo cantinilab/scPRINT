@@ -9,7 +9,15 @@ from lightning.pytorch.callbacks import (
 from lightning.pytorch.cli import LightningCLI, _get_short_description
 from lightning.pytorch.trainer import Trainer
 
-from scprint2.tasks import Denoiser, Embedder, Finetune, GNInfer
+from scprint2.tasks import (
+    Denoiser,
+    Embedder,
+    FinetuneBatchClass,
+    GeneEmbeddingExtractor,
+    Generate,
+    GNInfer,
+    Imputer,
+)
 
 from .trainer import TrainingMode
 
@@ -253,7 +261,7 @@ class MyCLI(LightningCLI):
                     self.config_init[subcommand]["output_filename"] + "_denoised.h5ad"
                 )
             elif subcommand == "finetune":
-                ft = Finetune(**conf)
+                ft = FinetuneBatchClass(**conf)
                 metrics, random_indices, model = ft(
                     model=model,
                     adata=adata,
@@ -268,8 +276,8 @@ class MyCLI(LightningCLI):
                     self.config_init[subcommand]["output_filename"] + "_finetuned.ckpt"
                 )
             elif subcommand == "gene_emb":
-                dn = Denoiser(**conf)
-                metrics, random_indices, expr_pred = dn(
+                ge = GeneEmbeddingExtractor(**conf)
+                metrics, random_indices, expr_pred = ge(
                     model=model,
                     adata=adata,
                 )
@@ -285,8 +293,8 @@ class MyCLI(LightningCLI):
                     self.config_init[subcommand]["output_filename"] + "_denoised.h5ad"
                 )
             elif subcommand == "generate":
-                dn = Denoiser(**conf)
-                metrics, random_indices, expr_pred = dn(
+                gen = Generate(**conf)
+                metrics, random_indices, expr_pred = gen(
                     model=model,
                     adata=adata,
                 )
@@ -302,8 +310,8 @@ class MyCLI(LightningCLI):
                     self.config_init[subcommand]["output_filename"] + "_denoised.h5ad"
                 )
             elif subcommand == "impute":
-                dn = Denoiser(**conf)
-                metrics, random_indices, expr_pred = dn(
+                imp = Imputer(**conf)
+                metrics, random_indices, expr_pred = imp(
                     model=model,
                     adata=adata,
                 )

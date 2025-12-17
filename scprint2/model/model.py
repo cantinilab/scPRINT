@@ -318,7 +318,7 @@ class scPRINT2(L.LightningModule, PyTorchModelHubMixin):
         self.attention = attention
 
         if classes is None:
-            classes = []
+            classes = {}
         self.label_counts = classes
         self.classes = list(classes.keys())
 
@@ -910,8 +910,8 @@ class scPRINT2(L.LightningModule, PyTorchModelHubMixin):
                         ]["stopped_epoch"] = 0
 
         except RuntimeError as e:
-            if "scPrint2 is not attached to a `Trainer`." in str(e):
-                print("FYI: scPrint2 is not attached to a `Trainer`.")
+            if "scPRINT2 is not attached to a `Trainer`." in str(e):
+                print("FYI: scPRINT2 is not attached to a `Trainer`.")
             else:
                 raise e
         if (
@@ -934,14 +934,14 @@ class scPRINT2(L.LightningModule, PyTorchModelHubMixin):
             try:
                 self.trainer.datamodule.organisms = self.organisms
             except RuntimeError as e:
-                if "scPrint2 is not attached to a `Trainer`." not in str(e):
+                if "scPRINT2 is not attached to a `Trainer`." not in str(e):
                     raise e
         if self._genes != checkpoints["hyper_parameters"]["genes"]:
             self._genes = checkpoints["hyper_parameters"]["genes"]
         try:
             self.trainer.datamodule.set_valid_genes_collator(self.genes)
         except RuntimeError as e:
-            if "scPrint2 is not attached to a `Trainer`." not in str(e):
+            if "scPRINT2 is not attached to a `Trainer`." not in str(e):
                 raise e
 
         if not is_interactive():
@@ -2664,7 +2664,7 @@ class scPRINT2(L.LightningModule, PyTorchModelHubMixin):
             + str(self.global_rank)
             + ".h5ad"
         )
-        if self.doplot:
+        if self.doplot and fig is not None:
             logged = False
             try:
                 self.logger.experiment.add_figure(fig)

@@ -35,6 +35,7 @@ class Imputer:
         genes_to_impute: Optional[List[str]] = None,
         save_every: int = 100_000,
         apply_zero_pred: bool = True,
+        use_knn: bool = True,
     ):
         """
         Imputer class for imputing missing values in scRNA-seq data using a scPRINT model
@@ -54,6 +55,7 @@ class Imputer:
                 This is important to avoid memory issues.
             apply_zero_pred (bool, optional): Whether to apply zero prediction adjustment. Defaults to True.
                 applying zero inflation might give results closer to the specific biases of sequencing technologies but less biological truthful.
+            use_knn (bool, optional): Whether to use k-nearest neighbors information. Defaults to True.
         """
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -65,6 +67,7 @@ class Imputer:
         self.genes_to_impute = genes_to_impute
         self.method = method
         self.apply_zero_pred = apply_zero_pred
+        self.use_knn = use_knn
 
     def __call__(self, model: torch.nn.Module, adata: AnnData):
         """
@@ -87,13 +90,13 @@ class Imputer:
             adataset = SimpleAnnDataset(
                 adata[random_indices],
                 obs_to_output=["organism_ontology_term_id"],
-                get_knn_cells=model.expr_emb_style == "metacell",
+                get_knn_cells=model.expr_emb_style == "metacell" and self.use_knn,
             )
         else:
             adataset = SimpleAnnDataset(
                 adata,
                 obs_to_output=["organism_ontology_term_id"],
-                get_knn_cells=model.expr_emb_style == "metacell",
+                get_knn_cells=model.expr_emb_style == "metacell" and self.use_knn,
             )
         genes_to_use = set(model.genes) & set(self.genes_to_use)
         print(
@@ -162,7 +165,7 @@ class Imputer:
                     depth,
                     knn_cells=(
                         batch["knn_cells"].to(device)
-                        if model.expr_emb_style == "metacell"
+                        if model.expr_emb_style == "metacell" and self.use_knn
                         else None
                     ),
                     do_generate=self.method == "generative",

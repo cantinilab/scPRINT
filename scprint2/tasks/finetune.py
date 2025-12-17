@@ -40,6 +40,7 @@ class FinetuneBatchClass:
         ft_mode: str = "xpressor",
         frac_train: float = 0.8,
         loss_scalers: dict = {},
+        use_knn: bool = True,
     ):
         """
         Embedder a class to embed and annotate cells using a model
@@ -63,6 +64,7 @@ class FinetuneBatchClass:
             frac_train (float, optional): The fraction of data to be used for training. Defaults to 0.8.
             loss_scalers (dict, optional): A dictionary specifying the scaling factors for different loss components. Defaults to {}.
                 expr, class, mmd, kl, and any of the predict_keys can be specified.
+            use_knn (bool, optional): Whether to use k-nearest neighbors information. Defaults to True.
         """
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -78,6 +80,7 @@ class FinetuneBatchClass:
         self.batch_encoder = {}
         self.do_mmd_on = do_mmd_on
         self.loss_scalers = loss_scalers
+        self.use_knn = use_knn
 
     def __call__(
         self,
@@ -166,7 +169,7 @@ class FinetuneBatchClass:
         train_dataset = SimpleAnnDataset(
             train_data,
             obs_to_output=self.predict_keys + [self.batch_key],
-            get_knn_cells=model.expr_emb_style == "metacell",
+            get_knn_cells=model.expr_emb_style == "metacell" and self.use_knn,
             encoder=mencoders,
         )
         if val_data is not None:
@@ -189,7 +192,7 @@ class FinetuneBatchClass:
             val_dataset = SimpleAnnDataset(
                 val_data,
                 obs_to_output=self.predict_keys + [self.batch_key],
-                get_knn_cells=model.expr_emb_style == "metacell",
+                get_knn_cells=model.expr_emb_style == "metacell" and self.use_knn,
                 encoder=mencoders,
             )
 

@@ -57,8 +57,8 @@ look at some of my [X-plainers](https://twitter.com/jkobject).
 - [scPRINT-2: 🏃🏃Your next-gen single cell foundation model](#scprint-2-your-next-gen-single-cell-foundation-model)
   - [Table of Contents](#table-of-contents)
   - [Use `scPRINT-2`](#use-scprint-2)
-    - [try scPRINT in superbio.ai!](#try-scprint-in-superbioai)
-    - [try scPRINT on a google colab notebook!](#try-scprint-on-a-google-colab-notebook)
+    - [try scPRINT-1 in superbio.ai!](#try-scprint-1-in-superbioai)
+    - [try scPRINT-1 on a google colab notebook!](#try-scprint-1-on-a-google-colab-notebook)
     - [To know about: lamin.ai](#to-know-about-laminai)
     - [install](#install)
     - [pytorch and GPUs](#pytorch-and-gpus)
@@ -96,24 +96,25 @@ look at some of my [X-plainers](https://twitter.com/jkobject).
 ## Use `scPRINT-2`
 
 For the moment scPRINT-2 has been tested on MacOS and Linux (Ubuntu 20.04) with
-Python 3.10+. Its instalation takes on average 2 minutes in `uv` but longer on
-`conda`.
+Python 3.10+. Its instalation takes on average 2 minutes in `uv` but much longer
+on `conda`. We highly recommend using `uv` to manage your python virtual
+environments!!
 
-Example of our previous generation
-[scPRINT-1](https://github.com/cantinilab/scPRINT) model exist in multiple
-places (don't forget to star it as well!):
+Here is a link to our --still maintained-- previous generation model which
+contains larger size models: [scPRINT-1](https://github.com/cantinilab/scPRINT)
+(don't forget to star it as well!):
 
-### try scPRINT in superbio.ai!
+### try scPRINT-1 in superbio.ai!
 
 [HERE](https://app.superbio.ai/apps/67333115ed44f27eb717cf84)
 
-### try scPRINT on a google colab notebook!
+### try scPRINT-1 on a google colab notebook!
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1CacoQDAwJn86tq2sBhUoZ6M-xAqsYFDI#scrollTo=Vj73HINSzKHL)
 
 ### To know about: lamin.ai
 
-To use scPRINT-2, you will need to use [lamin.ai](https://lamin.ai/). This is
+To use scPRINT, you will need to use [lamin.ai](https://lamin.ai/). This is
 needed to load biological informations like genes, cell types, organisms.. (but
 also to manage the pre-training datasets if this is something you want to set
 up)
@@ -132,6 +133,7 @@ uv pip install scprint2
 #OR pip install scprint2[dev,flash]
 
 lamin init --storage ./testdb --name test --modules bionty
+lamin connect anonymous/testdb
 ```
 
 ⚠️ `./testdb` is set in this example but be mindful about where you want to
@@ -154,10 +156,10 @@ or with this function:
 ```python
 from scdataloader.utils import populate_my_ontology
 
-populate_my_ontology() #to populate everything (recommended) (can take 2-10mns)
+populate_my_ontology() #to populate everything (can take 2-10mns)
 
-populate_my_ontology( #the minimum for scprint2 to run some inferences (denoising, grn inference)
-organisms: List[str] = ["NCBITaxon:10090", "NCBITaxon:9606"],
+populate_my_ontology( #the minimum for scPRINT-1 to run some inferences (denoising, grn inference)
+    organisms: List[str] = ["NCBITaxon:10090", "NCBITaxon:9606"],
     sex: List[str] = ["PATO:0000384", "PATO:0000383"],
     celltypes = None,
     ethnicities = None,
@@ -166,7 +168,11 @@ organisms: List[str] = ["NCBITaxon:10090", "NCBITaxon:9606"],
     diseases = None,
     dev_stages = None,
 )
+_adding_scbasecamp_genes()  #to add when using scPRINT-2
 ```
+
+A notebook for setting-up scPRINT-2 and lamin is also available
+[here](./notebooks/prepare_scprint2.ipynb)
 
 We make use of some additional packages we developed alongside scPRINT-2 (they
 are also shipped with scprint-2 already).
@@ -179,6 +185,8 @@ Please refer to their documentation for more information:
   gene networks from single cell data.
 - [benGRN](https://github.com/jkobject/benGRN): a package to benchmark gene
   network inference methods from single cell data.
+- [simpler-flash](https://github.com/jkobject/simpler-flash): a package to
+  easily use different versions of flash attention in pytorch models.
 
 ### pytorch and GPUs
 
@@ -190,7 +198,7 @@ issue
 
 ```python
 model = scPRINT2.load_from_checkpoint(
-    '../data/temp/last.ckpt', precpt_gene_emb=None)
+    '../data/temp/last.ckpt', precpt_gene_emb=None, )
 ```
 
 you will know more by following the

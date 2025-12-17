@@ -53,6 +53,7 @@ class GNInfer:
         precomp_attn: bool = False,
         symmetrize: bool = False,
         loc: str = "./",
+        use_knn: bool = True,
     ):
         """
         GNInfer a class to infer gene regulatory networks from a dataset using a scPRINT model.
@@ -86,6 +87,7 @@ class GNInfer:
                 It is required for mean_full head_agg. Defaults to False.
             symmetrize (bool, optional): Whether to GRN. Defaults to False.
             loc (str, optional): Location to save results. Defaults to "./".
+            use_knn (bool, optional): Whether to use k-nearest neighbors information. Defaults to True.
         """
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -111,6 +113,7 @@ class GNInfer:
         self.max_cells = max_cells
         self.curr_genes = None
         self.drop_unexpressed = drop_unexpressed
+        self.use_knn = use_knn
         if self.filtration != "none" and self.head_agg == "none":
             raise ValueError("filtration must be 'none' when head_agg is 'none'")
 
@@ -215,7 +218,7 @@ class GNInfer:
         adataset = SimpleAnnDataset(
             subadata,
             obs_to_output=["organism_ontology_term_id"],
-            get_knn_cells=model.expr_emb_style == "metacell",
+            get_knn_cells=model.expr_emb_style == "metacell" and self.use_knn,
         )
         col = Collator(
             organisms=model.organisms,
@@ -293,12 +296,12 @@ class GNInfer:
                     depth,
                     knn_cells=(
                         batch["knn_cells"].to(device)
-                        if model.expr_emb_style == "metacell"
+                        if model.expr_emb_style == "metacell" and self.use_knn
                         else None
                     ),
                     knn_cells_info=(
                         batch["knn_cells_info"].to(device)
-                        if model.expr_emb_style == "metacell"
+                        if model.expr_emb_style == "metacell" and self.use_knn
                         else None
                     ),
                     keep_output=False,

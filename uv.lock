@@ -5010,7 +5010,7 @@ wheels = [
 
 [[package]]
 name = "scdataloader"
-version = "2.0.2"
+version = "2.0.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anndata" },
@@ -5032,9 +5032,9 @@ dependencies = [
     { name = "torchdata" },
     { name = "zarr" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/de/2c/f1c020ba9b0943dce0e9b1fd6dab195b672b29bd502946bedaaa58c25ade/scdataloader-2.0.2.tar.gz", hash = "sha256:3530fcd622afe710a581074f99c66d702dc3f461ced80aa4fd6d0e18d4f3872a", size = 52353 }
+sdist = { url = "https://files.pythonhosted.org/packages/fe/a9/0a2bc172594a2b30607835a8a56c7b577ac0bd6239cad0e9a3f1170932d0/scdataloader-2.0.5.tar.gz", hash = "sha256:41c863d07b83966e738d88ebd33222997cb41fc6b79e5e63c990961e0a71e0e1", size = 60251 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/37/97/4021a86dd7e0032643393b17aeb6728e10d6124db1e22fa8420e1c322cb0/scdataloader-2.0.2-py3-none-any.whl", hash = "sha256:e95dc6435f92501232ca1cb975aff60b4e66192414111c0b38ef2a47fd059291", size = 55931 },
+    { url = "https://files.pythonhosted.org/packages/58/e3/71dcc7ee771513a2a765de2069f254e4c94420dfdaf330a72fd0ff781feb/scdataloader-2.0.5-py3-none-any.whl", hash = "sha256:48bb82d27e438c3a2f3a9d3ef53312ecda6f48a654570cfb0a67abcc71d8fa69", size = 63642 },
 ]
 
 [[package]]
@@ -5226,7 +5226,7 @@ wheels = [
 
 [[package]]
 name = "scprint2"
-version = "1.0.0"
+version = "0.9.0"
 source = { editable = "." }
 dependencies = [
     { name = "array-api-compat" },
@@ -5366,7 +5366,7 @@ requires-dist = [
     { name = "rich", specifier = ">=10.0.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6.4" },
     { name = "s3fs", specifier = ">=2024.10.0" },
-    { name = "scdataloader", specifier = ">=2.0.2" },
+    { name = "scdataloader", specifier = ">=2.0.3" },
     { name = "scib", specifier = ">=1.1.7" },
     { name = "scib-metrics", specifier = ">=0.5.1" },
     { name = "scikit-learn", specifier = "==1.6.0" },

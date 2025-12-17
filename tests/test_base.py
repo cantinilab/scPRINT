@@ -4,12 +4,13 @@ import urllib.request
 import bionty as bt
 import lamindb as ln
 import numpy as np
+import pandas as pd
 import pytest
 import scanpy as sc
 import torch
 from lightning.pytorch import Trainer
 from scdataloader import DataModule, Preprocessor
-from scdataloader.utils import populate_my_ontology
+from scdataloader.utils import _adding_scbasecamp_genes, populate_my_ontology
 
 from scprint2 import scPRINT2
 from scprint2.base import NAME
@@ -30,41 +31,7 @@ def test_base():
         # diseases=None,
         # dev_stages=None,
     )
-    for i in set(
-        bt.Organism.using("laminlabs/arc-virtual-cell-atlas").df().ontology_id
-    ) - set(bt.Organism.filter().df().ontology_id):
-        print(i)
-        rec = (
-            bt.Organism.using("laminlabs/arc-virtual-cell-atlas")
-            .filter(ontology_id=i)
-            .first()
-        )
-        rec.save()
-    for i in set(
-        bt.Organism.using("laminlabs/arc-virtual-cell-atlas").df().ontology_id
-    ) - set(["NCBITaxon:10090", "NCBITaxon:9606"]):
-        print(i)
-        df = (
-            bt.Gene.using("laminlabs/arc-virtual-cell-atlas")
-            .filter(organism__ontology_id=i)
-            .all()
-            .df()
-        )
-        genes = []
-        org = bt.Organism.filter(ontology_id=i).one()
-        for row in df.to_dict(orient="records"):
-            row["organism_id"] = org.id
-            gene = bt.Gene(
-                ensembl_gene_id=row["ensembl_gene_id"],
-                stable_id=row["stable_id"],
-                description=row["description"],
-                symbol=row["symbol"],
-                biotype=row["biotype"],
-                organism=org,
-                _skip_validation=True,
-            )
-            genes.append(gene)
-        ln.save(genes)
+    _adding_scbasecamp_genes()
     filepath = os.path.join(os.path.dirname(__file__), "test.h5ad")
     ckpt_path = os.path.join(os.path.dirname(__file__), "small-v2.ckpt")
     if not os.path.exists(ckpt_path):
@@ -85,15 +52,16 @@ def test_base():
         precpt_gene_emb=None,
         # triton gets installed so it must think it has cuda enabled
         transformer="normal",
+        gene_pos_file=None,
     )
     dn = Denoiser(
         max_cells=10,
         batch_size=2,
         num_workers=1,
         max_len=300,
-        downsample=0.7,
+        downsample_expr=0.7,
         predict_depth_mult=10,
-        dtype=torch.float32,
+        use_knn=False,
     )
     metrics, random_indices, adata_denoised = dn(
         model=model,
@@ -114,10 +82,9 @@ def test_base():
             "self_reported_ethnicity_ontology_term_id",
             "sex_ontology_term_id",
         ],
-        plot_corr_size=8,
         doplot=True,
-        keep_all_cls_pred=False,
-        dtype=torch.float32,
+        keep_all_labels_pred=False,
+        use_knn=False,
     )
     adata_emb, metrics = cell_embedder(model, adata[:10, :])
     assert "scprint_emb" in adata_emb.obsm, "Cell embedding failed"
@@ -132,15 +99,13 @@ def test_base():
     grn_inferer = GNInfer(
         layer=[0, 1],
         batch_size=2,
-        how="random expr",
+        how="most var within",
         preprocess="softmax",
         head_agg="mean_full",
         filtration="none",
-        forward_mode="none",
         num_genes=100,
         max_cells=10,
-        doplot=False,
-        dtype=torch.float32,
+        use_knn=False,
     )
     grn_adata = grn_inferer(model, adata)
     assert "GRN" in grn_adata.varp, "GRN inference failed"
@@ -151,11 +116,12 @@ def test_base():
     col.save()
     datamodule = DataModule(
         collection_name="test dataset",
-        gene_subset=os.path.join(os.path.dirname(__file__), "test_emb.parquet"),
+        gene_subset=pd.read_parquet(
+            os.path.join(os.path.dirname(__file__), "test_emb.parquet")
+        ).index.tolist(),
         hierarchical_clss=[],
         how="most expr",
         max_len=200,
-        add_zero_genes=0,
         # how much more you will see the most present vs less present category
         weight_scaler=10,
         clss_to_weight=["sex_ontology_term_id"],
@@ -171,9 +137,11 @@ def test_base():
     )
     _ = datamodule.setup()
     model = scPRINT2(
-        genes=datamodule.genes,
+        organisms=datamodule.organisms,
+        genes=datamodule.genes_dict,
         d_model=64,
         nhead=1,
+        num_heads_kv=1,
         nlayers=1,
         # layers_cls = [d_model],
         # labels = datamodule.labels,
@@ -186,16 +154,12 @@ def test_base():
         checkpointing=False,
     )
     trainingmode = TrainingMode(
-        do_denoise=True,
         noise=[0.1],
-        do_cce=False,
-        do_ecs=False,
-        do_cls=True,
-        do_mvc=True,
         mask_ratio=[],
         warmup_duration=10,
         lr_reduce_patience=10,
         test_every=10_000,
+        lr_reduce_monitor="train_loss",
     )
     trainer = Trainer(
         gradient_clip_val=500,
@@ -205,16 +169,16 @@ def test_base():
         accumulate_grad_batches=1,
         check_val_every_n_epoch=1,
         overfit_batches=1,
-        max_epochs=20,
+        max_epochs=10,
         reload_dataloaders_every_n_epochs=100_000,
         logger=None,
-        num_sanity_val_steps=0,
+        num_sanity_val_steps=1,
         max_steps=100,
     )
     initial_loss = None
     for i in range(2):
         trainer.fit(model, datamodule=datamodule)
-        trainer.fit_loop.max_epochs = 20 * (
+        trainer.fit_loop.max_epochs = 10 * (
             i + 2
         )  # Reset max_epochs for next iteration
         current_loss = trainer.callback_metrics.get("train_loss")

@@ -38,6 +38,7 @@ class Embedder:
         genelist: Optional[List[str]] = None,
         save_every: int = 40_000,
         unknown_label: str = "unknown",
+        use_knn: bool = True,
     ):
         """
         Embedder a class to embed and annotate cells using a model
@@ -59,6 +60,7 @@ class Embedder:
             save_every (int, optional): The number of cells to save at a time. Defaults to 100_000.
                 This is important to avoid memory issues.
             unknown_label (str, optional): The label to be used for unknown cell types. Defaults to "unknown".
+            use_knn (bool, optional): Whether to use k-nearest neighbors information. Defaults to True.
         """
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -72,6 +74,7 @@ class Embedder:
         self.save_every = save_every
         self.pred = None
         self.unknown_label = unknown_label
+        self.use_knn = use_knn
 
     def __call__(self, model: torch.nn.Module, adata: AnnData):
         """
@@ -103,7 +106,7 @@ class Embedder:
         adataset = SimpleAnnDataset(
             adata,
             obs_to_output=["organism_ontology_term_id"],
-            get_knn_cells=model.expr_emb_style == "metacell",
+            get_knn_cells=model.expr_emb_style == "metacell" and self.use_knn,
         )
         col = Collator(
             organisms=model.organisms,
@@ -150,12 +153,12 @@ class Embedder:
                     depth,
                     knn_cells=(
                         batch["knn_cells"].to(device)
-                        if model.expr_emb_style == "metacell"
+                        if model.expr_emb_style == "metacell" and self.use_knn
                         else None
                     ),
                     knn_cells_info=(
                         batch["knn_cells_info"].to(device)
-                        if model.expr_emb_style == "metacell"
+                        if model.expr_emb_style == "metacell" and self.use_knn
                         else None
                     ),
                     pred_embedding=self.pred_embedding,

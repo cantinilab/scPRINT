@@ -38,6 +38,7 @@ class Denoiser:
         pred_embedding: List[str] = ["cell_type_ontology_term_id"],
         additional_info: bool = False,
         apply_zero_pred: bool = False,
+        use_knn: bool = True,
     ):
         """
         Denoiser class for denoising scRNA-seq data using a scPRINT model
@@ -66,6 +67,7 @@ class Denoiser:
                 only useful when downsampling is used.
             apply_zero_pred (bool, optional): Whether to apply zero inflation to the output value during denoising, else uses only the predicted mean.
                 applying zero inflation might give results closer to the specific biases of sequencing technologies but less biological truthful.
+            use_knn (bool, optional): Whether to use knn cells for denoising when the model uses metacell expression embedding. Defaults to True.
         """
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -80,6 +82,7 @@ class Denoiser:
         self.pred_embedding = pred_embedding
         self.additional_info = additional_info
         self.apply_zero_pred = apply_zero_pred
+        self.use_knn = use_knn
 
     def __call__(self, model: torch.nn.Module, adata: AnnData):
         """
@@ -103,13 +106,13 @@ class Denoiser:
             adataset = SimpleAnnDataset(
                 adata[random_indices],
                 obs_to_output=["organism_ontology_term_id"],
-                get_knn_cells=model.expr_emb_style == "metacell",
+                get_knn_cells=model.expr_emb_style == "metacell" and self.use_knn,
             )
         else:
             adataset = SimpleAnnDataset(
                 adata,
                 obs_to_output=["organism_ontology_term_id"],
-                get_knn_cells=model.expr_emb_style == "metacell",
+                get_knn_cells=model.expr_emb_style == "metacell" and self.use_knn,
             )
         if self.how == "most var":
             sc.pp.highly_variable_genes(
@@ -151,6 +154,8 @@ class Denoiser:
             else model.dtype
         )
         torch.cuda.empty_cache()
+        save_expr = model.save_expr
+        model.save_expr = True
         with torch.no_grad(), torch.autocast(device_type=device, dtype=dtype):
             for batch in tqdm(dataloader):
                 gene_pos, expression, depth = (
@@ -160,7 +165,7 @@ class Denoiser:
                 )
                 knn_cells = (
                     batch["knn_cells"].to(device)
-                    if model.expr_emb_style == "metacell"
+                    if model.expr_emb_style == "metacell" and self.use_knn
                     else None
                 )
                 if self.downsample_expr is not None:
@@ -185,12 +190,12 @@ class Denoiser:
                     depth,
                     knn_cells=(
                         batch["knn_cells"].to(device)
-                        if model.expr_emb_style == "metacell"
+                        if model.expr_emb_style == "metacell" and self.use_knn
                         else None
                     ),
                     knn_cells_info=(
                         batch["knn_cells_info"].to(device)
-                        if model.expr_emb_style == "metacell"
+                        if model.expr_emb_style == "metacell" and self.use_knn
                         else None
                     ),
                     do_generate=False,
@@ -240,6 +245,7 @@ class Denoiser:
 
         metrics = None
         model.doplot = prevplot
+        model.save_expr = save_expr
         if self.downsample_expr is not None:
             reco = np.array(pred_adata.layers["scprint_mu"].data).reshape(
                 pred_adata.shape[0], -1

@@ -22,6 +22,7 @@ class GeneEmbeddingExtractor:
         save_every: int = 4_000,
         average: bool = False,
         save_dir: str = None,
+        use_knn: bool = False,
     ):
         """
         Args:
@@ -34,6 +35,9 @@ class GeneEmbeddingExtractor:
                 - "some": specific genes (from genelist)
                 - "most expr": most expressed genes in the cell
             save_every (int): Save embeddings every `save_every` batches.
+            average (bool): Whether to average embeddings across all cells.
+            save_dir (str): Directory to save embeddings. If None, embeddings are not saved to
+            use_knn (bool): Whether to use k-nearest neighbors information. Defaults to False.
 
         Returns:
             embeddings (np.ndarray): A numpy array of shape (n_cells, n_genes, embedding_dim)
@@ -44,6 +48,7 @@ class GeneEmbeddingExtractor:
         self.save_every = save_every
         self.average = average
         self.save_dir = save_dir
+        self.use_knn = use_knn
 
     def __call__(self, model, adata):
         model.eval()
@@ -159,9 +164,11 @@ class GeneEmbeddingExtractor:
         ad = AnnData(
             X=np.concatenate(expr, axis=0),
             var=pd.DataFrame(index=gene_list),
-            uns={"all_embeddings": np.concatenate(all_embeddings, axis=0)}
-            if not self.average
-            else None,
+            uns=(
+                {"all_embeddings": np.concatenate(all_embeddings, axis=0)}
+                if not self.average
+                else None
+            ),
             varm=full_embeddings.cpu().numpy() / count if self.average else None,
         )
         if self.save_dir is not None:
