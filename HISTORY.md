@@ -4,6 +4,14 @@ Changelog
 
 (unreleased)
 ------------
+- Debug. [jkobject]
+- Cleanup. [jkobject]
+- Debug the doc. [jkobject]
+
+
+0.9.6 (2025-12-18)
+------------------
+- Release: version 0.9.6 🚀 [jkobject]
 - Cleanup 3/4. [jkobject]
 - Merge branch 'main' of https://github.com/cantinilab/scPRINT-2.
   [jkobject]
