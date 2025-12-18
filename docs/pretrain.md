@@ -27,7 +27,7 @@ with `scdataloader`.
 
 Finally you might want to generate gene embeddings to use with scPRINT-2 instead
 of learning these tokens from scratch. For this you can use the
-[gene_embedders](embedder.md) module of scPRINT-2, which usage is detailed in
+[gene_embedders](tokenizers.md) module of scPRINT-2, which usage is detailed in
 the `notebooks/generate_gene_embeddings.ipynb` notebook and also gene locations
 using the additional notebook `notebooks/genelocs.ipynb`
 

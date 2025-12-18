@@ -1,9 +1,9 @@
 # structure
 
-## gene embedders
+## gene tokenizers
 
-Function to get embeddings from a set of genes, given their ensembl ids. For now
-use 2 different models:
+Function to get tokens from a set of genes, given their ensembl ids. For now use
+2 different models:
 
 - `RNABert`: for non coding genes
 - `ESM3`: for protein coding genes
