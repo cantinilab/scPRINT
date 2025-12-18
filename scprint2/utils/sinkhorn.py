@@ -19,7 +19,7 @@ class SinkhornDistance(torch.nn.Module):
         self.max_iter = max_iter
         self.reduction = reduction
 
-    def forward(self, c: torch.Tensor):
+    def forward(self, c: torch.Tensor) -> torch.Tensor:
         """
         forward Compute the Sinkhorn distance between two measures with cost matrix c
 

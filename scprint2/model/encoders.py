@@ -314,8 +314,7 @@ class ExprBasedFT(nn.Module):
             gene_encoder (nn.Module): The gene name encoder module.
             expr_encoder (nn.Module, optional): The expression encoder module. Defaults to nn.Identity.
             dropout (float, optional): The dropout rate to apply to the output of the positional encoding.
-            layers (int, optional): The number of layers in the encoder. Defaults to 1.
-            size (int, optional): The size of the input. Defaults to 1.
+            layers (int, optional): The number of layers in the encoder. Defaults to 2.
             intermediary_d (int, optional): The dimension of the intermediary layers. Defaults to 256 + 64.
 
         """
@@ -639,7 +638,7 @@ class GNN(nn.Module):
         edge_info: Optional[Tensor] = None,
         batch: Optional[Tensor] = None,
         mask: Optional[Tensor] = None,
-    ):
+    ) -> Tensor:
         """
         Forward pass
 

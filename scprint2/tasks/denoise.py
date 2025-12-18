@@ -84,7 +84,7 @@ class Denoiser:
         self.apply_zero_pred = apply_zero_pred
         self.use_knn = use_knn
 
-    def __call__(self, model: torch.nn.Module, adata: AnnData):
+    def __call__(self, model: torch.nn.Module, adata: AnnData) -> tuple[dict, Optional[np.ndarray], AnnData]:
         """
         __call__ calling the function
 
@@ -362,7 +362,7 @@ def default_benchmark(
     folder_dir: str = FILE_DIR + "/../../data/",
     dataset: str = FILE_DIR
     + "/../../data/gNNpgpo6gATjuxTE7CCp.h5ad",  # r4iCehg3Tw5IbCLiCIbl
-):
+) -> dict:
     """
     default_benchmark function used to run the default denoising benchmark of scPRINT
 

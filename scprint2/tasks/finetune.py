@@ -492,7 +492,7 @@ class FinetuneBatchClass:
         return total_loss, cls_loss, tot_mmd, loss_expr
 
 
-def mmd_loss(X: torch.Tensor, Y: torch.Tensor):
+def mmd_loss(X: torch.Tensor, Y: torch.Tensor) -> torch.Tensor:
     """
     Compute Maximum Mean Discrepancy (MMD) loss between two 2D embedding matrices.
 

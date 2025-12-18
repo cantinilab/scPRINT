@@ -69,7 +69,7 @@ class Imputer:
         self.apply_zero_pred = apply_zero_pred
         self.use_knn = use_knn
 
-    def __call__(self, model: torch.nn.Module, adata: AnnData):
+    def __call__(self, model: torch.nn.Module, adata: AnnData) -> tuple[Optional[np.ndarray], AnnData]:
         """
         __call__ calling the function
 

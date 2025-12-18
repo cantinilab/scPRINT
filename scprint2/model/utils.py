@@ -36,7 +36,7 @@ def make_adata(
     labels_hierarchy: Optional[Dict] = None,
     gtclass: Optional[Tensor] = None,
     doplot: bool = True,
-):
+) -> AnnData:
     """
     This function creates an AnnData object from the given input parameters.
 
@@ -336,7 +336,7 @@ def _init_weights(
                 )
 
 
-def downsample_profile(mat: Tensor, dropout: float, method="new", randsamp=False):
+def downsample_profile(mat: Tensor, dropout: float, method="new", randsamp=False) -> Tensor:
     """
     This function downsamples the expression profile of a given single cell RNA matrix.
 
@@ -482,7 +482,7 @@ def zinb_sample(
     theta: torch.Tensor,
     zi_probs: torch.Tensor,
     sample_shape: torch.Size = torch.Size([]),
-):
+) -> torch.Tensor:
     """
     zinb_sample This function generates a sample from a Zero-Inflated Negative Binomial (ZINB) distribution.
 

@@ -117,7 +117,7 @@ class GNInfer:
         if self.filtration != "none" and self.head_agg == "none":
             raise ValueError("filtration must be 'none' when head_agg is 'none'")
 
-    def __call__(self, model: torch.nn.Module, adata: AnnData, cell_type=None):
+    def __call__(self, model: torch.nn.Module, adata: AnnData, cell_type=None) -> tuple[AnnData, np.ndarray]:
         """
         __call__ runs the method
 
@@ -461,7 +461,7 @@ def default_benchmark(
     maxgenes: int = 5000,
     batch_size: int = 32,
     maxcells: int = 1024,
-):
+) -> dict:
     """
     default_benchmark function to run the default scPRINT GRN benchmark
 

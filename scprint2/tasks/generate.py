@@ -43,7 +43,7 @@ class Generate:
         self.embedding_to_use = embedding_to_use
         self.genelist = genelist if genelist is not None else []
 
-    def __call__(self, model: torch.nn.Module, adata: AnnData):
+    def __call__(self, model: torch.nn.Module, adata: AnnData) -> tuple[AnnData, List[str], np.ndarray, dict]:
         """
         __call__ function to call the embedding
 

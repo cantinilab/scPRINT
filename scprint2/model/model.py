@@ -77,7 +77,7 @@ class scPRINT2(L.LightningModule, PyTorchModelHubMixin):
         nlayers_cell: int = 6,
         num_heads_kv_cell: int = 4,
         transformer=None,
-        drop_path_rate: float =0.0,
+        drop_path_rate: float = 0.0,
         # unused args from older versions kept for loading old models
         gene_pos_enc=None,
         max_cont_len=None,
@@ -1250,7 +1250,7 @@ class scPRINT2(L.LightningModule, PyTorchModelHubMixin):
         do_class: bool = False,
         get_attention_layer: Optional[list] = None,
         mask_zeros: Optional[Tensor] = None,
-    ):
+    ) -> Dict[str, Tensor] | tuple[Dict[str, Tensor], list]:
         """
         Complete forward pass through the scPRINT-2 model.
 
@@ -1597,8 +1597,8 @@ class scPRINT2(L.LightningModule, PyTorchModelHubMixin):
     def training_step(
         self,
         batch: Dict[str, Tensor],
-        batch_idx,
-    ):
+        batch_idx: int,
+    ) -> Tensor:
         """
         training_step defines the train loop. It is independent of forward
 
@@ -2363,7 +2363,9 @@ class scPRINT2(L.LightningModule, PyTorchModelHubMixin):
             for encoder_layers in self.transformer.blocks:
                 encoder_layers.set_seq_parallel(False)
 
-    def predict_step(self, batch, batch_idx):
+    def predict_step(
+        self, batch: Dict[str, Tensor], batch_idx: int
+    ) -> Dict[str, Tensor]:
         """
         embed given gene expression, encode the gene embedding and cell embedding.
 
@@ -2424,8 +2426,8 @@ class scPRINT2(L.LightningModule, PyTorchModelHubMixin):
             self.pred_embedding (list, optional): the classes to predict. Defaults to [].
 
         """
-        self.keep_all_labels_pred = True
-        self.mask_zeros = True
+        # self.keep_all_labels_pred = True
+        # self.mask_zeros = True
         if self.transformer.attn_type == "hyper":
             # seq len must be a multiple of 128
             num = (1 if self.use_metacell_token else 0) + (
@@ -2638,42 +2640,21 @@ class scPRINT2(L.LightningModule, PyTorchModelHubMixin):
             mdir = self.logger.save_dir if self.logger.save_dir is not None else "/tmp"
         except:
             mdir = "data/"
-        mdir = "/pasteur/appa/scratch/jkalfon/" + mdir
         if not os.path.exists(mdir):
             os.makedirs(mdir)
-        self.embs = (
-            torch.concat([v for k, v in self.embs.items()], dim=1)
-            .cpu()
-            .numpy()
-            .astype(np.float16)
+        adata, fig = utils.make_adata(
+            genes=self.genes,
+            embs=self.embs,
+            pos=self.pos if self.save_expr else None,
+            expr_pred=self.expr_pred if self.save_expr else None,
+            classes=self.classes,
+            pred=self.pred if not self.keep_all_labels_pred else None,
+            label_decoders=self.label_decoders,
+            labels_hierarchy=self.labels_hierarchy,
+            gtclass=gtclass,
+            doplot=self.doplot,
         )
-
-        count = {
-            "cell_type_ontology_term_id": 3,
-            "tissue_ontology_term_id": 3,
-            "disease_ontology_term_id": 3,
-            "age_group": 3,
-            "assay_ontology_term_id": 3,
-            "self_reported_ethnicity_ontology_term_id": 3,
-            "sex_ontology_term_id": 1,
-            "organism_ontology_term_id": 3,
-            "cell_culture": 1,
-        }
-        tot = 0
-        locs = []
-        predloc = []
-        for val in self.classes:
-            num = self.hparams["classes"][val]
-            pred_slice = self.pred[:, tot : tot + num]
-            loc = pred_slice.argsort(-1)[:, -count[val] :].flip([-1])
-            top_k = torch.gather(pred_slice, 1, loc)
-            predloc.append(top_k.cpu().numpy().astype(np.float16))
-            locs.append(loc.cpu().numpy().astype(np.uint16))
-            tot += num
-
-        predloc = np.hstack(predloc)
-        locs = np.hstack(locs)
-        save = (
+        adata.write(
             str(mdir)
             + "/step_"
             + str(self.global_step)
@@ -2683,13 +2664,27 @@ class scPRINT2(L.LightningModule, PyTorchModelHubMixin):
             + str(name)
             + "_"
             + str(self.global_rank)
+            + ".h5ad"
         )
-        np.savez(save + "_top3", locs)
-        np.savez(save + "_scores", predloc)
-        np.savez(save + "_embs", self.embs)
+        if self.doplot and fig is not None:
+            logged = False
+            try:
+                self.logger.experiment.add_figure(fig)
+                logged = True
+            except:
+                print("couldn't log to tensorboard")
+            try:
+                self.logger.log_image(key="umaps", images=[fig], step=self.global_step)
+                logged = True
+            except:
+                print("couldn't log to wandb")
+            if not logged:
+                fig.savefig(mdir + "/umap_" + self.name + "_" + name + ".png")
+
+        return adata
 
     @property
-    def genes(self):
+    def genes(self) -> list[str]:
         """
         Get flattened list of all genes in the model's vocabulary.
 

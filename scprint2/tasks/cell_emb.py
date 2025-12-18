@@ -76,7 +76,7 @@ class Embedder:
         self.unknown_label = unknown_label
         self.use_knn = use_knn
 
-    def __call__(self, model: torch.nn.Module, adata: AnnData):
+    def __call__(self, model: torch.nn.Module, adata: AnnData) -> tuple[AnnData, dict]:
         """
         __call__ function to call the embedding
 

@@ -59,7 +59,7 @@ def masked_nb(input: Tensor, target: Tensor, mask: Tensor) -> Tensor:
 
 
 # FROM SCVI
-def nb(target: Tensor, mu: Tensor, theta: Tensor, eps=1e-4):
+def nb(target: Tensor, mu: Tensor, theta: Tensor, eps=1e-4) -> Tensor:
     """
     Computes the negative binomial (NB) loss.
 

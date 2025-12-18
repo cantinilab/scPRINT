@@ -20,6 +20,7 @@ from bokeh.models.annotations import LabelSet
 from bokeh.palettes import Category10, Category20
 from bokeh.plotting import figure, save
 from IPython import get_ipython
+
 # What pops up on hover?
 from matplotlib import pyplot as plt
 
@@ -130,7 +131,7 @@ def isnotebook() -> bool:
         return False  # Probably standard Python interpreter
 
 
-def get_free_gpu():
+def get_free_gpu() -> int:
     """
     get_free_gpu finds the GPU with the most free memory using nvidia-smi.
 
@@ -161,7 +162,7 @@ def get_free_gpu():
     return idx
 
 
-def get_git_commit():
+def get_git_commit() -> str:
     """
     get_git_commit gets the current git commit hash.
 
