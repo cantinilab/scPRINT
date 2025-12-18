@@ -4,6 +4,18 @@ Changelog
 
 (unreleased)
 ------------
+- Cleanup 3/4. [jkobject]
+- Merge branch 'main' of https://github.com/cantinilab/scPRINT-2.
+  [jkobject]
+- Update Codecov badge link in README.md. [Jérémie Kalfon]
+- Some more debugs. [jkobject]
+- Update codecov. [jkobject]
+- Some more results and improvements. [jkobject]
+
+
+0.9.2 (2025-12-17)
+------------------
+- Release: version 0.9.2 🚀 [jkobject]
 - Cleanup. [jkobject]
 
 
