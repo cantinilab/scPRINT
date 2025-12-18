@@ -11,10 +11,10 @@ nav:
   - 350M subset umap: umap/nice_umap_scprint2.html
   - documentation:
       - model: model.md
+      - tokenizers: tokenizers.md
       - tasks: tasks.md
-      - cli: cli.md
-      - tokenizers: embedder.md
       - utils: utils.md
+      - cli: cli.md
 plugins:
   - search
   - mkdocstrings:

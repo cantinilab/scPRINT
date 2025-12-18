@@ -13,14 +13,14 @@
 
 <img src="docs/fig.png" alt="logo" width="600" />
 
-scPRINT-2 is a single-cell RNA-seq foundation model built by Jérémie Kalfon in
-the Cantini Lab. It uses novel architecture, encoding, decoding, training
+**scPRINT-2** is a single-cell RNA-seq foundation model built by Jérémie Kalfon
+in the Cantini Lab. It uses novel architecture, encoding, decoding, training
 paradigms and losses.
 
-scPRINT-2 has been pretrained on more than 350 million cells from more than
+**scPRINT-2** has been pretrained on more than 350 million cells from more than
 22,000 datasets and 16 species.
 
-scPRINT-2 can be used to perform the following analyses in a zero-shot mode:
+**scPRINT-2** can be used to perform the following analyses in a zero-shot mode:
 
 - **expression denoising & imputation**: increase the resolution of your
   scRNAseq data and discover un-measured genes' expression
@@ -31,10 +31,10 @@ scPRINT-2 can be used to perform the following analyses in a zero-shot mode:
   tissue of origin and ethnicity of your cells.
 - **gene network inference**: generate a gene network from any cell or cell
   cluster in your scRNAseq dataset
-- cross species integration: scPRINT-2 has been trained on 16 species and can be
-  used to integrate data from different species.
+- **cross species integration**: scPRINT-2 has been trained on 16 species and
+  can be used to integrate data from different species.
 
-Example of scPRINT-2 finetuning exist for:
+Example of **scPRINT-2** finetuning exist for:
 
 - **new species**: finetune scPRINT-2 on a new organism
 - **classification**: finetune scPRINT-2 on your own cell type /disease / age
@@ -42,11 +42,11 @@ Example of scPRINT-2 finetuning exist for:
 - **batch correction of your datasets / atlas**: finetune scPRINT-2 to integrate
   data across species, technologies, and labs.
 
-scPRINT-2 is a foundation model and can be fine-tuned to perform many other
+**scPRINT-2** is a foundation model and can be fine-tuned to perform many other
 analysis
 
 [Read the manuscript!](https://www.biorxiv.org/content/10.64898/2025.12.11.693702v1)
-if you would like to know more about scPRINT-2. Or have a look at some of my
+if you would like to know more about **scPRINT-2**. Or have a look at some of my
 [X-plainers](https://twitter.com/jkobject).
 
 🎊 test scPRINT and scDataloader on this simple example
@@ -94,9 +94,9 @@ if you would like to know more about scPRINT-2. Or have a look at some of my
 
 ## Use `scPRINT-2`
 
-For the moment scPRINT-2 has been tested on MacOS and Linux (Ubuntu 20.04) with
-Python 3.10+. Its instalation takes on average 2 minutes in `uv` but much longer
-on `conda`. We highly recommend using `uv` to manage your python virtual
+For the moment **scPRINT-2** has been tested on MacOS and Linux (Ubuntu 20.04)
+with Python 3.10+. Its instalation takes on average 2 minutes in `uv` but much
+longer on `conda`. We highly recommend using `uv` to manage your python virtual
 environments!!
 
 Here is a link to our --still maintained-- previous generation model which
@@ -113,10 +113,10 @@ contains larger size models: [scPRINT-1](https://github.com/cantinilab/scPRINT)
 
 ### To know about: lamin.ai
 
-To use scPRINT-2, you will need to use [lamin.ai](https://lamin.ai/). This is
-required to load biological information like genes, cell types, organisms.. (but
-also to manage the pre-training datasets if this is something you want to set
-up)
+To use **scPRINT-2**, you will need to use [lamin.ai](https://lamin.ai/). This
+is required to load biological information like genes, cell types, organisms..
+(but also to manage the pre-training datasets if this is something you want to
+set up)
 
 ### install
 

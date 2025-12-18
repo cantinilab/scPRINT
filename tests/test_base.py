@@ -1,13 +1,11 @@
 import os
 import urllib.request
 
-import bionty as bt
 import lamindb as ln
 import numpy as np
 import pandas as pd
 import pytest
 import scanpy as sc
-import torch
 from lightning.pytorch import Trainer
 from scdataloader import DataModule, Preprocessor
 from scdataloader.utils import _adding_scbasecamp_genes, populate_my_ontology

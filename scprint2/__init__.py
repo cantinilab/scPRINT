@@ -1,6 +1,6 @@
 from importlib.metadata import version
 
-__version__ = version("scprint")
+__version__ = version("scprint2")
 
 
 from .model.model import scPRINT2
