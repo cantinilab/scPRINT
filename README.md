@@ -1,5 +1,7 @@
 > ℹ️ main place where scprint is built and maintained
 
+> 🎊 The scPRINT-2 model has now been released: [https://github.com/cantinilab/scPRINT-2](https://github.com/cantinilab/scPRINT-2)
+
 # scPRINT: Large Cell Model for scRNAseq data
 
 [![codecov](https://codecov.io/gh/cantinilab/scPRINT/branch/main/graph/badge.svg?token=GRnnData_token_here)](https://codecov.io/gh/cantinilab/scPRINT)
@@ -77,9 +79,13 @@ It is a foundation model and can be fine-tuned to perform any other analysis
   - [Work in progress (PR welcomed):](#work-in-progress-pr-welcomed)
 
 
+## scPRINT-2
+
+You can now checkout and use also the [scPRINT-2 model](https://github.com/cantinilab/scPRINT-2)
+
 ## Use `scPRINT`
 
-For the moment scPRINT has been tested on MacOS and Linux (Ubuntu 20.04) with Python 3.10. Its instalation takes on average 10 minutes.
+For the moment, scPRINT has been tested on MacOS and Linux (Ubuntu 20.04) with Python 3.10. Its instalation takes on average 10 minutes.
 
 If you want to be using flashattention2, know that it only supports triton 2.0 MLIR's version and torch==2.0.0 for now.
 
