@@ -1,6 +1,6 @@
 # scPRINT-2: 🏃🏃Your next-gen single cell foundation model
 
-[![codecov](https://codecov.io/gh/cantinilab/scPRINT-2/branch/main/graph/badge.svg?token=GRnnData_token_here)](https://codecov.io/gh/cantinilab/scPRINT-2)
+[![codecov](https://codecov.io/github/cantinilab/scPRINT-2/graph/badge.svg?token=UQEA9DN2MX)](https://codecov.io/github/cantinilab/scPRINT-2)
 [![CI](https://github.com/cantinilab/scPRINT-2/actions/workflows/main.yml/badge.svg)](https://github.com/cantinilab/scPRINT-2/actions/workflows/main.yml)
 [![PyPI version](https://badge.fury.io/py/scprint-2.svg)](https://badge.fury.io/py/scprint2)
 [![Downloads](https://pepy.tech/badge/scprint2)](https://pepy.tech/project/scprint2)
