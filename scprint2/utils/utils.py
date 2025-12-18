@@ -50,10 +50,11 @@ def fileToList(filename: str, strconv: callable = lambda x: x) -> list:
     loads an input file with a\\n b\\n.. into a list [a,b,..]
 
     Args:
-        input_str (str): The input string to be completed.
+        filename (str): The path to the file to be loaded.
+        strconv (callable): Function to convert each line. Defaults to identity function.
 
     Returns:
-        str: The completed string with 'complete' appended.
+        list: The list of converted values from the file.
     """
     with open(filename) as f:
         return [strconv(val[:-1]) for val in f.readlines()]
@@ -66,7 +67,7 @@ def listToFile(
     listToFile loads a list with [a,b,..] into an input file a\\n b\\n..
 
     Args:
-        l (list): The list of elements to be written to the file.
+        li (list): The list of elements to be written to the file.
         filename (str): The name of the file where the list will be written.
         strconv (callable, optional): A function to convert each element of the list to a string. Defaults to str.
 

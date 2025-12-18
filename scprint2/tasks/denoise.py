@@ -368,8 +368,8 @@ def default_benchmark(
 
     Args:
         model (Any): The scPRINT model to be used for the benchmark.
-        default_dataset (str, optional): Path to the default dataset to use for benchmarking. Defaults to FILE_DIR + "/../../data/r4iCehg3Tw5IbCLiCIbl.h5ad".
-        max_len (int, optional): Maximum number of genes to consider. Defaults to 5000.
+        folder_dir (str, optional): Directory containing data files.
+        dataset (str, optional): Path to the dataset to use for benchmarking.
 
     Returns:
         dict: A dictionary containing the benchmark metrics.

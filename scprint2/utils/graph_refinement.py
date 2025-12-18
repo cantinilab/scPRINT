@@ -106,10 +106,9 @@ def build_knn_graph(
 
     Args:
         adata (anndata.AnnData): AnnData object
-        representation_key (str): Key in adata.obsm for the representation to use
-        n_neighbors (int): Number of nearest neighbors
-        metric (str): Distance metric for nearest neighbor search
-        store_key (str): Key to store connectivity matrix in adata.obsp
+        representation_key (str): Key in adata.obsm for the representation to use. Defaults to "X_pca".
+        n_neighbors (int): Number of nearest neighbors. Defaults to 15.
+        metric (str): Distance metric for nearest neighbor search. Defaults to "euclidean".
 
     Returns:
         anndata.AnnData: Updated AnnData object with connectivity matrix

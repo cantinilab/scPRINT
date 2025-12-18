@@ -169,7 +169,10 @@ class PositionalEncoding(nn.Module):
     def forward(self, gene_pos: Tensor) -> Tensor:
         """
         Args:
-            x: Tensor, shape [seq_len, batch_size, embedding_dim]
+            gene_pos (Tensor): Gene position indices, shape [seq_len, batch_size] or [seq_len]
+
+        Returns:
+            Tensor: Positional encodings, shape [*gene_pos.shape, embedding_dim]
         """
         return torch.index_select(self.pe, 0, gene_pos.reshape(-1)).reshape(
             gene_pos.shape + (-1,)
@@ -185,8 +188,10 @@ class DPositionalEncoding(nn.Module):
 
     Args:
         d_model (int): The dimension of the input vectors.
-        dropout (float, optional): The dropout rate to apply to the output of the positional encoding.
-        max_len (int, optional): The maximum length of a sequence that this module can handle.
+        max_len_x (int): The maximum length in the x dimension.
+        max_len_y (int): The maximum length in the y dimension.
+        maxvalue_x (float, optional): Maximum value for x dimension scaling. Defaults to 10000.0.
+        maxvalue_y (float, optional): Maximum value for y dimension scaling. Defaults to 10000.0.
 
     Note: not used in the current version of scprint-2.
     """
@@ -254,9 +259,6 @@ class ContinuousValueEncoder(nn.Module):
             max_value (int, optional): The maximum value of the input. Defaults to 100_000.
             layers (int, optional): The number of layers in the encoder. Defaults to 1.
             size (int, optional): The size of the input. Defaults to 1.
-
-        Returns:
-            torch.Tensor: A tensor representing the encoded continuous values.
         """
         super(ContinuousValueEncoder, self).__init__()
         self.max_value = max_value
@@ -316,8 +318,6 @@ class ExprBasedFT(nn.Module):
             size (int, optional): The size of the input. Defaults to 1.
             intermediary_d (int, optional): The dimension of the intermediary layers. Defaults to 256 + 64.
 
-        Returns:
-            torch.Tensor: A tensor representing the encoded continuous values.
         """
         super(ExprBasedFT, self).__init__()
         self.encoder = nn.ModuleList()
@@ -402,9 +402,6 @@ class CategoryValueEncoder(nn.Module):
             num_embeddings (int): The number of possible values.
             embedding_dim (int): The dimension of the output vectors.
             padding_idx (int, optional): The index of the padding token. Defaults to None.
-
-        Returns:
-            Tensor: A tensor representing the encoded categorical values.
 
         Note: not used in the current version of scprint-2.
         """
@@ -635,21 +632,28 @@ class GNN(nn.Module):
                 aggr="mean",
             )
 
-    def forward(self, x, neighbors, edge_info=None, batch=None, mask=None):
+    def forward(
+        self,
+        x: Tensor,
+        neighbors: Tensor,
+        edge_info: Optional[Tensor] = None,
+        batch: Optional[Tensor] = None,
+        mask: Optional[Tensor] = None,
+    ):
         """
         Forward pass
 
         Args:
-            x: Node features [minibatch_size, ngenes]
-            neighbors: Neighbor nodes [minibatch_size, ngenes, n_neighbors] or [minibatch_size, ngenes, n_neighbors, 2]
-            edge_info:
-                - Graph connectivity [2, num_edges] if gnn_type != deepset
-                - Edge features [num_edges, 1] if gnn_type == deepset
-                - None if gnn_type == deepset and no edge features
-            batch: Batch assignment vector [num_nodes]
+            x (Tensor): Node features [minibatch_size, ngenes]
+            neighbors (Tensor): Neighbor nodes [minibatch_size, ngenes, n_neighbors] or [minibatch_size, ngenes, n_neighbors, 2]
+            edge_info (Tensor, optional): Graph connectivity [2, num_edges] if gnn_type != deepset,
+                Edge features [num_edges, 1] if gnn_type == deepset,
+                or None if gnn_type == deepset and no edge features.
+            batch (Tensor, optional): Batch assignment vector [num_nodes]
+            mask (Tensor, optional): Mask tensor for the nodes.
 
         Returns:
-            Node embeddings [num_nodes, hidden_dim]
+            Tensor: Node embeddings [num_nodes, hidden_dim]
         """
 
         # Standard GNN forward pass

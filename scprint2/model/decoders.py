@@ -47,9 +47,6 @@ class ExprDecoder(nn.Module):
             dropout (float, optional): The dropout rate applied during training to prevent overfitting. Defaults to 0.1.
             zinb (bool, optional): Whether to use a zero inflated negative binomial distribution. Defaults to True.
             use_depth (bool, optional): Whether to use depth as an additional feature. Defaults to False.
-
-        Returns:
-            Dict[str, Tensor]: A dictionary containing the predicted mean, variance, and zero logits (if zinb is True).
         """
         super(ExprDecoder, self).__init__()
         self.fc = nn.Sequential(
@@ -110,10 +107,10 @@ class MVCDecoder(nn.Module):
         Args:
             d_model (int): Dimension of the gene embedding.
             arch_style (str, optional): Architecture style of the decoder. Options:
-            - "inner product": Uses inner product between cell and gene embeddings
-            - "concat query": Concatenates cell and gene embeddings
-            - "sum query": Sums cell and gene embeddings
-            Defaults to "inner product".
+                "inner product": Uses inner product between cell and gene embeddings,
+                "concat query": Concatenates cell and gene embeddings,
+                "sum query": Sums cell and gene embeddings.
+                Defaults to "inner product".
             tot_labels (int, optional): Total number of labels in the input. Defaults to 1.
             query_activation (nn.Module, optional): Activation function for query vectors. Defaults to nn.Sigmoid.
             hidden_activation (nn.Module, optional): Activation function for hidden layers. Defaults to nn.PReLU.
@@ -241,14 +238,11 @@ class ClsDecoder(nn.Module):
         ClsDecoder Decoder for classification task.
 
         Args:
-            d_model: int, dimension of the input.
-            n_cls: int, number of classes.
-            layers: List[int], List of hidden layers.
-            activation: nn.Module, activation function.
-            dropout: float, dropout rate.
-
-        Returns:
-            Tensor, shape [batch_size, n_cls]
+            d_model (int): Dimension of the input.
+            n_cls (int): Number of classes.
+            layers (List[int]): List of hidden layers.
+            activation (Callable): Activation function.
+            dropout (float): Dropout rate.
         """
         super(ClsDecoder, self).__init__()
         # module List

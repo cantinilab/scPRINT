@@ -35,13 +35,9 @@ class Generate:
         Embedder a class to embed and annotate cells using a model
 
         Args:
+            genelist (List[str]): The list of genes for which to generate expression data.
             batch_size (int, optional): The size of the batches to be used in the DataLoader. Defaults to 64.
-            num_workers (int, optional): The number of worker processes to use for data loading. Defaults to 8.
-            embedding_to_use (List[str], optional): The list of embeddings to be used for generating expression. Defaults to [ "all" ].
-            doplot (bool, optional): Whether to generate plots. Defaults to True.
-            genelist (List[str]): The list of genes for which to generate expression data
-            save_every (int, optional): The number of cells to save at a time. Defaults to 40_000.
-                This is important to avoid memory issues.
+            embedding_to_use (List[str], optional): The list of embeddings to be used for generating expression. Defaults to ["all"].
         """
         self.batch_size = batch_size
         self.embedding_to_use = embedding_to_use

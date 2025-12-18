@@ -26,21 +26,14 @@ class GeneEmbeddingExtractor:
     ):
         """
         Args:
-            batch_size (int): Batch size for the DataLoader.
-            num_workers (int): Number of workers for DataLoader.
-            genelist (list): list of genes to restrict to.
-            how (str): Method to select genes for embedding extraction. Options:
-                - "random expr": random expression
-                - "most var": highly variable genes in the dataset
-                - "some": specific genes (from genelist)
-                - "most expr": most expressed genes in the cell
-            save_every (int): Save embeddings every `save_every` batches.
-            average (bool): Whether to average embeddings across all cells.
-            save_dir (str): Directory to save embeddings. If None, embeddings are not saved to
+            genelist (list): List of genes to restrict to.
+            batch_size (int): Batch size for the DataLoader. Defaults to 64.
+            num_workers (int): Number of workers for DataLoader. Defaults to 8.
+            save_every (int): Save embeddings every `save_every` batches. Defaults to 4000.
+            average (bool): Whether to average embeddings across all cells. Defaults to False.
+            save_dir (str): Directory to save embeddings. If None, embeddings are not saved. Defaults to None.
             use_knn (bool): Whether to use k-nearest neighbors information. Defaults to False.
 
-        Returns:
-            embeddings (np.ndarray): A numpy array of shape (n_cells, n_genes, embedding_dim)
         """
         self.genelist = genelist
         self.batch_size = batch_size

@@ -77,7 +77,7 @@ class scPRINT2(L.LightningModule, PyTorchModelHubMixin):
         nlayers_cell: int = 6,
         num_heads_kv_cell: int = 4,
         transformer=None,
-        drop_path_rate=0.0,
+        drop_path_rate: float =0.0,
         # unused args from older versions kept for loading old models
         gene_pos_enc=None,
         max_cont_len=None,
@@ -94,7 +94,7 @@ class scPRINT2(L.LightningModule, PyTorchModelHubMixin):
         num_batch_labels=None,
         fused_mlp=None,
         fused_bias_fc=None,
-        **attention_kwargs,
+        **attention_kwargs: dict,
     ):
         """
         scPRINT-2: Single-Cell Pretrained Regulatory Inference Network Transformer.
@@ -211,7 +211,7 @@ class scPRINT2(L.LightningModule, PyTorchModelHubMixin):
             nlayers_cell (int, optional): Layers in cell transformer. Defaults to 6.
             num_heads_kv_cell (int, optional): KV heads for cell transformer. Defaults to 4.
             drop_path_rate (float, optional): Stochastic depth rate. Defaults to 0.0.
-            **attention_kwargs: Additional arguments passed to FlashTransformer.
+            **attention_kwargs (dict): Additional arguments passed to FlashTransformer.
 
         Attributes:
             Training Configuration (set these before training):
@@ -1605,7 +1605,7 @@ class scPRINT2(L.LightningModule, PyTorchModelHubMixin):
         @see pl.LightningModule
 
         Returns:
-            _type_: _description_
+            Tensor: Total loss value for the training step.
         """
         total_loss, losses = self._full_training(
             batch=batch,
@@ -2368,10 +2368,11 @@ class scPRINT2(L.LightningModule, PyTorchModelHubMixin):
         embed given gene expression, encode the gene embedding and cell embedding.
 
         Args:
-            batch @see training_step
+            batch (Dict[str, Tensor]): Dictionary containing 'genes', 'x', 'depth', and optionally 'knn_cells'.
+            batch_idx: Index of the batch.
 
         Returns:
-            Tensor: _description_
+            Dict[str, Tensor]: Dictionary containing model predictions.
         """
         return self._predict(
             batch["genes"],

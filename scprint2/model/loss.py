@@ -260,7 +260,7 @@ def hierarchical_classification(
 
     Raises:
         ValueError: If the labels_hierarchy is not found while the number of predicted
-        labels is smaller than the number of ground truth labels.
+            labels is smaller than the number of ground truth labels.
 
     Returns:
         Tensor: The computed binary cross entropy loss for the given batch.

@@ -452,9 +452,6 @@ class WeightedMasker:
             genes (List[str]): The list of genes the model might see.
             TFs (List[str]): The list of TFs the model can drop.
             tf_weight (float): How likely it is to drop a non TF compared to a TF.
-
-        Returns:
-            torch.Tensor: A tensor of masked data.
         """
         TFs = set(TFs)
         self.weights = torch.tensor([tf_weight if gene in TFs else 1 for gene in genes])
@@ -652,8 +649,9 @@ def test(
 
     Args:
         model (torch.nn.Module): The model to be tested.
-        name (str): The name to be used for the output JSON files.
         filedir (str): The directory where the data files are located.
+        do_class (bool): Whether to perform classification. Defaults to True.
+        maxcells_grn (int): Maximum cells for GRN analysis. Defaults to 1024.
 
     Returns:
         None

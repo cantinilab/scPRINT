@@ -468,8 +468,7 @@ def default_benchmark(
     Args:
         model (Any): The scPRINT model to be used for the benchmark.
         default_dataset (str, optional): The default dataset to use for benchmarking. Defaults to "sroy".
-        cell_types (List[str], optional): List of cell types to include in the benchmark. Defaults to [
-        ].
+        cell_types (List[str], optional): List of cell types to include in the benchmark. Defaults to [].
         maxlayers (int, optional): Maximum number of layers to use from the model. Defaults to 16.
         maxgenes (int, optional): Maximum number of genes to consider. Defaults to 5000.
         batch_size (int, optional): Batch size for processing. Defaults to 32.

@@ -392,9 +392,11 @@ def default_benchmark(
 
     Args:
         model (torch.nn.Module): The scPRINT model to be used for embedding and annotation.
-        default_dataset (str, optional): The default dataset to use for benchmarking. Options are "pancreas", "lung", or a path to a dataset. Defaults to "pancreas".
+        folder_dir (str, optional): The directory containing data files.
+        dataset (str, optional): The dataset to use for benchmarking. Can be a path or URL.
         do_class (bool, optional): Whether to perform classification. Defaults to True.
         coarse (bool, optional): Whether to use coarse cell type annotations. Defaults to False.
+    
     Returns:
         dict: A dictionary containing the benchmark metrics.
     """
@@ -641,8 +643,9 @@ def display_confusion_matrix(
     Display the confusion matrix for true vs predicted cell types.
 
     Args:
-        nadata (_type_): _description_
-        on (str, optional): one of ['cell_type', 'disease', 'tissue'...]. Defaults to "cell_type".
+        nadata (AnnData): Annotated data object containing predictions and ground truth.
+        pred (str): Column name for predictions. Defaults to "conv_pred_cell_type_ontology_term_id".
+        true (str): Column name for ground truth. Defaults to "cell_type".
     """
     counts = None
     for k, v in nadata.obs[true].value_counts().items():
