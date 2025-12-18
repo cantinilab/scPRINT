@@ -2,7 +2,7 @@
 FROM openproblems/base_pytorch_nvidia:1
 
 # Install Python packages using pip
-RUN pip install scprint2==1.0.0
+RUN pip install scprint2==0.9.2
 
 RUN lamin init --storage ./main --name main --schema bionty
 RUN lamin load anonymous/main

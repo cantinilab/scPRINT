@@ -1,10 +1,24 @@
 # Remaining work to be done for scPRINT-2
 
--
--
--
--
--
+- train scPRINT-large
+- debugging and re-testing the attention bias matrices
+- make criss-cross attention work for gene network extraction
+- see if some of our issues with making the model work without gene locations have to do with ESM3 vs ESM2’s gene embeddings
+- encode dna-level information and non-coding genes too using DNA-LM
+- predict kinetics too (add a second MLP on top of the output gene embeddings)
+- make it work on bulk RNAseq (fine-tuning on TCGA/GTEX/DepMap)
+
+## fine-tuning example notebooks 
+
+- create a fine tuning class and notebook for classification from embeddings on additional labels (e.g. depmap /tcga diseases)
+- on new classes entirely (predict TCGA patient survival curves from cell embeddings too)
+- notebook for finetuning to predict genetic perturbations
+- notebook for finetuning to predict molecular perturbations
+
+## long term:
+
+- make it work on spatial neighbors too (and add spatial information to the loss)
+- make it a real diffusion denoising process (hard to do on non gaussian distributions)
 
 # How to develop on this project
 
