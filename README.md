@@ -153,7 +153,7 @@ You can do it via the command:
 or with this function:
 
 ```python
-from scdataloader.utils import populate_my_ontology
+from scdataloader.utils import populate_my_ontology, _adding_scbasecamp_genes
 
 populate_my_ontology() #to populate everything (can take 2-10mns)
 
