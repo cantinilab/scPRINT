@@ -110,7 +110,7 @@ def test_base():
     # make a collection
     file = ln.Artifact(adata, description="test file")
     file.save()
-    col = ln.Collection(file, name="test dataset")
+    col = ln.Collection(file, key="test dataset")
     col.save()
     datamodule = DataModule(
         collection_name="test dataset",
