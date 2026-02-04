@@ -1,17 +1,17 @@
 import shutil
 import sys
 
-import lamindb_setup as ln_setup
+import lamindb as ln
 import pytest
 
 
 def pytest_sessionstart():
-    ln_setup.init(storage="./testdb", name="test", modules="bionty")
+    ln.setup.init(storage="./testdb", name="test", modules="bionty")
 
 
 def pytest_sessionfinish(session):
     shutil.rmtree("./testdb")
-    ln_setup.delete("test", force=True)
+    ln.setup.delete("test", force=True)
 
 
 # each test runs on cwd to its temp dir

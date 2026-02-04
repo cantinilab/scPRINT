@@ -212,6 +212,7 @@ class Embedder:
 
         try:
             adata.obsm["X_scprint_umap"] = pred_adata.obsm["X_umap"]
+            del pred_adata.obsm["X_umap"]
         except:
             print("too few cells to embed into a umap")
         try:
@@ -396,7 +397,7 @@ def default_benchmark(
         dataset (str, optional): The dataset to use for benchmarking. Can be a path or URL.
         do_class (bool, optional): Whether to perform classification. Defaults to True.
         coarse (bool, optional): Whether to use coarse cell type annotations. Defaults to False.
-    
+
     Returns:
         dict: A dictionary containing the benchmark metrics.
     """
@@ -510,7 +511,9 @@ def compute_classification(
         if clss in labels_hierarchy:
             parentdf = (
                 bt.CellType.filter()
-                .df(include=["parents__ontology_id", "ontology_id"])
+                .to_dataframe(
+                    include=["parents__ontology_id", "ontology_id"], limit=None
+                )
                 .set_index("ontology_id")[["parents__ontology_id"]]
             )
             parentdf.parents__ontology_id = parentdf.parents__ontology_id.astype(str)

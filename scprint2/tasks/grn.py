@@ -42,7 +42,7 @@ class GNInfer:
         num_genes: int = 3000,
         max_cells: int = 0,
         cell_type_col: str = "cell_type",
-        how: str = "random expr",  # random expr, most var within, most var across, some
+        how: str = "most var within",  # random expr, most var within, most var across, some
         genelist: Optional[List[str]] = None,
         layer: Optional[List[int]] = None,
         preprocess: str = "softmax",  # sinkhorn, softmax, none
@@ -50,7 +50,7 @@ class GNInfer:
         filtration: str = "thresh",  # thresh, top-k, mst, known, none
         k: int = 10,
         known_grn: Optional[Any] = None,
-        precomp_attn: bool = False,
+        precomp_attn: bool = True,
         symmetrize: bool = False,
         loc: str = "./",
         use_knn: bool = True,
@@ -117,7 +117,9 @@ class GNInfer:
         if self.filtration != "none" and self.head_agg == "none":
             raise ValueError("filtration must be 'none' when head_agg is 'none'")
 
-    def __call__(self, model: torch.nn.Module, adata: AnnData, cell_type=None) -> tuple[AnnData, np.ndarray]:
+    def __call__(
+        self, model: torch.nn.Module, adata: AnnData, cell_type=None
+    ) -> tuple[AnnData, np.ndarray]:
         """
         __call__ runs the method
 
@@ -277,7 +279,6 @@ class GNInfer:
                 "full attention (i.e. precomp_attn=True) is not supported for random expr"
             )
         device = model.device.type
-        # this is a debugger line
         dtype = (
             torch.float16
             if isinstance(model.transformer, FlashTransformer)

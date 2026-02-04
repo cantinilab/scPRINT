@@ -14,14 +14,20 @@ from scprint2.tasks import (
     Embedder,
     FinetuneBatchClass,
     GeneEmbeddingExtractor,
-    Generate,
     GNInfer,
     Imputer,
 )
 
 from .trainer import TrainingMode
 
-TASKS = [("embed", Embedder), ("gninfer", GNInfer), ("denoise", Denoiser)]
+TASKS = [
+    ("embed", Embedder),
+    ("gninfer", GNInfer),
+    ("denoise", Denoiser),
+    ("finetune", FinetuneBatchClass),
+    ("gene_emb", GeneEmbeddingExtractor),
+    ("impute", Imputer),
+]
 TIMEOUT = 3600 * 9  # 9 hours in seconds
 
 
@@ -92,6 +98,12 @@ class MyCLI(LightningCLI):
             parser_subcommands.add_subcommand(
                 subcommand, subcommand_parser, help=description
             )
+        description = (
+            "setup everything for scprint2. only the default behavior is supported."
+        )
+        parser = self.init_parser(description=description)
+        self._subcommand_parsers["easy_setup"] = parser
+        parser_subcommands.add_subcommand("easy_setup", parser, help=description)
         for subcommand in TASKS:
             fn = getattr(subcommand[1], "__init__")
             description = _get_short_description(fn)
@@ -157,6 +169,20 @@ class MyCLI(LightningCLI):
             after_fn = getattr(self, f"after_{subcommand}", None)
             if callable(after_fn):
                 after_fn()
+        elif subcommand == "easy_setup":
+            from huggingface_hub import hf_hub_download
+            from scdataloader.utils import (
+                _adding_scbasecamp_genes,
+                populate_my_ontology,
+            )
+
+            populate_my_ontology()
+            _adding_scbasecamp_genes()
+            hf_hub_download(
+                repo_id="jkobject/scPRINT", filename="small-v2.ckpt", local_dir="."
+            )
+            print("finished command")
+            return
         else:
             import numpy as np
             import scanpy as sc
@@ -165,6 +191,11 @@ class MyCLI(LightningCLI):
 
             from scprint2 import scPRINT2
 
+            model_checkpoint_file = self.config_init[subcommand]["ckpt_path"]
+            model = scPRINT2.load_from_checkpoint(
+                model_checkpoint_file, precpt_gene_emb=None
+            )
+
             adata = sc.read_h5ad(self.config_init[subcommand]["adata"])
             adata.obs.drop(columns="is_primary_data", inplace=True, errors="ignore")
             if self.config_init[subcommand]["species"] is not None:
@@ -172,18 +203,16 @@ class MyCLI(LightningCLI):
                     "species"
                 ]
             preprocessor = Preprocessor(
-                do_postp=False,
+                do_postp=model.expr_emb_style == "metacell",
                 force_preprocess=True,
                 skip_validate=self.config_init[subcommand].get("skip_validate", True),
                 use_raw=self.config_init[subcommand].get("use_raw", False),
                 is_symbol=self.config_init[subcommand].get("is_symbol", False),
             )
             adata = preprocessor(adata)
+            if model.expr_emb_style == "metacell":
+                sc.pp.neighbors(adata, use_rep="X_pca")
             conf = dict(self.config_init[subcommand])
-            model_checkpoint_file = self.config_init[subcommand]["ckpt_path"]
-            model = scPRINT2.load_from_checkpoint(
-                model_checkpoint_file, precpt_gene_emb=None
-            )
             missing = set(model.genes) - set(load_genes(model.organisms).index)
             if len(missing) > 0:
                 print(
@@ -203,6 +232,11 @@ class MyCLI(LightningCLI):
                 "adata",
                 "output_filename",
                 "cell_type",
+                "use_raw",
+                "is_symbol",
+                "skip_validate",
+                "train_data",
+                "val_data",
             ]:
                 conf.pop(key, None)
 
@@ -217,14 +251,14 @@ class MyCLI(LightningCLI):
                 print("metrics:")
                 print(metrics)
                 print()
-                print(
-                    "saving the file under the path: ",
-                    self.config_init[subcommand]["output_filename"],
-                )
-                adata.write(
+                name = (
                     self.config_init[subcommand]["output_filename"] + "_embedded.h5ad"
                 )
-
+                print(
+                    "saving the file under the path: ",
+                    name,
+                )
+                adata.write(name)
             elif subcommand == "gninfer":
                 gn = GNInfer(**conf)
                 adata = gn(
@@ -232,100 +266,77 @@ class MyCLI(LightningCLI):
                     adata=adata,
                     cell_type=self.config_init[subcommand]["cell_type"],
                 )
-                print(
-                    "saving the file under the path: ",
-                    self.config_init[subcommand]["output_filename"],
-                )
-                adata.write(
+                name = (
                     self.config_init[subcommand]["output_filename"]
                     + "_"
                     + self.config_init[subcommand]["cell_type"]
                     + "_grn.h5ad"
                 )
+                print(
+                    "saving the file under the path: ",
+                    name,
+                )
+                adata.write(name)
 
             elif subcommand == "denoise":
                 dn = Denoiser(**conf)
-                metrics, random_indices, expr_pred = dn(
+                metrics, _, expr_pred = dn(
                     model=model,
                     adata=adata,
                 )
                 print("metrics:")
                 print(metrics)
                 print()
-                # now what we are doing here it to complete the expression profile with the denoised values. this is not done by default for now
-                print(
-                    "saving the file under the path: ",
-                    self.config_init[subcommand]["output_filename"],
-                )
-                expr_pred.write(
+                # now what we are doing here it to complete the expression profile with the denoised values.
+                # this is not done by default for now
+                name = (
                     self.config_init[subcommand]["output_filename"] + "_denoised.h5ad"
                 )
+                print(
+                    "saving the file under the path: ",
+                    name,
+                )
+                expr_pred.write(name)
             elif subcommand == "finetune":
                 ft = FinetuneBatchClass(**conf)
-                metrics, random_indices, model = ft(
+                model = ft(
                     model=model,
                     adata=adata,
                 )
-                print()
-                # now what we are doing here it to complete the expression profile with the denoised values. this is not done by default for now
-                print(
-                    "saving the model under the path: ",
-                    self.config_init[subcommand]["output_filename"],
-                )
-                model.save_checkpoint(
+                name = (
                     self.config_init[subcommand]["output_filename"] + "_finetuned.ckpt"
                 )
+                print(
+                    "saving the model under the path: ",
+                    name,
+                )
+                model.save_checkpoint(name)
             elif subcommand == "gene_emb":
                 ge = GeneEmbeddingExtractor(**conf)
-                metrics, random_indices, expr_pred = ge(
+                ada = ge(
                     model=model,
                     adata=adata,
                 )
-                print("metrics:")
-                print(metrics)
-                print()
-                # now what we are doing here it to complete the expression profile with the denoised values. this is not done by default for now
+                name = (
+                    self.config_init[subcommand]["output_filename"] + "_gene_emb.h5ad"
+                )
                 print(
                     "saving the file under the path: ",
-                    self.config_init[subcommand]["output_filename"],
+                    name,
                 )
-                expr_pred.write(
-                    self.config_init[subcommand]["output_filename"] + "_denoised.h5ad"
-                )
-            elif subcommand == "generate":
-                gen = Generate(**conf)
-                metrics, random_indices, expr_pred = gen(
-                    model=model,
-                    adata=adata,
-                )
-                print("metrics:")
-                print(metrics)
-                print()
-                # now what we are doing here it to complete the expression profile with the denoised values. this is not done by default for now
-                print(
-                    "saving the file under the path: ",
-                    self.config_init[subcommand]["output_filename"],
-                )
-                expr_pred.write(
-                    self.config_init[subcommand]["output_filename"] + "_denoised.h5ad"
-                )
+                ada.write(name)
             elif subcommand == "impute":
                 imp = Imputer(**conf)
-                metrics, random_indices, expr_pred = imp(
+                _, expr_pred = imp(
                     model=model,
                     adata=adata,
                 )
-                print("metrics:")
-                print(metrics)
-                print()
-                # now what we are doing here it to complete the expression profile with the denoised values. this is not done by default for now
+                name = self.config_init[subcommand]["output_filename"] + "_imputed.h5ad"
                 print(
                     "saving the file under the path: ",
-                    self.config_init[subcommand]["output_filename"],
+                    name,
                 )
-                expr_pred.write(
-                    self.config_init[subcommand]["output_filename"] + "_denoised.h5ad"
-                )
+                expr_pred.write(name)
             else:
                 raise ValueError(f"Unknown subcommand: {subcommand}")
 
@@ -358,7 +369,8 @@ class MyCLI(LightningCLI):
             self.model.name = self.trainer._loggers[0].version
         except:
             print("not on wandb, could not set name")
-        self.datamodule.set_valid_genes_collator(self.model.genes)
+        if hasattr(self, "datamodule") and self.datamodule is not None:
+            self.datamodule.set_valid_genes_collator(self.model.genes)
 
     def instantiate_trainer(self, **kwargs) -> Trainer:
         """Override to customize trainer instantiation"""

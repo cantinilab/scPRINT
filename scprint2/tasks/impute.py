@@ -25,14 +25,14 @@ FILE_DIR = os.path.dirname(os.path.realpath(__file__))
 class Imputer:
     def __init__(
         self,
+        genes_to_use: List[str],
+        genes_to_impute: List[str],
         batch_size: int = 10,
         num_workers: int = 1,
         max_cells: int = 500_000,
         doplot: bool = False,
         method: str = "generative",
         predict_depth_mult: int = 4,
-        genes_to_use: Optional[List[str]] = None,
-        genes_to_impute: Optional[List[str]] = None,
         save_every: int = 100_000,
         apply_zero_pred: bool = True,
         use_knn: bool = True,
@@ -49,8 +49,8 @@ class Imputer:
             method (str, optional): Imputation method, either 'masking' or 'generative'. Defaults to 'generative'.
             predict_depth_mult (int, optional): Multiplier for prediction depth. Defaults to 4.
                 This will artificially increase the sequencing depth (or number of counts) to 4 times the original depth.
-            genes_to_use (Optional[List[str]], optional): List of genes to use for imputation. Defaults to None.
-            genes_to_impute (Optional[List[str]], optional): List of genes to impute. Defaults to None.
+            genes_to_use (List[str]): List of genes to use for imputation. Defaults to None.
+            genes_to_impute (List[str]): List of genes to impute. Defaults to None.
             save_every (int, optional): The number of cells to save at a time. Defaults to 100_000.
                 This is important to avoid memory issues.
             apply_zero_pred (bool, optional): Whether to apply zero prediction adjustment. Defaults to True.
@@ -69,7 +69,9 @@ class Imputer:
         self.apply_zero_pred = apply_zero_pred
         self.use_knn = use_knn
 
-    def __call__(self, model: torch.nn.Module, adata: AnnData) -> tuple[Optional[np.ndarray], AnnData]:
+    def __call__(
+        self, model: torch.nn.Module, adata: AnnData
+    ) -> tuple[Optional[np.ndarray], AnnData]:
         """
         __call__ calling the function
 
@@ -151,6 +153,8 @@ class Imputer:
             if type(model.transformer) is FlashTransformer
             else model.dtype
         )
+        save_expr = model.save_expr
+        model.save_expr = True
         torch.cuda.empty_cache()
         with torch.no_grad(), torch.autocast(device_type=device, dtype=dtype):
             for batch in tqdm(dataloader):
@@ -204,6 +208,7 @@ class Imputer:
         pred_adata = concat(pred_adata)
 
         model.doplot = prevplot
+        model.save_expr = save_expr
 
         # pred_adata.X = adata.X if random_indices is None else adata.X[random_indices]
         true_imp = pred_adata.X[:, pred_adata.var.index.isin(genes_to_impute)].toarray()

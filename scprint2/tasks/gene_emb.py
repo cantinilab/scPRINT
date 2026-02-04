@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader
 class GeneEmbeddingExtractor:
     def __init__(
         self,
-        genelist,
+        genelist: list[str],
         batch_size: int = 64,
         num_workers: int = 8,
         save_every: int = 4_000,
@@ -26,7 +26,7 @@ class GeneEmbeddingExtractor:
     ):
         """
         Args:
-            genelist (list): List of genes to restrict to.
+            genelist (list[str]): List of genes to restrict to.
             batch_size (int): Batch size for the DataLoader. Defaults to 64.
             num_workers (int): Number of workers for DataLoader. Defaults to 8.
             save_every (int): Save embeddings every `save_every` batches. Defaults to 4000.

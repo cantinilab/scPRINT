@@ -1,12 +1,10 @@
-import math
-from typing import Dict, Optional
+from typing import Callable, Optional
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 from torch.autograd import Function
-from torch.distributions import NegativeBinomial
 
 # import ot
 # from ot.gromov import gromov_wasserstein, fused_gromov_wasserstein
@@ -87,23 +85,6 @@ def nb(target: Tensor, mu: Tensor, theta: Tensor, eps=1e-4) -> Tensor:
     )
 
     return -res.mean()
-
-
-def nb_dist(x: Tensor, mu: Tensor, theta: Tensor, eps=1e-4) -> Tensor:
-    """
-    nb_dist Computes the negative binomial distribution.
-
-    Args:
-        x (Tensor): Torch Tensor of observed data.
-        mu (Tensor): Torch Tensor of means of the negative binomial distribution (must have positive support).
-        theta (Tensor): Torch Tensor of inverse dispersion parameter (must have positive support).
-        eps (float, optional): Numerical stability constant. Defaults to 1e-4.
-
-    Returns:
-        Tensor: Negative binomial loss value.
-    """
-    loss = -NegativeBinomial(mu=mu, theta=theta).log_prob(x)
-    return loss
 
 
 def zinb(
@@ -341,7 +322,7 @@ class AdversarialDiscriminatorLoss(nn.Module):
         d_model: int,
         n_cls: int,
         nlayers: int = 3,
-        activation: callable = nn.LeakyReLU,
+        activation: Callable = nn.LeakyReLU,
         reverse_grad: bool = True,
     ):
         """
