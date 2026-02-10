@@ -8,7 +8,11 @@ import pytest
 import scanpy as sc
 from lightning.pytorch import Trainer
 from scdataloader import DataModule, Preprocessor
-from scdataloader.utils import _adding_scbasecamp_genes, populate_my_ontology
+from scdataloader.utils import (
+    _adding_scbasecamp_genes,
+    load_genes,
+    populate_my_ontology,
+)
 
 from scprint2 import scPRINT2
 from scprint2.base import NAME
@@ -33,7 +37,7 @@ def test_base():
     filepath = os.path.join(os.path.dirname(__file__), "test.h5ad")
     ckpt_path = os.path.join(os.path.dirname(__file__), "small-v2.ckpt")
     if not os.path.exists(ckpt_path):
-        url = "https://huggingface.co/jkobject/scPRINT/resolve/main/18hebyht-final-small.ckpt"
+        url = "https://huggingface.co/jkobject/scPRINT/resolve/main/small-v2.ckpt"
         urllib.request.urlretrieve(url, ckpt_path)
 
     adata = sc.read_h5ad(filepath)
@@ -48,10 +52,14 @@ def test_base():
     model = scPRINT2.load_from_checkpoint(
         ckpt_path,
         precpt_gene_emb=None,
-        # triton gets installed so it must think it has cuda enabled
-        transformer="normal",
         gene_pos_file=None,
     )
+    missing = set(model.genes) - set(load_genes(model.organisms).index)
+    if len(missing) > 0:
+        print(
+            "Warning: some genes missmatch exist between model and ontology: solving...",
+        )
+        model._rm_genes(missing)
     dn = Denoiser(
         max_cells=10,
         batch_size=2,

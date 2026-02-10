@@ -950,7 +950,14 @@ class scPRINT2(L.LightningModule, PyTorchModelHubMixin):
     def _rm_genes(self, names):
         tokeep = ~np.array([g in names for g in self.genes])
         # Keep only embeddings for genes that are NOT being deleted
-        kept_embeddings = self.gene_encoder.embeddings.weight.data[tokeep]
+        if type(self.expr_encoder) is encoders.ExprBasedFT:
+            kept_embeddings = self.expr_encoder.gene_encoder.embeddings.weight.data[
+                tokeep
+            ]
+        elif type(self.gene_encoder) is torch.nn.Sequential:
+            kept_embeddings = self.gene_encoder[0].embeddings.weight.data[tokeep]
+        else:
+            kept_embeddings = self.gene_encoder.embeddings.weight.data[tokeep]
 
         # Create new embeddings layer with reduced vocabulary size
         new_vocab_size = tokeep.sum()
@@ -960,7 +967,10 @@ class scPRINT2(L.LightningModule, PyTorchModelHubMixin):
         # Replace the old encoder with the new one
         if type(self.expr_encoder) is encoders.ExprBasedFT:
             self.expr_encoder.gene_encoder = new_gene_encoder
-        self.gene_encoder = new_gene_encoder
+        elif type(self.gene_encoder) is torch.nn.Sequential:
+            self.gene_encoder[0] = new_gene_encoder
+        else:
+            self.gene_encoder = new_gene_encoder
         # Update vocabulary
         for k, v in self._genes.items():
             if len(set(v) & set(names)) > 0:
@@ -1252,7 +1262,7 @@ class scPRINT2(L.LightningModule, PyTorchModelHubMixin):
         mask_zeros: Optional[Tensor] = None,
     ) -> Dict[str, Tensor] | tuple[Dict[str, Tensor], list]:
         """
-        Complete forward pass through the scPRINT-2 model.
+        Complete forward pass through the scPRINT-2
 
         Encodes input expression data, processes through transformer(s), and
         decodes into expression predictions and cell classifications.

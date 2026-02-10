@@ -3,12 +3,12 @@ import os
 import numpy as np
 import pandas as pd
 import torch
-from scprint import utils
 
 # from RNABERT import RNABERT
 from torch.nn import AdaptiveAvgPool1d
 from tqdm import tqdm
 
+from .. import utils
 from .protein_embedder import ESM2
 
 
@@ -65,9 +65,7 @@ def protein_embeddings_generator(
         names = []
         client = ESMC.from_pretrained("esmc_600m").to("cuda" if cuda else "cpu")
         conf = LogitsConfig(sequence=True, return_embeddings=True)
-        with (
-            open(fasta_path + "subset.fa", "r") as fasta,
-        ):
+        with (open(fasta_path + "subset.fa", "r") as fasta,):
             for record in tqdm(SeqIO.parse(fasta, "fasta")):
                 protein = ESMProtein(sequence=str(record.seq))
                 protein_tensor = client.encode(protein)

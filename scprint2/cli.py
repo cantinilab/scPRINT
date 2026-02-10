@@ -193,7 +193,7 @@ class MyCLI(LightningCLI):
 
             model_checkpoint_file = self.config_init[subcommand]["ckpt_path"]
             model = scPRINT2.load_from_checkpoint(
-                model_checkpoint_file, precpt_gene_emb=None
+                model_checkpoint_file, precpt_gene_emb=None, gene_pos_file=None
             )
 
             adata = sc.read_h5ad(self.config_init[subcommand]["adata"])
@@ -213,6 +213,12 @@ class MyCLI(LightningCLI):
             if model.expr_emb_style == "metacell":
                 sc.pp.neighbors(adata, use_rep="X_pca")
             conf = dict(self.config_init[subcommand])
+            if model.cell_transformer is None:
+                if conf.get("ft_mode", "xpressor"):
+                    print(
+                        "model doesn't have xpressor, setting finetuning mode to 'full' model"
+                    )
+                conf["ft_mode"] = "full"
             missing = set(model.genes) - set(load_genes(model.organisms).index)
             if len(missing) > 0:
                 print(
