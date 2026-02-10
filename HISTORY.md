@@ -4,6 +4,8 @@ Changelog
 
 (unreleased)
 ------------
+- Many debugs and cleanups. [jkobject]
+- Release: version 1.0.0 🚀 [jkobject]
 - Update lamindb version. [jkobject]
 - Merge branch 'main' of https://github.com/cantinilab/scPRINT-2.
   [jkobject]
