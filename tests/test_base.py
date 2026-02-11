@@ -77,7 +77,6 @@ def test_base():
             "self_reported_ethnicity_ontology_term_id",
             "sex_ontology_term_id",
         ],
-        plot_corr_size=8,
         doplot=True,
         keep_all_cls_pred=False,
         dtype=torch.float32,

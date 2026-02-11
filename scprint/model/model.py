@@ -8,8 +8,9 @@ from functools import partial
 from math import factorial
 from pathlib import Path
 from typing import Dict, Optional
-import numpy as np
+
 import lightning as L
+import numpy as np
 import pandas as pd
 import torch
 import torch.distributed
@@ -482,12 +483,12 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 print("RuntimeError caught: scPrint is not attached to a `Trainer`.")
         if not is_interactive():
             self.save_hyperparameters()
-            
+
     def _rm_genes(self, names):
         tokeep = ~np.array([g in names for g in self.genes])
         # Keep only embeddings for genes that are NOT being deleted
         kept_embeddings = self.gene_encoder.embeddings.weight.data[tokeep]
-        
+
         # Create new embeddings layer with reduced vocabulary size
         new_vocab_size = tokeep.sum()
         new_gene_encoder = encoders.GeneEncoder(new_vocab_size, self.d_model)
@@ -622,7 +623,8 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 )
                 output.update(
                     {
-                        "cls_output_" + clsname: self.cls_decoders[clsname](
+                        "cls_output_"
+                        + clsname: self.cls_decoders[clsname](
                             output["cell_embs"][:, loc, :]
                         )
                     }
@@ -1040,9 +1042,9 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         # TASK 6. expression generation
         if do_generate:
             output = self._generate(
-                cell_embs=output["cell_embs"]
-                if not run_full_forward
-                else full_cell_embs,
+                cell_embs=(
+                    output["cell_embs"] if not run_full_forward else full_cell_embs
+                ),
                 gene_pos=gene_pos,
                 depth_mult=expression.sum(1),
                 req_depth=total_count,
@@ -1722,8 +1724,7 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 logged = True
             except:
                 print("couldn't log to wandb")
-            if not logged:
-                fig.savefig('' + mdir + "/umap_" + self.name +"_"+name + ".png")
-            
+            if not logged and fig is not None:
+                fig.savefig("" + mdir + "/umap_" + self.name + "_" + name + ".png")
 
         return adata

@@ -4,6 +4,456 @@ Changelog
 
 (unreleased)
 ------------
+- Debug of the latest version. [jkobject]
+- Merge branch 'main' of https://github.com/cantinilab/scPRINT into
+  main-v1. [jkobject]
+- Update README.md. [Jérémie Kalfon]
+- Update checkpoint filenames in README.md. [Jérémie Kalfon]
+- Update test_base.py. [Jérémie Kalfon]
+- Nothing really. [jkobject]
+
+
+1.0.1 (2026-02-10)
+------------------
+- Release: version 1.0.1 🚀 [jkobject]
+- Many debugs and cleanups. [jkobject]
+- Release: version 1.0.0 🚀 [jkobject]
+- Update lamindb version. [jkobject]
+- Merge branch 'main' of https://github.com/cantinilab/scPRINT-2.
+  [jkobject]
+- Update README.md. [Jérémie Kalfon]
+- Debugs ci. [jkobject]
+
+
+0.9.8 (2025-12-18)
+------------------
+- Release: version 0.9.8 🚀 [jkobject]
+- Debug. [jkobject]
+- Cleanup. [jkobject]
+- Debug the doc. [jkobject]
+
+
+0.9.6 (2025-12-18)
+------------------
+- Release: version 0.9.6 🚀 [jkobject]
+- Cleanup 3/4. [jkobject]
+- Merge branch 'main' of https://github.com/cantinilab/scPRINT-2.
+  [jkobject]
+- Update Codecov badge link in README.md. [Jérémie Kalfon]
+- Some more debugs. [jkobject]
+- Update codecov. [jkobject]
+- Some more results and improvements. [jkobject]
+
+
+0.9.2 (2025-12-17)
+------------------
+- Release: version 0.9.2 🚀 [jkobject]
+- Cleanup. [jkobject]
+
+
+0.9.1 (2025-12-17)
+------------------
+- Release: version 0.9.1 🚀 [jkobject]
+- Merge branch 'main' of https://github.com/cantinilab/scPRINT-2.
+  [jkobject]
+- Update README.md. [Jérémie Kalfon]
+- Revise README with updated links and content. [Jérémie Kalfon]
+
+  Updated manuscript link and added X-plainers reference.
+- Making it all more prod ready 1/4. [jkobject]
+- Some updates. [jkobject]
+- Cleanups. [jkobject]
+- Update the model name everywhere. [jkobject]
+- Moved it. [jkobject]
+- Updates. [jkobject]
+- Nothing. [jkobject]
+- Nothing. [jkobject]
+- Cleanup. [jkobject]
+- Adding. [jkobject]
+- Adding this. [jkobject]
+- Adding that. [jkobject]
+- Adding this. [jkobject]
+- Adding the nice datamaplot. [jkobject]
+- Final runs. [jkobject]
+- Formating. [jkobject]
+- Improve readme. [jkobject]
+- Add files via upload. [Jérémie Kalfon]
+- Merge branch 'main' of https://github.com/cantinilab/scPRINT-2.
+  [jkobject]
+- Add files via upload. [Jérémie Kalfon]
+- More cleanups and better readme. [jkobject]
+- Cleanup. [jkobject]
+- Merge branch 'breaking' [jkobject]
+- New gitignore. [jkobject]
+- Higher scale class. final notebook version. [jkobject]
+- Wip. [jkobject]
+- Merge branch 'breaking' of https://github.com/cantinilab/scPRINT into
+  breaking. [jkobject]
+- Merge branch 'main' into breaking. [Jérémie Kalfon]
+- Update LICENSE. [Jérémie Kalfon]
+- Update README.md. [Jérémie Kalfon]
+- Latest notebook version. [jkobject]
+- Correct versions. [jkobject]
+- WIP on latest questions. [jkobject]
+- Debug. [jkobject]
+- Make it work. [jkobject]
+- Update. [jkobject]
+- Update. [jkobject]
+- Continuing notebooks. [jkobject]
+- Save wip. [jkobject]
+- Debug. [jkobject]
+- Merge branch 'breaking' of https://github.com/cantinilab/scPRINT into
+  breaking. [jkobject]
+- Merge branch 'breaking' of https://github.com/cantinilab/scPRINT into
+  breaking. [jkobject-tower]
+- Nothing. [jkobject-tower]
+- Debug. [jkobject]
+- Real debug. [jkobject]
+- Debug. [jkobject]
+- Merge branch 'breaking' of https://github.com/cantinilab/scPRINT into
+  breaking. [jkobject]
+- Nothing. [jkobject-tower]
+- Debug. [jkobject]
+- One more debug. [jkobject]
+- Debug hyper test and binning, mask zeros, [jkobject]
+- Easy debug. [jkobject]
+- Merge branch 'breaking' of https://github.com/cantinilab/scPRINT into
+  breaking. [jkobject-tower]
+- Debug. [jkobject]
+- Merge branch 'breaking' of https://github.com/cantinilab/scPRINT into
+  breaking. [jkobject]
+- More. [jkobject]
+- Work in progress. [jkobject]
+- WIP. [jkobject-tower]
+- Merge branch 'dev' into breaking. [jkobject-tower]
+- Wip. [jkobject-tower]
+- Wip on the notebooks. [jkobject]
+- Removing blocking. [jkobject]
+- Debug was no gene fine tuning (forgot commit) [jkobject]
+- Debug was no gene fine tuning!!! [jkobject]
+- Merge remote-tracking branch 'origin/dev' into breaking. [jkobject]
+- Adding ft v2. [jkobject-tower]
+- Nothing really. [jkobject]
+- Dbug. [jkobject]
+- More complex loss. [jkobject]
+- More complex loss. [jkobject]
+- Merge branch 'dev' into breaking. [jkobject]
+- Debug submit  & large. [jkobject]
+- Zarr better. [jkobject]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject-tower]
+- Runnning notebooks. [jkobject]
+- Running notebooks. [jkobject-tower]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject-tower]
+- Wip. [jkobject-tower]
+- Debug tf masking. [jkobject]
+- Dbug adv class. [jkobject]
+- Dbug. [jkobject]
+- Quick cell emb db. [jkobject]
+- Did we solve it? [jkobject]
+- Should be more similar to prev version. [jkobject]
+- Simple dbug. [jkobject]
+- Debug stuff. [jkobject]
+- Debug pred embedding in case of no cell_emb. [jkobject]
+- Dbug. [jkobject]
+- Refactor transformer handling with FlashTransformer. [Jérémie Kalfon]
+- Max_cont_len useless. [jkobject]
+- Solve some GNN random expr stuff and masking genes. [jkobject]
+- Solution to logging issues on wandb. [jkobject]
+- Should work better now. [jkobject]
+- Trying to prevent NaNs. [jkobject]
+- Merge branch 'dev' into breaking. [jkobject]
+- Making nocls and binning works. [jkobject]
+- Debug long run times. [jkobject]
+- Debug long run times. [jkobject]
+- Debug multi cell model. [jkobject]
+- Novel weight init. [jkobject]
+- Merge remote-tracking branch 'origin/dev' into breaking. [jkobject]
+- Working on notebooks. [jkobject-tower]
+- Testing out stuff. [jkobject]
+- Merge remote-tracking branch 'origin/dev' into breaking. [jkobject]
+- All the notebook. [jkobject-tower]
+- Simple dbug. [jkobject-tower]
+- Some debug. [jkobject]
+- Solving knn-cells and adv bugs. [jkobject]
+- ExprBasedFT. [jkobject-tower]
+- Better sq classifier loc. [jkobject-tower]
+- Working on notebook and better adv clss. [jkobject-tower]
+- Make it work on non jz. [jkobject]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject-jz]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject-tower]
+- Improv. [jkobject]
+- Improv. [jkobject]
+- Improvements. [jkobject-tower]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject-jz]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject]
+- Missed some files in prev commit. [jkobject-tower]
+- Simplification and device-wide contrastive loss. [jkobject-tower]
+- Make binning work wip. [jkobject]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject-jz]
+- More debugs. [jkobject-tower]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject-jz]
+- Redbug. [jkobject-tower]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject-jz]
+- Update ablation study too. [jkobject-tower]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject-jz]
+- Using gene_pos file and giving it to the model for more clarity.
+  [jkobject-tower]
+- Running the notebooks. [jkobject-tower]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject-tower]
+- Issue with test datasets, removing. [jkobject]
+- Running different examples. [jkobject-tower]
+- Esm works back. [jkobject-tower]
+- Testing novel parameters. [jkobject-tower]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject-jz]
+- Debug more. [jkobject-tower]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject-jz]
+- Some more debugs. [jkobject-tower]
+- For jz. [jkobject-jz]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject-jz]
+- Debug. [jkobject-tower]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject-jz]
+- Nothing. [jkobject-tower]
+- All debugs. [jkobject-tower]
+- Adding new function to potentially improve classification results.
+  [jkobject]
+- Debugs. [jkobject-tower]
+- Debug tf masker. [jkobject-tower]
+- Solve for previous versions. [jkobject-tower]
+- Works. [jkobject-tower]
+- Debug tf masker. [jkobject-tower]
+- Adding gitignore. [jkobject-tower]
+- Working on files. [jkobject-tower]
+- Denoising, cross species wip or finished. [jkobject-tower]
+- Xenium, output emb, denoisin, cross species wip or finished.
+  [jkobject-tower]
+- Works. [jkobject-tower]
+- Works. [jkobject-tower]
+- Works1. [jkobject-tower]
+- Debug tf masker. [jkobject-tower]
+- Debug tf masker. [jkobject-tower]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject-tower]
+- Debugs. [jkobject]
+- Adding gitignore. [jkobject-tower]
+- Working on files. [jkobject-tower]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject-tower]
+- Novel task definition for generation and solve es. [jkobject]
+- ES update. [jkobject]
+- Denoising, cross species wip or finished. [jkobject-tower]
+- Xenium, output emb, denoisin, cross species wip or finished.
+  [jkobject-tower]
+- Update package version, gene names as dict, gene emb task, generate
+  denoise task, better emb saving, better expr saving. [jkobject-tower]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject-tower]
+- Merge branch 'main' into dev. [jkobject]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject]
+- Wip. [jkobject]
+- Wip on many notebooks. [jkobject-tower]
+- Again. [jkobject-tower]
+- Hope to be final dbug. [jkobject-tower]
+- Trying to log. [jkobject-tower]
+- Again. [jkobject-tower]
+- Again. [jkobject-tower]
+- Debug. [jkobject-tower]
+- Solving issue further. [jkobject-tower]
+- Dbug? [jkobject-tower]
+- Adding one more adv_cls. [jkobject-tower]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject-tower]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject]
+- Debug. [jkobject]
+- Nothing. [jkobject]
+- Some improvements and multiple debugs. [jkobject-tower]
+- New model packages v and some debug. [jkobject-tower]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject-tower]
+- Merge branch 'making-it-work-2' into dev. [jkobject]
+- Simple debug. [jkobject]
+- Good version and params. [jkobject-tower]
+- Linting. [jkobject-tower]
+- Merge commit '8e5706db1a27bdb56174f79c2b6de7fb7a524e18' into making-
+  it-work-2. [jkobject]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject]
+- Debug. [jkobject]
+- Applying prev stash. [jkobject]
+- Comparing embeddings. [jkobject]
+- That should help my life. [jkobject]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject]
+- Working on the notebooks. [jkobject]
+- Setting ft ge to false, preventing OOM cell emb. [jkobject]
+- What a debug. [jkobject]
+- Tiny debug. [jkobject]
+- Testing this. [jkobject]
+- Debug. [jkobject]
+- More. [jkobject]
+- Debug. [jkobject]
+- Debugged embeddings. [jkobject]
+- Debug. [jkobject]
+- Testing different parameters. [jkobject]
+- Debug. [jkobject]
+- Couple things that seemed to help. [jkobject]
+- Debug. [jkobject]
+- Debug. [jkobject]
+- Dbug. [jkobject]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject]
+- Nothing really. [jkobject]
+- Merge remote-tracking branch 'cantini/main' into dev. [jkobject]
+- Debug. [jkobject]
+- Quick solve. [jkobject]
+- Testing better class compression. [jkobject]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject]
+- Nothing. [jkobject-jz]
+- Solving gene memap and cleanup. [jkobject]
+- Debuging VAE. [jkobject]
+- Updating some stuff. [jkobject]
+- Final debug of the test, it is now working fully. [jkobject]
+- Likely solution. [jkobject]
+- New test function, better savings, preventing OOMs. [jkobject]
+- Adding more tests. [jkobject]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject]
+- Add better params. [jkobject]
+- Debug some issues with the model. [jkobject]
+- Improving the tests and adding new parameters. [jkobject]
+- Cleaning up the notebooks. [jkobject]
+- Same. [jkobject]
+- Adding all important things from model/* [jkobject]
+- Reverting some from previous version - TO RUN as VAE. [jkobject]
+- Debugged embeddings. [jkobject]
+- Adding back mask zeros. [jkobject]
+- Merge commit '32ba88ec8910a4b93bdd5bb3d1c0baf929ff300c' into making-
+  it-work. [jkobject]
+- Quick change. [jkobject]
+- Seems needed. [jkobject]
+- Adding VAE. [jkobject]
+- Revert "changing activation location" [jkobject]
+
+  This reverts commit c5e2f580056068e288337c406d95e115e8373c5d.
+- Ecs/cce, cell transf as params, invert TF weights. [jkobject]
+- Changing activation location. [jkobject]
+- Some different base_v3 parameters. [jkobject]
+- More. [jkobject]
+- Again. [jkobject]
+- A debug. [jkobject]
+- Before base_v3. [jkobject]
+- Generating gene locs and logging more val. [jkobject]
+- Key debug to apply. [jkobject]
+- Adding splicing heads, debugging cell transformer and embs (making it
+  work for smaller dim) [jkobject]
+- Add one elem. [jkobject]
+- Add configs. [jkobject]
+- Debug model loading. [jkobject]
+- Trying to solve issue. [jkobject]
+- Solve a loading of model issue. [jkobject]
+- Dbug. [jkobject]
+- Adding organism back. [jkobject]
+- Nothing really. [jkobject]
+- Dbug adv loss. [jkobject]
+- Quick debug. [jkobject]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject]
+- Wip embedding. [jkobject]
+- Wip on different tests. [jkobject]
+- Changing default params, removing useless input, improving hier
+  classifier, adding back adv class. [jkobject]
+- Simplifying stuff. [jkobject]
+- Print on protein emb. [jkobject]
+- Updating the train. [jkobject]
+- Many new run formats, masking zeros, simplify attn, hyper attn, some
+  debugs, gnn faster, [jkobject]
+- Final debug. [jkobject]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject]
+- Work on notebooks. [jkobject]
+- Debugs cleanups and adding docu. [jkobject]
+- One more debug. [jkobject]
+- Debugs and imrpovements. [jkobject]
+- Debugs and improvements. [jkobject]
+- Debug gnn mode. [jkobject]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject]
+- Merge remote-tracking branch 'cantini/main' into dev. [jkobject]
+- Wip. [jkobject]
+- Solving many issues. [jkobject]
+- New parameter and some debug. [jkobject]
+- Debug. [jkobject]
+- Debug. [jkobject]
+- Merge commit 'b06953e4e0b0d44d2d53b2c759f3747f60045cfe' into dev.
+  [jkobject]
+- Some debug. [jkobject]
+- Merge solve. [jkobject]
+- Merge remote-tracking branch 'origin/main' into dev. [jkobject]
+- Wip on the large task front. [jkobject]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject]
+- Debug embedding gene issue. [jkobject]
+- Debug gene encoder and making it load prev model versions. [jkobject]
+- Debug of a key circular import and start to solve gene emb. [jkobject]
+- Updating defaults. [jkobject]
+- Debugging cli, and slurm runs. [jkobject]
+- Debug knn cells. [jkobject]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject]
+- Debug. [jkobject]
+- Testing models. [jkobject]
+- Actually adding a KL loss and setting up better package versions.
+  [jkobject]
+- Better params for get knn cells and sota denoising. [jkobject]
+- Merge remote-tracking branch 'origin/dev' into gnn. [jkobject]
+- Merge branch 'dev' of https://github.com/cantinilab/scPRINT into dev.
+  [jkobject-jz]
+- Adding to model.py. [jkobject-jz]
+- Add wip gnn. [jkobject]
+- Debug issue. [jkobject]
+- Wip. [jkobject]
+- Classic forgot. [jkobject]
+- Adding esm2 finetuning and. [jkobject]
+- Debug. [jkobject]
+- More debugs. [jkobject]
+- More debugs. [jkobject]
+- Few debugs. [jkobject]
+- Add performer attention. [jkobject]
+- Add LICENSE file. [Jérémie Kalfon]
+- Update LICENSE. [Jérémie Kalfon]
+- Add LICENSE file. [Jérémie Kalfon]
+- Add files via upload. [Jérémie Kalfon]
+- Better doc. [jkobject]
+
+
+2.3.5 (2025-08-05)
+------------------
+- Release: version 2.3.5 🚀 [jkobject]
 - By default umap generation. [jkobject]
 
 

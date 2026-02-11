@@ -1,6 +1,6 @@
 [project]
 name = "scprint"
-version = "2.3.5"
+version = "2.3.6"
 description = "scPRINT is a Large Cell Model for Gene Network Inference, Denoising and more from scRNAseq data"
 authors = [
     {name = "jeremie kalfon", email = "jkobject@gmail.com"}
@@ -66,6 +66,7 @@ dependencies = [
     "gseapy>=1.1.8",
     "d3graph>=2.5.1",
     "gget>=0.29.1",
+    "setuptools>=58.0.0,<=75.8.0",
 ]
 
 [project.optional-dependencies]
