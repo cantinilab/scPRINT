@@ -196,3 +196,11 @@ metrics_*.json
 step_*
 data/main/gene_embs/
 data/main/gene_locs/
+uniprot_function
+fine_tuned_emb_task3.h5ad
+umap_embeder.pkl
+data/umap__embed_OhbVrp_1.png
+data/umap__embed_OhbVrp_0.png
+grn_fromscprint.h5ad
+testdb/
+testdb12/
