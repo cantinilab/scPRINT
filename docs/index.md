@@ -23,7 +23,7 @@ paradigms and losses.
 - **cross species integration**: scPRINT-2 has been trained on 16 species and
   can be used to integrate data from different species.
 
-Example of scPRINT-2 finetuning exist for:
+Example of **scPRINT-2** finetuning exist for:
 
 - **new species**: finetune scPRINT-2 on a new organism
 - **classification**: finetune scPRINT-2 on your own cell type /disease / age
@@ -31,7 +31,7 @@ Example of scPRINT-2 finetuning exist for:
 - **batch correction of your datasets / atlas**: finetune scPRINT-2 to integrate
   data across species, technologies, and labs.
 
-scPRINT-2 is a foundation model and can be fine-tuned to perform many other
+**scPRINT-2** is a foundation model and can be fine-tuned to perform many other
 analysis
 
 [Read the manuscript!](https://www.biorxiv.org/content/10.64898/2025.12.11.693702v1)
@@ -120,17 +120,18 @@ uv pip install scprint2
 # OR uv pip install scprint2[flash] # to use flashattention2 with triton: only if you have a compatible gpu (e.g. not available for apple GPUs for now, see https://github.com/triton-lang/triton?tab=readme-ov-file#compatibility)
 #OR pip install scprint2[dev,flash]
 
-lamin init --storage ./testdb --name test --modules bionty
-lamin connect anonymous/testdb
+lamin init --storage ./testdb --name testdb --modules bionty
+scprint2 easy_setup
 ```
 
 ⚠️ `./testdb` is set in this example, but be mindful about where you want to
 store your data, this might get quite big as you use i,t and if you are on
 specific partition you want to consider this.
 
-If you start with lamin and have to do a `lamin init`, you will also need to
-populate your ontologies. This is because **scPRINT-2** is using ontologies to
-define its cell types, diseases, sexes, ethnicities, etc.
+If you start with lamin and have to do a `lamin init`, you will also do a
+`scprint2 easy_setup`. This populates your ontologies and adds some additional
+gene names. This is because scPRINT-2 is using ontologies to define its cell
+types, diseases, sexes, ethnicities, etc.
 ([link to view ontologies](https://www.ebi.ac.uk/ols4/ontologies/cl/classes/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCL_0000057))
 
 You can do it via the command:
@@ -142,7 +143,7 @@ You can do it via the command:
 or with this function:
 
 ```python
-from scdataloader.utils import populate_my_ontology
+from scdataloader.utils import populate_my_ontology, _adding_scbasecamp_genes
 
 populate_my_ontology() #to populate everything (can take 2-10mns)
 
@@ -157,6 +158,14 @@ populate_my_ontology( #the minimum for scPRINT-1 to run some inferences (denoisi
     dev_stages = None,
 )
 _adding_scbasecamp_genes()  #to add when using scPRINT-2
+```
+
+It will also download the default checkpoint of a pretrain scprint2 model from
+[our hugging face page](https://huggingface.co/jkobject/scPRINT-2/). But you can
+use other ones if you prefer:
+
+```bash
+$ hf download jkobject/scPRINT v2-medium.ckpt --local-dir .
 ```
 
 A notebook for setting-up scPRINT-2 and lamin is also available
@@ -189,22 +198,18 @@ issue
 
 ```python
 model = scPRINT2.load_from_checkpoint(
-    '../data/temp/last.ckpt', precpt_gene_emb=None, )
+    '../data/temp/last.ckpt', precpt_gene_emb=None, gene_pos_file=None,)
 ```
 
-You will know more about scPRINT-1 and scPRINT-2 in general by following the
-[get-started](https://cantinilab.github.io/scPRINT/notebooks/cancer_usecase/)
+You will know more by following the
+[get-started](https://cantinilab.github.io/scPRINT-2/notebooks/cancer_usecase/)
 notebook.
 
 ## Usage
 
-To start you will also need to download a checkpoint of a pretrain model like
-18hebyht-final-small or some others from
-[hugging face](https://huggingface.co/jkobject/scPRINT-2/)
-
-```bash
-$ hf download jkobject/scPRINT 18hebyht-final-small.ckpt --local-dir .
-```
+To get a sense of how scPRINT-2 works, have a look at our
+[get-started](https://cantinilab.github.io/scPRINT-2/notebooks/cancer_usecase/)
+notebook.
 
 ### scPRINT-2's basic commands
 
@@ -467,6 +472,7 @@ in the model weights. You just need to load the weights like this:
 model = scPRINT2.load_from_checkpoint(
     '../../data/temp/last.ckpt',
     precpt_gene_emb=None,
+    gene_pos_file=None,
 )
 ```
 
@@ -527,7 +533,7 @@ Docker Hub:
 
 ```bash
 docker pull jkobject/scprint2:1.0.0
-docker tag jkobject/scprint2:1.0.0 scprint2:latest
+docker tag scprint2:latest jkobject/scprint2:1.0.0
 ```
 
 ### Running the Docker Container

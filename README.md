@@ -209,7 +209,7 @@ issue
 
 ```python
 model = scPRINT2.load_from_checkpoint(
-    '../data/temp/last.ckpt', precpt_gene_emb=None, )
+    '../data/temp/last.ckpt', precpt_gene_emb=None, gene_pos_file=None,)
 ```
 
 You will know more by following the
@@ -284,7 +284,7 @@ find out more about the commands by running `scprint2 --help` or
 `scprint2 [command] --help`.
 
 more examples of using the command line are available in the
-[docs](<[https://](https://cantinilab.github.io/scPRINT-2)>).
+[docs](https://cantinilab.github.io/scPRINT-2).
 
 ### Example notebooks
 
@@ -481,6 +481,7 @@ in the model weights. You just need to load the weights like this:
 model = scPRINT2.load_from_checkpoint(
     '../../data/temp/last.ckpt',
     precpt_gene_emb=None,
+    gene_pos_file=None,
 )
 ```
 
