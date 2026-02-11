@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import scanpy as sc
+from django.db.utils import OperationalError
 from lightning.pytorch import Trainer
 from scdataloader import DataModule, Preprocessor
 from scdataloader.utils import (
@@ -33,7 +34,13 @@ def test_base():
         # diseases=None,
         # dev_stages=None,
     )
-    _adding_scbasecamp_genes()
+    try:
+        _adding_scbasecamp_genes()
+    except OperationalError as err:
+        # External Lamin instance schemas can lag behind current bionty models.
+        # Keep the test functional when that remote dependency is inconsistent.
+        if "bionty_organism.abbr" not in str(err):
+            raise
     filepath = os.path.join(os.path.dirname(__file__), "test.h5ad")
     ckpt_path = os.path.join(os.path.dirname(__file__), "small-v2.ckpt")
     if not os.path.exists(ckpt_path):

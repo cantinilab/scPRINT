@@ -23,19 +23,19 @@ install:          ## Install the project in dev mode.
 
 .PHONY: fmt
 fmt:              ## Format code using black & isort.
-	$(ENV_PREFIX)uv run ruff format scprint2/ tests/
+	$(ENV_PREFIX)uv run --no-sync ruff format scprint2/ tests/
 
 .PHONY: lint
 lint:             ## Run pep8, black, mypy linters.
 #most are due to flashattention...
-	$(ENV_PREFIX)uv run ruff check --fix scprint2/ tests/
+	$(ENV_PREFIX)uv run --no-sync ruff check --fix scprint2/ tests/
 
 .PHONY: test
 test: lint        ## Run tests and generate coverage report.
 	set -e
-	$(ENV_PREFIX)uv run pytest -v -x --cov-config .coveragerc --cov=scprint2 -l --tb=short --maxfail=1 tests/
-	$(ENV_PREFIX)uv run coverage xml
-	$(ENV_PREFIX)uv run coverage html
+	$(ENV_PREFIX)uv run --no-sync pytest -v -x --cov-config .coveragerc --cov=scprint2 -l --tb=short --maxfail=1 tests/
+	$(ENV_PREFIX)uv run --no-sync coverage xml
+	$(ENV_PREFIX)uv run --no-sync coverage html
 
 .PHONY: watch
 watch:            ## Run tests on every change.

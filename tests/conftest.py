@@ -1,6 +1,7 @@
 import shutil
 import sys
 
+import bionty as bt
 import lamindb as ln
 import pytest
 
