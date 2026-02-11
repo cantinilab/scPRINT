@@ -277,6 +277,8 @@
 
 
 
+
+
 <p><span class="doc-section-title">Classes:</span></p>
     <table>
       <thead>
@@ -303,7 +305,8 @@
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -325,6 +328,7 @@
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="lightning.LightningModule">LightningModule</span></code>, <code><span title="huggingface_hub.PyTorchModelHubMixin">PyTorchModelHubMixin</span></code></p>
+
 
 
         <p>scPRINT transformer for single cell biology and the inference of Gene Regulatory networks</p>
@@ -608,6 +612,7 @@
 
 
 
+
 <p><span class="doc-section-title">Methods:</span></p>
     <table>
       <thead>
@@ -712,8 +717,7 @@
 
                   <details class="quote">
                     <summary>Source code in <code>scprint/model/model.py</code></summary>
-                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 38</span>
-<span class="normal"> 39</span>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 39</span>
 <span class="normal"> 40</span>
 <span class="normal"> 41</span>
 <span class="normal"> 42</span>
@@ -1047,7 +1051,8 @@
 <span class="normal">370</span>
 <span class="normal">371</span>
 <span class="normal">372</span>
-<span class="normal">373</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+<span class="normal">373</span>
+<span class="normal">374</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">genes</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
     <span class="n">organisms</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;NCBITaxon:9606&quot;</span><span class="p">],</span>
@@ -1388,7 +1393,8 @@
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -1412,11 +1418,9 @@
         <p>@see pl.LightningModule</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">755</span>
-<span class="normal">756</span>
-<span class="normal">757</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">757</span>
 <span class="normal">758</span>
 <span class="normal">759</span>
 <span class="normal">760</span>
@@ -1488,7 +1492,9 @@
 <span class="normal">826</span>
 <span class="normal">827</span>
 <span class="normal">828</span>
-<span class="normal">829</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">configure_optimizers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">829</span>
+<span class="normal">830</span>
+<span class="normal">831</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">configure_optimizers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;@see pl.LightningModule&quot;&quot;&quot;</span>
     <span class="c1"># https://pytorch.org/docs/stable/generated/torch.optim.Adam.html#torch.optim.Adam</span>
     <span class="c1"># not working because of poor weight decay implem</span>
@@ -1726,11 +1732,9 @@ at minima, the dictionary codntains the following:
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">647</span>
-<span class="normal">648</span>
-<span class="normal">649</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">649</span>
 <span class="normal">650</span>
 <span class="normal">651</span>
 <span class="normal">652</span>
@@ -1834,7 +1838,9 @@ at minima, the dictionary codntains the following:
 <span class="normal">750</span>
 <span class="normal">751</span>
 <span class="normal">752</span>
-<span class="normal">753</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span>
+<span class="normal">753</span>
+<span class="normal">754</span>
+<span class="normal">755</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">gene_pos</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
     <span class="n">expression</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1963,11 +1969,9 @@ It will log to tensorboard and wandb if available</p>
 <p>see @utils.log_adata</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1675</span>
-<span class="normal">1676</span>
-<span class="normal">1677</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1677</span>
 <span class="normal">1678</span>
 <span class="normal">1679</span>
 <span class="normal">1680</span>
@@ -2019,7 +2023,8 @@ It will log to tensorboard and wandb if available</p>
 <span class="normal">1726</span>
 <span class="normal">1727</span>
 <span class="normal">1728</span>
-<span class="normal">1729</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">log_adata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gtclass</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="normal">1729</span>
+<span class="normal">1730</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">log_adata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gtclass</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    log_adata will log an adata from predictions.</span>
 <span class="sd">    It will log to tensorboard and wandb if available</span>
@@ -2069,9 +2074,8 @@ It will log to tensorboard and wandb if available</p>
             <span class="n">logged</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">except</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;couldn&#39;t log to wandb&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">logged</span><span class="p">:</span>
-            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;&#39;</span> <span class="o">+</span> <span class="n">mdir</span> <span class="o">+</span> <span class="s2">&quot;/umap_&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span><span class="s2">&quot;_&quot;</span><span class="o">+</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;.png&quot;</span><span class="p">)</span>
-
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">logged</span> <span class="ow">and</span> <span class="n">fig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;&quot;</span> <span class="o">+</span> <span class="n">mdir</span> <span class="o">+</span> <span class="s2">&quot;/umap_&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;.png&quot;</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">adata</span>
 </code></pre></div></td></tr></table></div>
@@ -2094,15 +2098,15 @@ It will log to tensorboard and wandb if available</p>
         <p>@see pl.LightningModule</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">831</span>
-<span class="normal">832</span>
-<span class="normal">833</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">833</span>
 <span class="normal">834</span>
 <span class="normal">835</span>
 <span class="normal">836</span>
-<span class="normal">837</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">on_fit_start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">837</span>
+<span class="normal">838</span>
+<span class="normal">839</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">on_fit_start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;@see pl.LightningModule&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transformer</span><span class="p">)</span> <span class="ow">is</span> <span class="n">FlashTransformer</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">encoder_layers</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span><span class="o">.</span><span class="n">blocks</span><span class="p">:</span>
@@ -2129,15 +2133,15 @@ It will log to tensorboard and wandb if available</p>
         <p>@see pl.LightningModule will</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1623</span>
-<span class="normal">1624</span>
-<span class="normal">1625</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1625</span>
 <span class="normal">1626</span>
 <span class="normal">1627</span>
 <span class="normal">1628</span>
-<span class="normal">1629</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">on_predict_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">1629</span>
+<span class="normal">1630</span>
+<span class="normal">1631</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">on_predict_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;@see pl.LightningModule will&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="p">:</span>
         <span class="k">return</span>
@@ -2164,17 +2168,17 @@ It will log to tensorboard and wandb if available</p>
         <p>@see pl.LightningModule</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1405</span>
-<span class="normal">1406</span>
-<span class="normal">1407</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1407</span>
 <span class="normal">1408</span>
 <span class="normal">1409</span>
 <span class="normal">1410</span>
 <span class="normal">1411</span>
 <span class="normal">1412</span>
-<span class="normal">1413</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">on_predict_epoch_start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">1413</span>
+<span class="normal">1414</span>
+<span class="normal">1415</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">on_predict_epoch_start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;@see pl.LightningModule&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">embs</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="kc">None</span>
@@ -2203,11 +2207,9 @@ It will log to tensorboard and wandb if available</p>
         <p>@see pl.LightningModule</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1355</span>
-<span class="normal">1356</span>
-<span class="normal">1357</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1357</span>
 <span class="normal">1358</span>
 <span class="normal">1359</span>
 <span class="normal">1360</span>
@@ -2230,7 +2232,9 @@ It will log to tensorboard and wandb if available</p>
 <span class="normal">1377</span>
 <span class="normal">1378</span>
 <span class="normal">1379</span>
-<span class="normal">1380</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">on_validation_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">1380</span>
+<span class="normal">1381</span>
+<span class="normal">1382</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">on_validation_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;@see pl.LightningModule&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">embs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_gather</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">embs</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">embs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_gather</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
@@ -2276,11 +2280,9 @@ It will log to tensorboard and wandb if available</p>
         <p>@see pl.LightningModule</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1259</span>
-<span class="normal">1260</span>
-<span class="normal">1261</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1261</span>
 <span class="normal">1262</span>
 <span class="normal">1263</span>
 <span class="normal">1264</span>
@@ -2306,7 +2308,9 @@ It will log to tensorboard and wandb if available</p>
 <span class="normal">1284</span>
 <span class="normal">1285</span>
 <span class="normal">1286</span>
-<span class="normal">1287</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">optimizer_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">epoch</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">optimizer_closure</span><span class="p">):</span>
+<span class="normal">1287</span>
+<span class="normal">1288</span>
+<span class="normal">1289</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">optimizer_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">epoch</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">optimizer_closure</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;@see pl.LightningModule&quot;&quot;&quot;</span>
     <span class="c1"># update params</span>
     <span class="c1"># manually warm up lr without a scheduler</span>
@@ -2377,11 +2381,9 @@ It will log to tensorboard and wandb if available</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1415</span>
-<span class="normal">1416</span>
-<span class="normal">1417</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1417</span>
 <span class="normal">1418</span>
 <span class="normal">1419</span>
 <span class="normal">1420</span>
@@ -2397,7 +2399,9 @@ It will log to tensorboard and wandb if available</p>
 <span class="normal">1430</span>
 <span class="normal">1431</span>
 <span class="normal">1432</span>
-<span class="normal">1433</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">predict_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">):</span>
+<span class="normal">1433</span>
+<span class="normal">1434</span>
+<span class="normal">1435</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">predict_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    embed given gene expression, encode the gene embedding and cell embedding.</span>
 
@@ -2459,11 +2463,9 @@ It will log to tensorboard and wandb if available</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">839</span>
-<span class="normal">840</span>
-<span class="normal">841</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">841</span>
 <span class="normal">842</span>
 <span class="normal">843</span>
 <span class="normal">844</span>
@@ -2493,7 +2495,9 @@ It will log to tensorboard and wandb if available</p>
 <span class="normal">868</span>
 <span class="normal">869</span>
 <span class="normal">870</span>
-<span class="normal">871</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">training_step</span><span class="p">(</span>
+<span class="normal">871</span>
+<span class="normal">872</span>
+<span class="normal">873</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">training_step</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">batch</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">],</span>
     <span class="n">batch_idx</span><span class="p">,</span>
@@ -2571,11 +2575,9 @@ It will log to tensorboard and wandb if available</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1297</span>
-<span class="normal">1298</span>
-<span class="normal">1299</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1299</span>
 <span class="normal">1300</span>
 <span class="normal">1301</span>
 <span class="normal">1302</span>
@@ -2629,7 +2631,9 @@ It will log to tensorboard and wandb if available</p>
 <span class="normal">1350</span>
 <span class="normal">1351</span>
 <span class="normal">1352</span>
-<span class="normal">1353</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">validation_step</span><span class="p">(</span>
+<span class="normal">1353</span>
+<span class="normal">1354</span>
+<span class="normal">1355</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">validation_step</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">batch</span><span class="p">,</span>
     <span class="n">batch_idx</span><span class="p">,</span>
@@ -2698,6 +2702,7 @@ It will log to tensorboard and wandb if available</p>
 
     </div>
 
+
 </div>
 
 
@@ -2721,6 +2726,8 @@ It will log to tensorboard and wandb if available</p>
 </h2>
 
     <div class="doc doc-contents first">
+
+
 
 
 
@@ -2880,7 +2887,8 @@ It will log to tensorboard and wandb if available</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -2902,6 +2910,7 @@ It will log to tensorboard and wandb if available</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
+
 
 
         <p>Discriminator for the adversarial training for batch correction.</p>
@@ -2968,6 +2977,7 @@ It will log to tensorboard and wandb if available</p>
     </tr>
   </tbody>
 </table>
+
 
 
 
@@ -3059,7 +3069,8 @@ It will log to tensorboard and wandb if available</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -3106,7 +3117,7 @@ It will log to tensorboard and wandb if available</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/loss.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">337</span>
 <span class="normal">338</span>
@@ -3140,6 +3151,7 @@ It will log to tensorboard and wandb if available</p>
   </div>
 
     </div>
+
 
 </div>
 
@@ -3262,7 +3274,7 @@ It will log to tensorboard and wandb if available</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/loss.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">233</span>
 <span class="normal">234</span>
@@ -3505,7 +3517,7 @@ Typical values are between 0.1 and 0.5.</p>
 </ul>
 </details>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/loss.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">170</span>
 <span class="normal">171</span>
@@ -3598,7 +3610,7 @@ Typical values are between 0.1 and 0.5.</p>
         <p>Compute the negative log-likelihood of Bernoulli distribution</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/loss.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">149</span>
 <span class="normal">150</span>
@@ -3692,7 +3704,7 @@ Typical values are between 0.1 and 0.5.</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/loss.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">208</span>
 <span class="normal">209</span>
@@ -3816,7 +3828,7 @@ Typical values are between 0.1 and 0.5.</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/loss.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">361</span>
 <span class="normal">362</span>
@@ -3862,7 +3874,7 @@ Typical values are between 0.1 and 0.5.</p>
 MAE = mean absolute error</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/loss.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">35</span>
 <span class="normal">36</span>
@@ -3899,7 +3911,7 @@ MAE = mean absolute error</p>
         <p>Compute the masked MSE loss between input and target.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/loss.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">26</span>
 <span class="normal">27</span>
@@ -3934,7 +3946,7 @@ MAE = mean absolute error</p>
         <p>Compute the masked negative binomial loss between input and target.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/loss.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">45</span>
 <span class="normal">46</span>
@@ -3971,7 +3983,7 @@ MAE = mean absolute error</p>
         <p>Compute the masked relative error between input and target.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/loss.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">159</span>
 <span class="normal">160</span>
@@ -4010,7 +4022,7 @@ MAE = mean absolute error</p>
         <p>Compute the MSE loss between input and target.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/loss.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">15</span>
 <span class="normal">16</span>
@@ -4122,7 +4134,7 @@ MAE = mean absolute error</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/loss.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">56</span>
 <span class="normal">57</span>
@@ -4271,7 +4283,7 @@ MAE = mean absolute error</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/loss.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 86</span>
 <span class="normal"> 87</span>
@@ -4323,7 +4335,7 @@ MAE = mean absolute error</p>
 using a combination of cosine and L2 distance</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/loss.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">408</span>
 <span class="normal">409</span>
@@ -4479,7 +4491,7 @@ using a combination of cosine and L2 distance</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/loss.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">103</span>
 <span class="normal">104</span>
@@ -4602,6 +4614,8 @@ using a combination of cosine and L2 distance</p>
 
 
 
+
+
 <p><span class="doc-section-title">Classes:</span></p>
     <table>
       <thead>
@@ -4689,7 +4703,8 @@ using a combination of cosine and L2 distance</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -4709,6 +4724,7 @@ using a combination of cosine and L2 distance</p>
 
 
     <div class="doc doc-contents ">
+
 
 
         <p>Initialize the Attention class.</p>
@@ -4777,6 +4793,7 @@ using a combination of cosine and L2 distance</p>
     </tr>
   </tbody>
 </table>
+
 
 
 
@@ -4880,7 +4897,8 @@ using a combination of cosine and L2 distance</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -4936,7 +4954,7 @@ using a combination of cosine and L2 distance</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">516</span>
 <span class="normal">517</span>
@@ -5071,7 +5089,7 @@ using a combination of cosine and L2 distance</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">558</span>
 <span class="normal">559</span>
@@ -5171,7 +5189,7 @@ using a combination of cosine and L2 distance</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">587</span>
 <span class="normal">588</span>
@@ -5218,6 +5236,7 @@ using a combination of cosine and L2 distance</p>
 
     </div>
 
+
 </div>
 
 <div class="doc doc-object doc-class">
@@ -5231,6 +5250,7 @@ using a combination of cosine and L2 distance</p>
 
 
     <div class="doc doc-contents ">
+
 
 
         <p>Randomly mask a batch of data.</p>
@@ -5311,6 +5331,7 @@ using a combination of cosine and L2 distance</p>
 
 
 
+
                   <details class="quote">
                     <summary>Source code in <code>scprint/model/utils.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">407</span>
@@ -5363,7 +5384,8 @@ using a combination of cosine and L2 distance</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -5378,6 +5400,7 @@ using a combination of cosine and L2 distance</p>
   </div>
 
     </div>
+
 
 </div>
 
@@ -5461,7 +5484,7 @@ returns the final matrix count.</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">316</span>
 <span class="normal">317</span>
@@ -5762,7 +5785,7 @@ returns the final matrix count.</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 30</span>
 <span class="normal"> 31</span>
@@ -6302,7 +6325,7 @@ returns the final matrix count.</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">389</span>
 <span class="normal">390</span>
@@ -6416,7 +6439,7 @@ returns the final matrix count.</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">606</span>
 <span class="normal">607</span>
@@ -6971,7 +6994,7 @@ returns the final matrix count.</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">450</span>
 <span class="normal">451</span>
@@ -7068,6 +7091,8 @@ returns the final matrix count.</p>
 
 
 
+
+
 <p><span class="doc-section-title">Classes:</span></p>
     <table>
       <thead>
@@ -7126,7 +7151,8 @@ returns the final matrix count.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -7148,6 +7174,7 @@ returns the final matrix count.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
+
 
 
         <p>Encodes categorical values into a vector using an embedding layer and layer normalization.</p>
@@ -7227,6 +7254,7 @@ returns the final matrix count.</p>
 
 
 
+
                   <details class="quote">
                     <summary>Source code in <code>scprint/model/encoders.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">213</span>
@@ -7279,7 +7307,8 @@ returns the final matrix count.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -7294,6 +7323,7 @@ returns the final matrix count.</p>
   </div>
 
     </div>
+
 
 </div>
 
@@ -7310,6 +7340,7 @@ returns the final matrix count.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
+
 
 
         <p>Encode real number values to a vector using neural nets projection.</p>
@@ -7409,6 +7440,7 @@ returns the final matrix count.</p>
 
 
 
+
 <p><span class="doc-section-title">Methods:</span></p>
     <table>
       <thead>
@@ -7499,7 +7531,8 @@ returns the final matrix count.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -7546,7 +7579,7 @@ returns the final matrix count.</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/encoders.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">194</span>
 <span class="normal">195</span>
@@ -7591,6 +7624,7 @@ returns the final matrix count.</p>
 
     </div>
 
+
 </div>
 
 <div class="doc doc-object doc-class">
@@ -7606,6 +7640,7 @@ returns the final matrix count.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
+
 
 
         <p>The PositionalEncoding module applies a positional encoding to a sequence of vectors.
@@ -7653,6 +7688,7 @@ allows the model to attend to positions in the sequence.</p>
     </tr>
   </tbody>
 </table>        <p>Note: not used in the current version of scprint.</p>
+
 
 
 
@@ -7749,7 +7785,8 @@ allows the model to attend to positions in the sequence.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -7796,7 +7833,7 @@ allows the model to attend to positions in the sequence.</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/encoders.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">151</span>
 <span class="normal">152</span>
@@ -7825,6 +7862,7 @@ allows the model to attend to positions in the sequence.</p>
 
     </div>
 
+
 </div>
 
 <div class="doc doc-object doc-class">
@@ -7840,6 +7878,7 @@ allows the model to attend to positions in the sequence.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
+
 
 
         <p>Encodes gene sequences into a continuous vector space using an embedding layer.</p>
@@ -7915,6 +7954,7 @@ allows the model to attend to positions in the sequence.</p>
     </tr>
   </tbody>
 </table>        <p>Note: not used in the current version of scprint.</p>
+
 
 
 
@@ -8002,7 +8042,8 @@ allows the model to attend to positions in the sequence.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -8017,6 +8058,7 @@ allows the model to attend to positions in the sequence.</p>
   </div>
 
     </div>
+
 
 </div>
 
@@ -8033,6 +8075,7 @@ allows the model to attend to positions in the sequence.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
+
 
 
         <p>The PositionalEncoding module applies a positional encoding to a sequence of vectors.
@@ -8080,6 +8123,7 @@ allows the model to attend to positions in the sequence.</p>
     </tr>
   </tbody>
 </table>        <p>Note: not used in the current version of scprint.</p>
+
 
 
 
@@ -8196,7 +8240,8 @@ allows the model to attend to positions in the sequence.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -8242,7 +8287,7 @@ allows the model to attend to positions in the sequence.</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/encoders.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">91</span>
 <span class="normal">92</span>
@@ -8271,6 +8316,7 @@ allows the model to attend to positions in the sequence.</p>
 
     </div>
 
+
 </div>
 
 
@@ -8293,6 +8339,8 @@ allows the model to attend to positions in the sequence.</p>
 </h2>
 
     <div class="doc doc-contents first">
+
+
 
 
 
@@ -8351,7 +8399,8 @@ allows the model to attend to positions in the sequence.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -8373,6 +8422,7 @@ allows the model to attend to positions in the sequence.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
+
 
 
         <p>ClsDecoder Decoder for classification task.</p>
@@ -8461,6 +8511,7 @@ allows the model to attend to positions in the sequence.</p>
     </tr>
   </tbody>
 </table>
+
 
 
 
@@ -8560,7 +8611,8 @@ allows the model to attend to positions in the sequence.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -8607,7 +8659,7 @@ allows the model to attend to positions in the sequence.</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/decoders.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">235</span>
 <span class="normal">236</span>
@@ -8634,6 +8686,7 @@ allows the model to attend to positions in the sequence.</p>
 
     </div>
 
+
 </div>
 
 <div class="doc doc-object doc-class">
@@ -8649,6 +8702,7 @@ allows the model to attend to positions in the sequence.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
+
 
 
         <p>ExprDecoder Decoder for the gene expression prediction.</p>
@@ -8708,6 +8762,7 @@ allows the model to attend to positions in the sequence.</p>
     </tr>
   </tbody>
 </table>
+
 
 
 
@@ -8809,7 +8864,8 @@ allows the model to attend to positions in the sequence.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -8833,7 +8889,7 @@ allows the model to attend to positions in the sequence.</p>
         <p>x is the output of the transformer, (batch, seq_len, d_model)</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/decoders.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">64</span>
 <span class="normal">65</span>
@@ -8896,6 +8952,7 @@ allows the model to attend to positions in the sequence.</p>
 
     </div>
 
+
 </div>
 
 <div class="doc doc-object doc-class">
@@ -8911,6 +8968,7 @@ allows the model to attend to positions in the sequence.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
+
 
 
         <p>Initialize the ExprNeuralSDEDecoder module.</p>
@@ -8965,6 +9023,7 @@ allows the model to attend to positions in the sequence.</p>
 
 
 
+
                   <details class="quote">
                     <summary>Source code in <code>scprint/model/decoders.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 9</span>
@@ -8997,7 +9056,8 @@ allows the model to attend to positions in the sequence.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -9012,6 +9072,7 @@ allows the model to attend to positions in the sequence.</p>
   </div>
 
     </div>
+
 
 </div>
 
@@ -9030,6 +9091,7 @@ allows the model to attend to positions in the sequence.</p>
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
 
 
+
         <p>MVCDecoder Decoder for the masked value prediction for cell embeddings.</p>
 <p>Will use the gene embeddings with the cell embeddings to predict the mean, variance and zero logits</p>
 
@@ -9045,14 +9107,14 @@ allows the model to attend to positions in the sequence.</p>
       <td class="field-body">
         <ul class="first simple">
             <li>
-              <b><code>d_model</code></b>
+              <b><code>d_model (</code></b>
               –
               <div class="doc-md-description">
                 <p>obj:<code>int</code>): dimension of the gene embedding.</p>
               </div>
             </li>
             <li>
-              <b><code>arch_style</code></b>
+              <b><code>arch_style (</code></b>
               –
               <div class="doc-md-description">
                 <p>obj:<code>str</code>): architecture style of the decoder, choice from
@@ -9060,7 +9122,7 @@ allows the model to attend to positions in the sequence.</p>
               </div>
             </li>
             <li>
-              <b><code>query_activation</code></b>
+              <b><code>query_activation (</code></b>
               –
               <div class="doc-md-description">
                 <p>obj:<code>nn.Module</code>): activation function for the query
@@ -9068,7 +9130,7 @@ vectors. Defaults to nn.Sigmoid.</p>
               </div>
             </li>
             <li>
-              <b><code>hidden_activation</code></b>
+              <b><code>hidden_activation (</code></b>
               –
               <div class="doc-md-description">
                 <p>obj:<code>nn.Module</code>): activation function for the hidden
@@ -9080,6 +9142,7 @@ layers. Defaults to nn.PReLU.</p>
     </tr>
   </tbody>
 </table>
+
 
 
 
@@ -9217,7 +9280,8 @@ layers. Defaults to nn.PReLU.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -9272,7 +9336,7 @@ layers. Defaults to nn.PReLU.</p>
   </tbody>
 </table>
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/model/decoders.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">143</span>
 <span class="normal">144</span>
@@ -9398,6 +9462,7 @@ layers. Defaults to nn.PReLU.</p>
   </div>
 
     </div>
+
 
 </div>
 
