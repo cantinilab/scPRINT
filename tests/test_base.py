@@ -31,7 +31,7 @@ def test_base():
     filepath = os.path.join(os.path.dirname(__file__), "test.h5ad")
     ckpt_path = os.path.join(os.path.dirname(__file__), "small.ckpt")
     if not os.path.exists(ckpt_path):
-        url = "https://huggingface.co/jkobject/scPRINT/resolve/main/small.ckpt"
+        url = "https://huggingface.co/jkobject/scPRINT/resolve/main/small-v1.ckpt"
         urllib.request.urlretrieve(url, ckpt_path)
 
     adata = sc.read_h5ad(filepath)
