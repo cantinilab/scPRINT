@@ -4,11 +4,9 @@ Changelog
 
 (unreleased)
 ------------
+- Improving readme and index. [jkobject]
+- Release: version 1.0.2 🚀 [jkobject]
 - Making sure no flash. [jkobject]
-
-
-1.0.2 (2026-02-11)
-------------------
 - Release: version 1.0.2 🚀 [jkobject]
 - Wip. [jkobject]
 - Merge branch 'main' of https://github.com/cantinilab/scPRINT-2.
