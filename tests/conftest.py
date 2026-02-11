@@ -6,12 +6,12 @@ import pytest
 
 
 def pytest_sessionstart():
-    ln.setup.init(storage="./testdb", name="test", modules="bionty")
+    ln.setup.init(storage="./test-scprintdb", name="test-scprint", modules="bionty")
 
 
 def pytest_sessionfinish(session):
-    shutil.rmtree("./testdb")
-    ln.setup.delete("test", force=True)
+    shutil.rmtree("./test-scprintdb")
+    ln.setup.delete("test-scprint", force=True)
 
 
 # each test runs on cwd to its temp dir

@@ -9,6 +9,9 @@ resolution-markers = [
     "python_full_version >= '3.12' and sys_platform == 'linux'",
 ]
 
+[manifest]
+overrides = [{ name = "tokenizers", specifier = ">=0.15" }]
+
 [[package]]
 name = "absl-py"
 version = "2.1.0"
@@ -5520,7 +5523,7 @@ wheels = [
 
 [[package]]
 name = "scprint2"
-version = "0.9.8"
+version = "1.0.1"
 source = { editable = "." }
 dependencies = [
     { name = "array-api-compat" },
@@ -5566,6 +5569,7 @@ dependencies = [
     { name = "scikit-misc" },
     { name = "scipy" },
     { name = "seaborn" },
+    { name = "setuptools" },
     { name = "simpler-flash" },
     { name = "sparse" },
     { name = "supabase" },
@@ -5600,9 +5604,6 @@ dev = [
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },
-]
-flash = [
-    { name = "triton" },
 ]
 
 [package.metadata]
@@ -5666,7 +5667,8 @@ requires-dist = [
     { name = "scikit-misc", specifier = ">=0.5.0" },
     { name = "scipy", specifier = ">=1.11.0" },
     { name = "seaborn", specifier = ">=0.11.0" },
-    { name = "simpler-flash", specifier = ">=1.2.0" },
+    { name = "setuptools", specifier = ">=58.0.0" },
+    { name = "simpler-flash", extras = ["flash"], specifier = ">=1.3.4" },
     { name = "sparse", specifier = ">=0.15.4" },
     { name = "supabase", specifier = ">=2.15.0" },
     { name = "tensorly", specifier = ">=0.6.0" },
@@ -5677,7 +5679,6 @@ requires-dist = [
     { name = "torchmetrics", specifier = ">=1.6.0" },
     { name = "torchtext", specifier = ">=0.13.0" },
     { name = "torchvision", specifier = ">=0.23.0" },
-    { name = "triton", marker = "extra == 'flash'", specifier = "==3.4.0" },
     { name = "typeshed-client", specifier = ">=2.0.0" },
     { name = "urllib3", specifier = ">=1.26.0,<1.27.0" },
     { name = "wandb", specifier = ">=0.12.0" },
@@ -5807,7 +5808,7 @@ wheels = [
 
 [[package]]
 name = "simpler-flash"
-version = "1.3.3"
+version = "1.3.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "adasplash" },
@@ -5822,9 +5823,9 @@ dependencies = [
     { name = "torchvision" },
     { name = "triton" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d5/7d/8fa6272fd1932b6a6d99a465af967a92a7a6c9faec0ab59ffc660eb21d07/simpler_flash-1.3.3.tar.gz", hash = "sha256:5ef2e56c617b76c83d8b700ee854cb1cd24bb27f727966695a27babb5729407c", size = 171042 }
+sdist = { url = "https://files.pythonhosted.org/packages/67/09/18f2f2f5962dde2ff6e9fd83311f7b412f15dba643a404ea87e97abcb536/simpler_flash-1.3.4.tar.gz", hash = "sha256:eac1297dba76ed06bc9d198040ce6bc7c32005961bffa1a474817e205eb81224", size = 163846 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8e/40/c1141a071a1806e10a87012fe70dc6d5a50667898bce65e684f9d21027f9/simpler_flash-1.3.3-py3-none-any.whl", hash = "sha256:d4d6f90cfcfe1359716e76263174e7791f81b09f0cbe8e73ea0cf08c7a1eb74e", size = 62631 },
+    { url = "https://files.pythonhosted.org/packages/f1/0b/8a1dd296a7661818ce4ef98abf549662291271b60d4e794d67f0b717f9db/simpler_flash-1.3.4-py3-none-any.whl", hash = "sha256:ca89942ece85a1c327b800873ea0da49d1196cc34ccf15b3c2f74e15881a0a4e", size = 63011 },
 ]
 
 [[package]]
