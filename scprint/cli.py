@@ -158,9 +158,9 @@ class MyCLI(LightningCLI):
             import numpy as np
             import scanpy as sc
             from scdataloader import Preprocessor
-            from scdataloader.utils import load_genes 
+            from scdataloader.utils import load_genes
+
             from scprint import scPrint
-            import numpy as np
 
             adata = sc.read_h5ad(self.config_init[subcommand]["adata"])
             adata.obs.drop(columns="is_primary_data", inplace=True, errors="ignore")

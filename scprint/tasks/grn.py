@@ -22,10 +22,10 @@ from grnndata import utils as grnutils
 from matplotlib import pyplot as plt
 from scdataloader import Collator, Preprocessor
 from scdataloader.data import SimpleAnnDataset
+from scdataloader.utils import load_genes
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from scdataloader.utils import load_genes
 from scprint.utils.sinkhorn import SinkhornDistance
 
 from .tmfg import tmfg
