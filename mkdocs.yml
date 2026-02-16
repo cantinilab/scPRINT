@@ -1,6 +1,7 @@
 site_name: scprint
 theme:
   name: readthedocs
+  logo: logo.png
   # analytics:
   # gtag: G-ABC123
 site_url: https://www.jkobject.com/scPRINT/
