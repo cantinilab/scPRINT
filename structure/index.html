@@ -3,9 +3,9 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://www.jkobject.com/scPRINT-2/structure/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://www.jkobject.com/scPRINT/structure/" />
       <link rel="shortcut icon" href="../img/favicon.ico" />
-    <title>structure - scPRINT-2</title>
+    <title>structure - scprint</title>
     <link rel="stylesheet" href="../css/theme.css" />
     <link rel="stylesheet" href="../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
@@ -15,7 +15,7 @@
         // Current page data
         var mkdocs_page_name = "structure";
         var mkdocs_page_input_path = "structure.md";
-        var mkdocs_page_url = "/scPRINT-2/structure/";
+        var mkdocs_page_url = "/scPRINT/structure/";
       </script>
     
     <!--[if lt IE 9]>
@@ -32,7 +32,7 @@
     <div class="wy-side-scroll">
       <div class="wy-side-nav-search">
           <a href="..">
-          <img src="../fig.png" class="logo" alt="Logo"/>
+          <img src="../logo.png" class="logo" alt="Logo"/>
         </a><div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
       <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
@@ -48,7 +48,7 @@
               <ul class="current">
                 <li class="toctree-l1 current"><a class="reference internal current" href="#">structure</a>
     <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#gene-tokenizers">gene tokenizers</a>
+    <li class="toctree-l2"><a class="reference internal" href="#gene-embedders">gene embedders</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#data_loaders">data_loaders</a>
     </li>
@@ -66,20 +66,27 @@
                 </li>
               </ul>
               <ul>
-                <li class="toctree-l1"><a class="reference internal" href="../umap/nice_umap_scprint2.html">350M subset umap</a>
+                <li class="toctree-l1"><a class="reference internal" href="../usage/">usage example</a>
                 </li>
+              </ul>
+              <p class="caption"><span class="caption-text">example notebooks</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../notebooks/cancer_usecase/">scPRINT use case on BPH</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../notebooks/cancer_usecase_part2/">scPRINT use case on BPH (part 2, GN analysis)</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">documentation</span></p>
               <ul>
                   <li class="toctree-l1"><a class="reference internal" href="../model/">model</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../tokenizers/">tokenizers</a>
-                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../tasks/">tasks</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../utils/">utils</a>
-                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../cli/">cli</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../embedder/">embedders</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../utils/">utils</a>
                   </li>
               </ul>
       </div>
@@ -89,7 +96,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
       <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="..">scPRINT-2</a>
+          <a href="..">scprint</a>
         
       </nav>
       <div class="wy-nav-content">
@@ -106,29 +113,24 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="structure">structure</h1>
-<h2 id="gene-tokenizers">gene tokenizers</h2>
-<p>Function to get tokens from a set of genes, given their ensembl ids. For now use
-2 different models:</p>
+<h2 id="gene-embedders">gene embedders</h2>
+<p>Function to get embeddings from a set of genes, given their ensembl ids. For now use 2 different models:</p>
 <ul>
 <li><code>RNABert</code>: for non coding genes</li>
-<li><code>ESM3</code>: for protein coding genes</li>
+<li><code>ESM2</code>: for protein coding genes</li>
 </ul>
-<p>given ids, a fasta file, will use the models to compute an embedding of each
-gene.</p>
-<p>This could be potentially applied to genes with mutations and from different
-species.</p>
+<p>given ids, a fasta file, will use the models to compute an embedding of each gene.</p>
+<p>This could be potentially applied to genes with mutations and from different species.</p>
 <h2 id="data_loaders">data_loaders</h2>
-<p>From scDataloader. (see more in the available readmes and website
-https://jkobject.com/scDataLoader)</p>
-<p>For now can work with either one to many AnnData's or a laminDB Collection of
-AnnDatas</p>
+<p>From scDataloader. (see more in the available readmes and website https://jkobject.com/scDataLoader)</p>
+<p>For now can work with either one to many AnnData's or a laminDB Collection of AnnDatas</p>
 <p>allows you to preprocess your anndatas too.</p>
 <p>They can be stored locally or remotely</p>
-<p>stores them in a <code>Dataset</code> class. Creates the DataLoaders from a <code>Datamodule</code>
-Class. Collates the results using a <code>Collator</code> function.</p>
+<p>stores them in a <code>Dataset</code> class.
+Creates the DataLoaders from a <code>Datamodule</code> Class.
+Collates the results using a <code>Collator</code> function.</p>
 <h2 id="model">model</h2>
-<p>Extends from lightning data module to implement all the necessary functions to
-do:</p>
+<p>Extends from lightning data module to implement all the necessary functions to do:</p>
 <ul>
 <li>training</li>
 <li>validation</li>
@@ -140,38 +142,19 @@ do:</p>
 <li>encoder</li>
 <li>transformer</li>
 <li>decoder</li>
-<li>the fsq module</li>
 </ul>
 <h2 id="trainer-cli">trainer &amp; cli</h2>
 <p>the model uses lightning's training toolkit and CLI tools.</p>
-<p>to use CLI, just call <code>scprint2 ...</code> (will call the <code>__main__.py</code> function).
-Additional, training-specific informations are passed to the model using the
-trainer.py function. specific training schemes are available under the <code>config</code>
-folder as <code>yaml</code> files. Moreover the model can be trained on multiple compute
-types. SLURM scripts are available under the <code>slurm</code> folder.</p>
+<p>to use CLI, just call <code>scprint ...</code> (will call the <code>__main__.py</code> function).
+Additional, training-specific informations are passed to the model using the trainer.py function.
+specific training schemes are available under the <code>config</code> folder as <code>yaml</code> files.
+Moreover the model can be trained on multiple compute types. SLURM scripts are available under the <code>slurm</code> folder.</p>
 <h2 id="tasks">tasks</h2>
 <p>Implement different tasks that a pretrained model would perform. for now:</p>
 <ul>
-<li>GRN prediction: given a single cell dataset and a group (cell type, cluster,
-  ...) will output a <code>GRnnData</code> completed with a predicted GRN from the
-  attention of the model.</li>
-<li>denoising: from a single cell dataset, will modify the count matrices to
-  predict what it would have looked like if it had been sequenced deeper,
-  according to the model.</li>
-<li>embedding: from a single cell dataset, will create embeddings (low dimensional
-  representations) of each cells, as well as prediction of the cell labels the
-  model has been trained on (cell type, disease, ethnicity, sex...). It will
-  also output a umap and predicted expression from the zinb, post bottleneck
-  (similar to a VAE decoder prediction)</li>
-<li>generation: from a set of conditions (cell type, disease state, ethnicity,
-  sex...) will generate new cell profile matching these conditions.</li>
-<li>imputation: from a single cell dataset with missing values (genes), will
-  impute the missing genes according to the model.</li>
-<li>finetuning: from a pretrained model and a new single cell dataset, will
-  finetune the model to better fit the new dataset and potentially correct for
-  batch effects if provided with batch labels.</li>
-<li>gene embedding: from a list of genes, and an expression profile will output
-  embeddings for gene.</li>
+<li>GRN prediction: given a single cell dataset and a group (cell type, cluster, ...) will output a <code>GRnnData</code> completed with a predicted GRN from the attention of the model.</li>
+<li>denoising: from a single cell dataset, will modify the count matrices to predict what it would have looked like if it had been sequenced deeper, according to the model.</li>
+<li>embedding: from a single cell dataset, will create embeddings (low dimensional representations) of each cells, as well as prediction of the cell labels the model has been trained on (cell type, disease, ethnicity, sex...). It will also output a umap and predicted expression from the zinb, post bottleneck (similar to a VAE decoder prediction)</li>
 </ul>
               
             </div>

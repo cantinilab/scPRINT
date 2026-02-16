@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://www.jkobject.com/scPRINT/embedder/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>embedders - scprint</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../assets/_mkdocstrings.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "embedders";
+        var mkdocs_page_input_path = "embedder.md";
+        var mkdocs_page_url = "/scPRINT/embedder/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="..">
+          <img src="../logo.png" class="logo" alt="Logo"/>
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../structure/">structure</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../pretrain/">pre-training</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../usage/">usage example</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">example notebooks</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../notebooks/cancer_usecase/">scPRINT use case on BPH</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../notebooks/cancer_usecase_part2/">scPRINT use case on BPH (part 2, GN analysis)</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">documentation</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../model/">model</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tasks/">tasks</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../cli/">cli</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">embedders</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#scprint.tokenizers.protein_embedder">protein_embedder</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#scprint.tokenizers.protein_embedder.ESM2">ESM2</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#scprint.tokenizers.protein_embedder.ESM2.__call__">__call__</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#scprint.tokenizers.protein_embedder.ESM2.read_results">read_results</a>
+    </li>
+        </ul>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#scprint.tokenizers.embedder">embedder</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#scprint.tokenizers.embedder.protein_embeddings_generator">protein_embeddings_generator</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../utils/">utils</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">scprint</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">documentation</li>
+      <li class="breadcrumb-item active">embedders</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="documentation-for-the-tokenizers-module">Documentation for the <code>tokenizers</code> module</h1>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<h2 id="scprint.tokenizers.protein_embedder" class="doc doc-heading">
+            <code>scprint.tokenizers.protein_embedder</code>
+
+
+</h2>
+
+    <div class="doc doc-contents first">
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Classes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="ESM2 (scprint.tokenizers.protein_embedder.ESM2)" href="#scprint.tokenizers.protein_embedder.ESM2">ESM2</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="scprint.tokenizers.protein_embedder.ESM2" class="doc doc-heading">
+              <code class="highlight language-python"><span class="n">ESM2</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>ESM2 a ghost class to call protein LLMs to encode protein sequences.</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Parameters:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              <b><code>config</code></b>
+                  (<code><span title="str">str</span></code>, default:
+                      <code>&#39;esm-extract&#39;</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>The configuration for the model. Defaults to "esm-extract".</p>
+              </div>
+            </li>
+            <li>
+              <b><code>pretrained_model</code></b>
+                  (<code><span title="str">str</span></code>, default:
+                      <code>&#39;esm2_t33_650M_UR50D&#39;</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>The pretrained model to be used. Defaults to "esm2_t33_650M_UR50D".</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Methods:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="__call__ (scprint.tokenizers.protein_embedder.ESM2.__call__)" href="#scprint.tokenizers.protein_embedder.ESM2.__call__">__call__</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Call the ESM2 model on the input file.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="read_results (scprint.tokenizers.protein_embedder.ESM2.read_results)" href="#scprint.tokenizers.protein_embedder.ESM2.read_results">read_results</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Read multiple .pt files in a folder and convert them into a DataFrame.</p>
+                </div>
+              </td>
+            </tr>
+      </tbody>
+    </table>
+
+
+
+                  <details class="quote">
+                    <summary>Source code in <code>scprint/tokenizers/protein_embedder.py</code></summary>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;esm-extract&quot;</span><span class="p">,</span>
+    <span class="n">pretrained_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;esm2_t33_650M_UR50D&quot;</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    ESM2 a ghost class to call protein LLMs to encode protein sequences.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        config (str, optional): The configuration for the model. Defaults to &quot;esm-extract&quot;.</span>
+<span class="sd">        pretrained_model (str, optional): The pretrained model to be used. Defaults to &quot;esm2_t33_650M_UR50D&quot;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">pretrained_model</span> <span class="o">=</span> <span class="n">pretrained_model</span>
+</code></pre></div></td></tr></table></div>
+                  </details>
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="scprint.tokenizers.protein_embedder.ESM2.__call__" class="doc doc-heading">
+            <code class="highlight language-python"><span class="fm">__call__</span></code>
+
+</h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Call the ESM2 model on the input file.</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Parameters:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              <b><code>input_file</code></b>
+                  (<code><span title="str">str</span></code>)
+              –
+              <div class="doc-md-description">
+                <p>The input file to be processed.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>output_folder</code></b>
+                  (<code><span title="str">str</span></code>, default:
+                      <code>&#39;/tmp/esm_out/&#39;</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>The folder where the output will be stored. Defaults to "/tmp/esm_out/".</p>
+              </div>
+            </li>
+            <li>
+              <b><code>cache</code></b>
+                  (<code><span title="bool">bool</span></code>, default:
+                      <code>True</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>If True, use cached data if available. Defaults to True.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Returns:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code><span title="pandas.DataFrame">DataFrame</span></code>
+              –
+              <div class="doc-md-description">
+                <p>pd.DataFrame: The results of the model as a DataFrame.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>scprint/tokenizers/protein_embedder.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">input_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;/tmp/esm_out/&quot;</span><span class="p">,</span> <span class="n">cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Call the ESM2 model on the input file.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        input_file (str): The input file to be processed.</span>
+<span class="sd">        output_folder (str, optional): The folder where the output will be stored. Defaults to &quot;/tmp/esm_out/&quot;.</span>
+<span class="sd">        cache (bool, optional): If True, use cached data if available. Defaults to True.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        pd.DataFrame: The results of the model as a DataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="kn">import</span><span class="w"> </span><span class="nn">pdb</span>
+
+    <span class="n">pdb</span><span class="o">.</span><span class="n">set_trace</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">output_folder</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">cache</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">output_folder</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;running ESM2&quot;</span><span class="p">)</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span>
+            <span class="o">+</span> <span class="s2">&quot; &quot;</span>
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pretrained_model</span>
+            <span class="o">+</span> <span class="s2">&quot; &quot;</span>
+            <span class="o">+</span> <span class="n">input_file</span>
+            <span class="o">+</span> <span class="s2">&quot; &quot;</span>
+            <span class="o">+</span> <span class="n">output_folder</span>
+            <span class="o">+</span> <span class="s2">&quot; --include mean&quot;</span>
+        <span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">run_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;An error occurred while running the esm-extract command: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="p">)</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_results</span><span class="p">(</span><span class="n">output_folder</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="scprint.tokenizers.protein_embedder.ESM2.read_results" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">read_results</span></code>
+
+</h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Read multiple .pt files in a folder and convert them into a DataFrame.</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Parameters:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              <b><code>output_folder</code></b>
+                  (<code><span title="str">str</span></code>)
+              –
+              <div class="doc-md-description">
+                <p>The folder where the .pt files are stored.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Returns:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              –
+              <div class="doc-md-description">
+                <p>pd.DataFrame: The results of the model as a DataFrame.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>scprint/tokenizers/protein_embedder.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">68</span>
+<span class="normal">69</span>
+<span class="normal">70</span>
+<span class="normal">71</span>
+<span class="normal">72</span>
+<span class="normal">73</span>
+<span class="normal">74</span>
+<span class="normal">75</span>
+<span class="normal">76</span>
+<span class="normal">77</span>
+<span class="normal">78</span>
+<span class="normal">79</span>
+<span class="normal">80</span>
+<span class="normal">81</span>
+<span class="normal">82</span>
+<span class="normal">83</span>
+<span class="normal">84</span>
+<span class="normal">85</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">read_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read multiple .pt files in a folder and convert them into a DataFrame.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        output_folder (str): The folder where the .pt files are stored.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        pd.DataFrame: The results of the model as a DataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">output_folder</span><span class="p">)</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">files</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.pt&quot;</span><span class="p">)]</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">load</span><span class="p">(</span><span class="n">output_folder</span> <span class="o">+</span> <span class="n">file</span><span class="p">)[</span><span class="s2">&quot;mean_representations&quot;</span><span class="p">][</span><span class="mi">33</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">results</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="n">file</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">])</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+
+</div>
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-module">
+
+
+
+<h2 id="scprint.tokenizers.embedder" class="doc doc-heading">
+            <code>scprint.tokenizers.embedder</code>
+
+
+</h2>
+
+    <div class="doc doc-contents first">
+
+
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Functions:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="protein_embeddings_generator (scprint.tokenizers.embedder.protein_embeddings_generator)" href="#scprint.tokenizers.embedder.protein_embeddings_generator">protein_embeddings_generator</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>protein_embeddings_generator embed a set of genes using fasta file and LLMs</p>
+                </div>
+              </td>
+            </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="scprint.tokenizers.embedder.protein_embeddings_generator" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">protein_embeddings_generator</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>protein_embeddings_generator embed a set of genes using fasta file and LLMs</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Parameters:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              <b><code>genedf</code></b>
+                  (<code><span title="pandas.DataFrame">DataFrame</span></code>, default:
+                      <code>None</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>A DataFrame containing gene information.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>organism</code></b>
+                  (<code><span title="str">str</span></code>, default:
+                      <code>&#39;homo_sapiens&#39;</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>The organism to which the genes belong. Defaults to "homo_sapiens".</p>
+              </div>
+            </li>
+            <li>
+              <b><code>cache</code></b>
+                  (<code><span title="bool">bool</span></code>, default:
+                      <code>True</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>If True, the function will use cached data if available. Defaults to True.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>fasta_path</code></b>
+                  (<code><span title="str">str</span></code>, default:
+                      <code>&#39;/tmp/data/fasta/&#39;</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>The path to the directory where the fasta files are stored. Defaults to "/tmp/data/fasta/".</p>
+              </div>
+            </li>
+            <li>
+              <b><code>embedding_size</code></b>
+                  (<code><span title="int">int</span></code>, default:
+                      <code>512</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>The size of the embeddings to be generated. Defaults to 512.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>        <p>Returns:
+    pd.DataFrame: Returns a DataFrame containing the protein embeddings.
+    pd.DataFrame: Returns the naming dataframe.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>scprint/tokenizers/embedder.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 16</span>
+<span class="normal"> 17</span>
+<span class="normal"> 18</span>
+<span class="normal"> 19</span>
+<span class="normal"> 20</span>
+<span class="normal"> 21</span>
+<span class="normal"> 22</span>
+<span class="normal"> 23</span>
+<span class="normal"> 24</span>
+<span class="normal"> 25</span>
+<span class="normal"> 26</span>
+<span class="normal"> 27</span>
+<span class="normal"> 28</span>
+<span class="normal"> 29</span>
+<span class="normal"> 30</span>
+<span class="normal"> 31</span>
+<span class="normal"> 32</span>
+<span class="normal"> 33</span>
+<span class="normal"> 34</span>
+<span class="normal"> 35</span>
+<span class="normal"> 36</span>
+<span class="normal"> 37</span>
+<span class="normal"> 38</span>
+<span class="normal"> 39</span>
+<span class="normal"> 40</span>
+<span class="normal"> 41</span>
+<span class="normal"> 42</span>
+<span class="normal"> 43</span>
+<span class="normal"> 44</span>
+<span class="normal"> 45</span>
+<span class="normal"> 46</span>
+<span class="normal"> 47</span>
+<span class="normal"> 48</span>
+<span class="normal"> 49</span>
+<span class="normal"> 50</span>
+<span class="normal"> 51</span>
+<span class="normal"> 52</span>
+<span class="normal"> 53</span>
+<span class="normal"> 54</span>
+<span class="normal"> 55</span>
+<span class="normal"> 56</span>
+<span class="normal"> 57</span>
+<span class="normal"> 58</span>
+<span class="normal"> 59</span>
+<span class="normal"> 60</span>
+<span class="normal"> 61</span>
+<span class="normal"> 62</span>
+<span class="normal"> 63</span>
+<span class="normal"> 64</span>
+<span class="normal"> 65</span>
+<span class="normal"> 66</span>
+<span class="normal"> 67</span>
+<span class="normal"> 68</span>
+<span class="normal"> 69</span>
+<span class="normal"> 70</span>
+<span class="normal"> 71</span>
+<span class="normal"> 72</span>
+<span class="normal"> 73</span>
+<span class="normal"> 74</span>
+<span class="normal"> 75</span>
+<span class="normal"> 76</span>
+<span class="normal"> 77</span>
+<span class="normal"> 78</span>
+<span class="normal"> 79</span>
+<span class="normal"> 80</span>
+<span class="normal"> 81</span>
+<span class="normal"> 82</span>
+<span class="normal"> 83</span>
+<span class="normal"> 84</span>
+<span class="normal"> 85</span>
+<span class="normal"> 86</span>
+<span class="normal"> 87</span>
+<span class="normal"> 88</span>
+<span class="normal"> 89</span>
+<span class="normal"> 90</span>
+<span class="normal"> 91</span>
+<span class="normal"> 92</span>
+<span class="normal"> 93</span>
+<span class="normal"> 94</span>
+<span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">protein_embeddings_generator</span><span class="p">(</span>
+    <span class="n">genedf</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">organism</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;homo_sapiens&quot;</span><span class="p">,</span>  <span class="c1"># mus_musculus,</span>
+    <span class="n">cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">fasta_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;/tmp/data/fasta/&quot;</span><span class="p">,</span>
+    <span class="n">embedding_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span>
+    <span class="n">embedder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;esm3&quot;</span><span class="p">,</span>  <span class="c1"># or glm2</span>
+    <span class="n">cuda</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    protein_embeddings_generator embed a set of genes using fasta file and LLMs</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        genedf (pd.DataFrame): A DataFrame containing gene information.</span>
+<span class="sd">        organism (str, optional): The organism to which the genes belong. Defaults to &quot;homo_sapiens&quot;.</span>
+<span class="sd">        cache (bool, optional): If True, the function will use cached data if available. Defaults to True.</span>
+<span class="sd">        fasta_path (str, optional): The path to the directory where the fasta files are stored. Defaults to &quot;/tmp/data/fasta/&quot;.</span>
+<span class="sd">        embedding_size (int, optional): The size of the embeddings to be generated. Defaults to 512.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        pd.DataFrame: Returns a DataFrame containing the protein embeddings.</span>
+<span class="sd">        pd.DataFrame: Returns the naming dataframe.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># given a gene file and organism</span>
+    <span class="c1"># load the organism fasta if not already done</span>
+    <span class="n">fasta_path_pep</span><span class="p">,</span> <span class="n">fasta_path_ncrna</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">load_fasta_species</span><span class="p">(</span>
+        <span class="n">species</span><span class="o">=</span><span class="n">organism</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="n">fasta_path</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span>
+    <span class="p">)</span>
+    <span class="c1"># subset the fasta</span>
+    <span class="n">fasta_name</span> <span class="o">=</span> <span class="n">fasta_path_pep</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">utils</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">run_command</span><span class="p">([</span><span class="s2">&quot;gunzip&quot;</span><span class="p">,</span> <span class="n">fasta_path_pep</span><span class="p">])</span>
+    <span class="n">protgenedf</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">genedf</span><span class="p">[</span><span class="n">genedf</span><span class="p">[</span><span class="s2">&quot;biotype&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;protein_coding&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">genedf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="p">)</span>
+    <span class="n">found</span><span class="p">,</span> <span class="n">naming_df</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">subset_fasta</span><span class="p">(</span>
+        <span class="n">protgenedf</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="k">if</span> <span class="n">protgenedf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">subfasta_path</span><span class="o">=</span><span class="n">fasta_path</span> <span class="o">+</span> <span class="s2">&quot;subset.fa&quot;</span><span class="p">,</span>
+        <span class="n">fasta_path</span><span class="o">=</span><span class="n">fasta_path</span> <span class="o">+</span> <span class="n">fasta_name</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">],</span>
+        <span class="n">drop_unknown_seq</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">embedder</span> <span class="o">==</span> <span class="s2">&quot;esm2&quot;</span><span class="p">:</span>
+        <span class="n">prot_embedder</span> <span class="o">=</span> <span class="n">ESM2</span><span class="p">()</span>
+        <span class="n">prot_embeddings</span> <span class="o">=</span> <span class="n">prot_embedder</span><span class="p">(</span>
+            <span class="n">fasta_path</span> <span class="o">+</span> <span class="s2">&quot;subset.fa&quot;</span><span class="p">,</span> <span class="n">output_folder</span><span class="o">=</span><span class="n">fasta_path</span> <span class="o">+</span> <span class="s2">&quot;esm_out/&quot;</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">embedder</span> <span class="o">==</span> <span class="s2">&quot;esm3&quot;</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">Bio</span><span class="w"> </span><span class="kn">import</span> <span class="n">SeqIO</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">esm.models.esmc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ESMC</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">esm.sdk.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ESMProtein</span><span class="p">,</span> <span class="n">LogitsConfig</span>
+
+        <span class="n">prot_embeddings</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="n">ESMC</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">&quot;esmc_600m&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span> <span class="k">if</span> <span class="n">cuda</span> <span class="k">else</span> <span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
+        <span class="n">conf</span> <span class="o">=</span> <span class="n">LogitsConfig</span><span class="p">(</span><span class="n">sequence</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">return_embeddings</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">with</span> <span class="p">(</span>
+            <span class="nb">open</span><span class="p">(</span><span class="n">fasta_path</span> <span class="o">+</span> <span class="s2">&quot;subset.fa&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fasta</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">SeqIO</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">fasta</span><span class="p">,</span> <span class="s2">&quot;fasta&quot;</span><span class="p">)):</span>
+                <span class="n">protein</span> <span class="o">=</span> <span class="n">ESMProtein</span><span class="p">(</span><span class="n">sequence</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">seq</span><span class="p">))</span>
+                <span class="n">protein_tensor</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">protein</span><span class="p">)</span>
+                <span class="n">logits_output</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">logits</span><span class="p">(</span><span class="n">protein_tensor</span><span class="p">,</span> <span class="n">conf</span><span class="p">)</span>
+                <span class="n">prot_embeddings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">logits_output</span><span class="o">.</span><span class="n">embeddings</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+                <span class="p">)</span>
+                <span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Embedder </span><span class="si">{</span><span class="n">embedder</span><span class="si">}</span><span class="s2"> not supported&quot;</span><span class="p">)</span>
+    <span class="c1"># load the data and erase / zip the rest</span>
+    <span class="c1"># utils.utils.run_command([&quot;gzip&quot;, fasta_path + fasta_name[:-3]])</span>
+    <span class="c1"># return the embedding and gene file</span>
+    <span class="c1"># TODO: to redebug</span>
+    <span class="c1"># do the same for RNA</span>
+    <span class="c1"># rnagenedf = genedf[genedf[&quot;biotype&quot;] != &quot;protein_coding&quot;]</span>
+    <span class="c1"># fasta_file = next(</span>
+    <span class="c1">#    file for file in os.listdir(fasta_path) if file.endswith(&quot;.ncrna.fa.gz&quot;)</span>
+    <span class="c1"># )</span>
+    <span class="c1"># utils.utils.run_command([&quot;gunzip&quot;, fasta_path + fasta_file])</span>
+    <span class="c1"># utils.subset_fasta(</span>
+    <span class="c1">#    rnagenedf[&quot;ensembl_gene_id&quot;].tolist(),</span>
+    <span class="c1">#    subfasta_path=fasta_path + &quot;subset.ncrna.fa&quot;,</span>
+    <span class="c1">#    fasta_path=fasta_path + fasta_file[:-3],</span>
+    <span class="c1">#    drop_unknown_seq=True,</span>
+    <span class="c1"># )</span>
+    <span class="c1"># rna_embedder = RNABERT()</span>
+    <span class="c1"># rna_embeddings = rna_embedder(fasta_path + &quot;subset.ncrna.fa&quot;)</span>
+    <span class="c1">## Check if the sizes of the cembeddings are not the same</span>
+    <span class="c1"># utils.utils.run_command([&quot;gzip&quot;, fasta_path + fasta_file[:-3]])</span>
+    <span class="c1">#</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">AdaptiveAvgPool1d</span><span class="p">(</span><span class="n">embedding_size</span><span class="p">)</span>
+    <span class="n">prot_embeddings</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">m</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">prot_embeddings</span><span class="p">))),</span> <span class="n">index</span><span class="o">=</span><span class="n">names</span>
+    <span class="p">)</span>
+    <span class="c1"># rna_embeddings = pd.DataFrame(</span>
+    <span class="c1">#    data=m(torch.tensor(rna_embeddings.values)), index=rna_embeddings.index</span>
+    <span class="c1"># )</span>
+    <span class="c1"># Concatenate the embeddings</span>
+    <span class="k">return</span> <span class="n">prot_embeddings</span><span class="p">,</span> <span class="n">naming_df</span>  <span class="c1"># pd.concat([prot_embeddings, rna_embeddings])</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../cli/" class="btn btn-neutral float-left" title="cli"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../utils/" class="btn btn-neutral float-right" title="utils">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../cli/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../utils/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

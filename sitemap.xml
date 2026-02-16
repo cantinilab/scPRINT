@@ -1,35 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://www.jkobject.com/scPRINT-2/</loc>
+         <loc>https://www.jkobject.com/scPRINT/</loc>
          <lastmod>2026-02-16</lastmod>
     </url>
     <url>
-         <loc>https://www.jkobject.com/scPRINT-2/cli/</loc>
+         <loc>https://www.jkobject.com/scPRINT/cli/</loc>
          <lastmod>2026-02-16</lastmod>
     </url>
     <url>
-         <loc>https://www.jkobject.com/scPRINT-2/model/</loc>
+         <loc>https://www.jkobject.com/scPRINT/embedder/</loc>
          <lastmod>2026-02-16</lastmod>
     </url>
     <url>
-         <loc>https://www.jkobject.com/scPRINT-2/pretrain/</loc>
+         <loc>https://www.jkobject.com/scPRINT/model/</loc>
          <lastmod>2026-02-16</lastmod>
     </url>
     <url>
-         <loc>https://www.jkobject.com/scPRINT-2/structure/</loc>
+         <loc>https://www.jkobject.com/scPRINT/pretrain/</loc>
          <lastmod>2026-02-16</lastmod>
     </url>
     <url>
-         <loc>https://www.jkobject.com/scPRINT-2/tasks/</loc>
+         <loc>https://www.jkobject.com/scPRINT/structure/</loc>
          <lastmod>2026-02-16</lastmod>
     </url>
     <url>
-         <loc>https://www.jkobject.com/scPRINT-2/tokenizers/</loc>
+         <loc>https://www.jkobject.com/scPRINT/tasks/</loc>
          <lastmod>2026-02-16</lastmod>
     </url>
     <url>
-         <loc>https://www.jkobject.com/scPRINT-2/utils/</loc>
+         <loc>https://www.jkobject.com/scPRINT/usage/</loc>
+         <lastmod>2026-02-16</lastmod>
+    </url>
+    <url>
+         <loc>https://www.jkobject.com/scPRINT/utils/</loc>
+         <lastmod>2026-02-16</lastmod>
+    </url>
+    <url>
+         <loc>https://www.jkobject.com/scPRINT/notebooks/cancer_usecase/</loc>
+         <lastmod>2026-02-16</lastmod>
+    </url>
+    <url>
+         <loc>https://www.jkobject.com/scPRINT/notebooks/cancer_usecase_part2/</loc>
          <lastmod>2026-02-16</lastmod>
     </url>
 </urlset>
