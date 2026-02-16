@@ -3,9 +3,9 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://www.jkobject.com/scPRINT/pretrain/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://www.jkobject.com/scPRINT-2/pretrain/" />
       <link rel="shortcut icon" href="../img/favicon.ico" />
-    <title>pre-training - scprint</title>
+    <title>pre-training - scPRINT-2</title>
     <link rel="stylesheet" href="../css/theme.css" />
     <link rel="stylesheet" href="../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
@@ -15,7 +15,7 @@
         // Current page data
         var mkdocs_page_name = "pre-training";
         var mkdocs_page_input_path = "pretrain.md";
-        var mkdocs_page_url = "/scPRINT/pretrain/";
+        var mkdocs_page_url = "/scPRINT-2/pretrain/";
       </script>
     
     <!--[if lt IE 9]>
@@ -31,7 +31,8 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
     <div class="wy-side-scroll">
       <div class="wy-side-nav-search">
-          <a href=".." class="icon icon-home"> scprint
+          <a href="..">
+          <img src="../fig.png" class="logo" alt="Logo"/>
         </a><div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
       <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
@@ -55,33 +56,24 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#pre-training">Pre-training</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#fine-tuning">Fine-tuning</a>
-    </li>
     </ul>
                 </li>
               </ul>
               <ul>
-                <li class="toctree-l1"><a class="reference internal" href="../usage/">usage example</a>
+                <li class="toctree-l1"><a class="reference internal" href="../umap/nice_umap_scprint2.html">350M subset umap</a>
                 </li>
-              </ul>
-              <p class="caption"><span class="caption-text">example notebooks</span></p>
-              <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../notebooks/cancer_usecase/">scPRINT use case on BPH</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../notebooks/cancer_usecase_part2/">scPRINT use case on BPH (part 2, GN analysis)</a>
-                  </li>
               </ul>
               <p class="caption"><span class="caption-text">documentation</span></p>
               <ul>
                   <li class="toctree-l1"><a class="reference internal" href="../model/">model</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tokenizers/">tokenizers</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../tasks/">tasks</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../cli/">cli</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../embedder/">embedders</a>
-                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../utils/">utils</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../cli/">cli</a>
                   </li>
               </ul>
       </div>
@@ -91,7 +83,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
       <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="..">scprint</a>
+          <a href="..">scPRINT-2</a>
         
       </nav>
       <div class="wy-nav-content">
@@ -107,39 +99,67 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h1 id="pre-training-scprint">Pre-training scPRINT</h1>
-<p>scPRINT is a large model that can be pre-trained on a large dataset of single cell data.</p>
-<p>This pre-training is quite efficient for scPRINT and smaller models can be pretrained on any hardware with a 20GB NVIDIA GPU.</p>
+                <h1 id="pre-training-scprint-2">Pre-training scPRINT-2</h1>
+<p>scPRINT-2 is a large model that can be pre-trained on a large dataset of single
+cell data.</p>
+<p>This pre-training is quite efficient for scPRINT-2 and smaller models can be
+pretrained on any hardware with a 20GB NVIDIA GPU.</p>
 <h2 id="setup-of-the-database">Setup of the database</h2>
-<p>To perform pretraining you will need a large dataset. We recommend using the <a href="https://lamin.ai">laminDB</a> to assemble such a large database of dataset and to use our <a href="https://github.com/jkobject/scDataLoader">scdataloader</a> package to perform the data loading to the model.</p>
-<p>In addition, you will need to preprocess your datasets. To make sure that the fields are all here, the genes are in the right format, the raw counts are used, etc... We recommend using the Preprocessor class of the <code>scdataloader</code> package.</p>
-<p>Moreover scdataloader works with a set of ontologies. To install these, use the function <code>populate_my_ontologies</code> from the <code>scdataloader</code> package.</p>
-<p>If you do not have your own database of anndatas, we recommend the <a href="https://cellxgene.cziscience.com/">cellxgene database</a> and our associated helper function to download and preprocess all of cellxgene in a single command with <code>scdataloader</code>.</p>
-<p>Finally you might want to generate gene embeddings to use with scPRINT instead of learning these tokens from scratch. For this you can use the <a href="../embedder/">gene_embedders</a> module of scPRINT, which usage is detailed in the <code>notebooks/generate_gene_embeddings.ipynb</code> notebook.</p>
+<p>To perform pretraining you will need a large dataset. We recommend using the
+<a href="https://lamin.ai">laminDB</a> to assemble such a large database of dataset and to
+use our <a href="https://github.com/jkobject/scDataLoader">scdataloader</a> package to
+perform the data loading to the model.</p>
+<p>In addition, you will need to preprocess your datasets. To make sure that the
+fields are all here, the genes are in the right format, the raw counts are used,
+etc... We recommend using the Preprocessor class of the <code>scdataloader</code> package.</p>
+<p>Moreover scdataloader works with a set of ontologies. To install these, use the
+function <code>populate_my_ontologies</code> from the <code>scdataloader</code> package.</p>
+<p>If you do not have your own database of anndatas, we recommend the
+<a href="https://cellxgene.cziscience.com/">cellxgene database</a> and our associated
+helper function to download and preprocess all of cellxgene in a single command
+with <code>scdataloader</code>.</p>
+<p>Finally you might want to generate gene embeddings to use with scPRINT-2 instead
+of learning these tokens from scratch. For this you can use the
+<a href="../tokenizers/">gene_embedders</a> module of scPRINT-2, which usage is detailed in
+the <code>notebooks/generate_gene_embeddings.ipynb</code> notebook and also gene locations
+using the additional notebook <code>notebooks/genelocs.ipynb</code></p>
 <h2 id="pre-training">Pre-training</h2>
-<p>to pretrain scPRINT we strongly recommend using command line as it can take multiple days (and using some HPC plateform like slurm or others). If on your own machine, use something like <code>screen</code> at least 😉.</p>
-<p>Most of the pre-training usage follows from <a href="https://lightning.ai/docs/pytorch/stable/levels/intermediate.html">pytorch lightning</a> with <code>scprint fit</code> you will launch a training run. It will populate both the datamodule (see <code>scdataloader</code>), the model (see <code>model.py</code>), the trainer (see <code>pytorch lightning</code>) and the various callbacks.</p>
-<p>But you might want to use additional parameters. For this, you can use the <code>config</code> folder and the <code>yaml</code> files in it. These files are used to store the main hyperparameters of the model and the training scheme.</p>
-<p>More hyperparameters are given to the scPRINT model via a Trainer callback I created (see <code>trainer/trainer.py</code>). This is used to specify parameters to scPRINT that are used solely during training and are not part of the model definition itself, like lr, schedulers, optimizers, etc.. I use a callback as it is how pytorch lightning requires us to send training parameters to the model.</p>
-<p>Thus a full command line to train scPRINT on a slurm cluster might look like this:</p>
-<pre><code class="language-bash">conda activate scprint
+<p>to pretrain scPRINT-2 we strongly recommend using command line as it can take
+multiple days (and using some HPC plateform like slurm or others). If on your
+own machine, use something like <code>screen</code> at least 😉.</p>
+<p>Most of the pre-training usage follows from
+<a href="https://lightning.ai/docs/pytorch/stable/levels/intermediate.html">pytorch lightning</a>
+with <code>scprint-2 fit</code> you will launch a training run. It will populate both the
+datamodule (see <code>scdataloader</code>), the model (see <code>model.py</code>), the trainer (see
+<code>pytorch lightning</code>) and the various callbacks.</p>
+<p>But you might want to use additional parameters. For this, you can use the
+<code>config</code> folder and the <code>yaml</code> files in it. These files are used to store the
+main hyperparameters of the model and the training scheme.</p>
+<p>More hyperparameters are given to the scPRINT-2 model via a Trainer callback I
+created (see <code>trainer/trainer.py</code>). This is used to specify parameters to
+scPRINT-2 that are used solely during training and are not part of the model
+definition itself, like lr, schedulers, optimizers, etc.. I use a callback as it
+is how pytorch lightning requires us to send training parameters to the model.</p>
+<p>Thus a full command line to train scPRINT-2 on a slurm cluster might look like
+this:</p>
+<pre><code class="language-bash">conda activate scprint2
 ### slurm level stuff
-module load cuda/11.7
-srun 
+module load cuda/12.2
+sbatch
   -p gpu #gpu partition
   -q gpu #gpu queue
   --gres=gpu:A40:4,gmem:40G #gpu type (4 A40 with 40GB of GPU mem)
   --cpus-per-task 16
   --mem-per-gpu 90G #RAM per GPU
-  --ntasks-per-node=1 
+  --ntasks-per-node=1
 ####
-  # actuall scprint command
-  scprint fit 
-    --config config/base.yml #base config file (see below)
-    --config config/pretrain_large.yml #the differences when training a large model
+  # actuall scprint-2 command
+  slurm/submit.sh 'fit
+    --config config/base_v1.yml #base config file (see below)
+    --config config/pretrain_medium.yml #the differences when training a large model
     --model.nhead 8 # changing this parameter from the large model directly in command line (cannot do 4 heads of 128dim with A40 GPUs...)
     --scprint_training.name o2uniqsx #an id for the model (not needed but useful)
-    --trainer.strategy auto #here the strategy selected will be &quot;ddp_find_unused_parameters_true&quot;
+    '
 </code></pre>
 <p>with the base yaml file containing:</p>
 <pre><code class="language-yaml"># general params
@@ -164,32 +184,32 @@ trainer: #training level params
     ...
 model: # model params
   dropout: 0.1
-  transformer: flash #flashattention is used
-  mvc_decoder: inner product
-  residual_in_fp32: True
+  transformer: normal #flashattention is used
   ...
 data: #datamodule params
   organisms: #we will use these 2 species
     - NCBITaxon:9606
     - NCBITaxon:10090
   gene_position_tolerance: 10_000 #gene location: if genes are closer than 10kb, they are considered as the same location
-  gene_embeddings: ./data/main/gene_embeddings.parquet #the embeddings of genes (see above  )
+  gene_embeddings: ./data/main/gene_embeddings/ #the embeddings of genes (see above  )
   collection_name: all no zhang13M # the name of the laminDB collection we will use
   how: random expr # how we collate the expression data (here random expressed genes)
   max_len: 2200 #how many genes we use in the model context during training
   weight_scaler: 50 #how do we scale the weighted random sampling procedure (see our manuscript)
   ...
 </code></pre>
-<p>We use wanDB in our case and our previous wandb training runs are available <a href="https://wandb.ai/ml4ig/scprint_scale/reports/scPRINT-trainings--Vmlldzo4ODIxMjgx?accessToken=80metwx7b08hhourotpskdyaxiflq700xzmzymr6scvkp69agybt79l341tv68hp">here</a>, however scPRINT and pytorch lightning support a breadth of logging tools: <a href="https://lightning.ai/docs/pytorch/stable/api_references.html#loggers">see loggers</a>.</p>
-<p>We use slurm in our usecase here but scPRINT and pytorch lightning has been made to work in a breadth of environments <a href="https://lightning.ai/docs/pytorch/stable/levels/intermediate_level_7.html">e.g.</a>.</p>
-<h2 id="fine-tuning">Fine-tuning</h2>
-<p>For now scPRINT doesn't have a fine-tuning script. But PRs are very welcome on using LoRA and its alternatives to fine-tune scPRINT on novel tasks!</p>
+<p>We use wanDB in our case, however scPRINT-2 and pytorch lightning support a
+breadth of logging tools:
+<a href="https://lightning.ai/docs/pytorch/stable/api_references.html#loggers">see loggers</a>.</p>
+<p>We use slurm in our usecase here but scPRINT-2 and pytorch lightning has been
+made to work in a breadth of environments
+<a href="https://lightning.ai/docs/pytorch/stable/levels/intermediate_level_7.html">e.g.</a>.</p>
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
         <a href="../structure/" class="btn btn-neutral float-left" title="structure"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../usage/" class="btn btn-neutral float-right" title="usage example">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../umap/nice_umap_scprint2.html" class="btn btn-neutral float-right" title="350M subset umap">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -215,7 +235,7 @@ data: #datamodule params
       <span><a href="../structure/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
-      <span><a href="../usage/" style="color: #fcfcfc">Next &raquo;</a></span>
+      <span><a href="../umap/nice_umap_scprint2.html" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>
