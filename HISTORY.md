@@ -4,6 +4,35 @@ Changelog
 
 (unreleased)
 ------------
+- Update with newer versions. [jkobject]
+- Adding docs. [jkobject]
+
+
+1.0.2 (2026-02-11)
+------------------
+- Release: version 1.0.2 🚀 [jkobject]
+- Improving readme and index. [jkobject]
+- Release: version 1.0.2 🚀 [jkobject]
+- Making sure no flash. [jkobject]
+- Release: version 1.0.2 🚀 [jkobject]
+- Wip. [jkobject]
+- Merge branch 'main' of https://github.com/cantinilab/scPRINT-2.
+  [jkobject]
+- Adding docker. [jkobject]
+- Update. [jkobject]
+
+
+2.3.7 (2026-02-11)
+------------------
+- Release: version 2.3.7 🚀 [jkobject]
+- Merge pull request #47 from cantinilab/main-v1. [Jérémie Kalfon]
+
+  Main v1
+
+
+2.3.6 (2026-02-11)
+------------------
+- Release: version 2.3.6 🚀 [jkobject]
 - Debug of the latest version. [jkobject]
 - Merge branch 'main' of https://github.com/cantinilab/scPRINT into
   main-v1. [jkobject]
