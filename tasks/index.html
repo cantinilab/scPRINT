@@ -1214,7 +1214,9 @@
 <span class="normal">450</span>
 <span class="normal">451</span>
 <span class="normal">452</span>
-<span class="normal">453</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">compute_classification</span><span class="p">(</span>
+<span class="normal">453</span>
+<span class="normal">454</span>
+<span class="normal">455</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">compute_classification</span><span class="p">(</span>
     <span class="n">adata</span><span class="p">:</span> <span class="n">AnnData</span><span class="p">,</span>
     <span class="n">classes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">label_decoders</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
@@ -1243,7 +1245,9 @@
         <span class="k">if</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">labels_hierarchy</span><span class="p">:</span>
             <span class="n">parentdf</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="n">bt</span><span class="o">.</span><span class="n">CellType</span><span class="o">.</span><span class="n">filter</span><span class="p">()</span>
-                <span class="o">.</span><span class="n">df</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;parents__ontology_id&quot;</span><span class="p">])</span>
+                <span class="o">.</span><span class="n">to_dataframe</span><span class="p">(</span>
+                    <span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;parents__ontology_id&quot;</span><span class="p">,</span> <span class="s2">&quot;ontology_id&quot;</span><span class="p">],</span> <span class="n">limit</span><span class="o">=</span><span class="kc">None</span>
+                <span class="p">)</span>
                 <span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;ontology_id&quot;</span><span class="p">)[[</span><span class="s2">&quot;parents__ontology_id&quot;</span><span class="p">]]</span>
             <span class="p">)</span>
             <span class="n">parentdf</span><span class="o">.</span><span class="n">parents__ontology_id</span> <span class="o">=</span> <span class="n">parentdf</span><span class="o">.</span><span class="n">parents__ontology_id</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
@@ -1994,16 +1998,6 @@
               </div>
             </li>
             <li>
-              <b><code>doplot</code></b>
-                  (<code><span title="bool">bool</span></code>, default:
-                      <code>True</code>
-)
-              –
-              <div class="doc-md-description">
-                <p>Whether to generate plots. Defaults to True.</p>
-              </div>
-            </li>
-            <li>
               <b><code>max_cells</code></b>
                   (<code><span title="int">int</span></code>, default:
                       <code>0</code>
@@ -2112,7 +2106,11 @@
 
                   <details class="quote">
                     <summary>Source code in <code>scprint/tasks/grn.py</code></summary>
-                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 37</span>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 33</span>
+<span class="normal"> 34</span>
+<span class="normal"> 35</span>
+<span class="normal"> 36</span>
+<span class="normal"> 37</span>
 <span class="normal"> 38</span>
 <span class="normal"> 39</span>
 <span class="normal"> 40</span>
@@ -2195,17 +2193,7 @@
 <span class="normal">117</span>
 <span class="normal">118</span>
 <span class="normal">119</span>
-<span class="normal">120</span>
-<span class="normal">121</span>
-<span class="normal">122</span>
-<span class="normal">123</span>
-<span class="normal">124</span>
-<span class="normal">125</span>
-<span class="normal">126</span>
-<span class="normal">127</span>
-<span class="normal">128</span>
-<span class="normal">129</span>
-<span class="normal">130</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+<span class="normal">120</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">layer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">64</span><span class="p">,</span>
@@ -2223,7 +2211,6 @@
     <span class="n">apc</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">known_grn</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">symmetrize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">doplot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">comp_attn</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">max_cells</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
     <span class="n">forward_mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;none&quot;</span><span class="p">,</span>
@@ -2252,7 +2239,6 @@
 <span class="sd">        apc (bool, optional): Whether to apply Average Product Correction. Defaults to False.</span>
 <span class="sd">        known_grn (optional): Known gene regulatory network to use as a reference. Defaults to None.</span>
 <span class="sd">        symmetrize (bool, optional): Whether to symmetrize the adjacency matrix. Defaults to False.</span>
-<span class="sd">        doplot (bool, optional): Whether to generate plots. Defaults to True.</span>
 <span class="sd">        max_cells (int, optional): Maximum number of cells to consider. Defaults to 0.</span>
 <span class="sd">        forward_mode (str, optional): Mode for forward pass. Defaults to &quot;none&quot;.</span>
 <span class="sd">        genes (list, optional): List of genes to consider. Defaults to an empty list.</span>
@@ -2267,21 +2253,17 @@
     <span class="bp">self</span><span class="o">.</span><span class="n">layer</span> <span class="o">=</span> <span class="n">layer</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">locname</span> <span class="o">=</span> <span class="n">locname</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">how</span> <span class="o">=</span> <span class="n">how</span>
-    <span class="k">assert</span> <span class="p">(</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">how</span>
-        <span class="ow">in</span> <span class="p">[</span>
-            <span class="s2">&quot;most var within&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;most var across&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;random expr&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;given&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;most expr&quot;</span><span class="p">,</span>
-        <span class="p">]</span>
-    <span class="p">),</span> <span class="s2">&quot;how must be one of &#39;most var within&#39;, &#39;most var across&#39;, &#39;random expr&#39;, &#39;given&#39;, &#39;most expr&#39;&quot;</span>
+    <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">how</span> <span class="ow">in</span> <span class="p">[</span>
+        <span class="s2">&quot;most var within&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;most var across&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;random expr&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;given&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;most expr&quot;</span><span class="p">,</span>
+    <span class="p">],</span> <span class="s2">&quot;how must be one of &#39;most var within&#39;, &#39;most var across&#39;, &#39;random expr&#39;, &#39;given&#39;, &#39;most expr&#39;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">num_genes</span> <span class="o">=</span> <span class="n">num_genes</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">preprocess</span> <span class="o">=</span> <span class="n">preprocess</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">cell_type_col</span> <span class="o">=</span> <span class="n">cell_type_col</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">filtration</span> <span class="o">=</span> <span class="n">filtration</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">doplot</span> <span class="o">=</span> <span class="n">doplot</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">genes</span> <span class="o">=</span> <span class="n">genes</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">apc</span> <span class="o">=</span> <span class="n">apc</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">dtype</span>
@@ -2401,7 +2383,17 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/tasks/grn.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">132</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
 <span class="normal">133</span>
 <span class="normal">134</span>
 <span class="normal">135</span>
@@ -2419,17 +2411,7 @@
 <span class="normal">147</span>
 <span class="normal">148</span>
 <span class="normal">149</span>
-<span class="normal">150</span>
-<span class="normal">151</span>
-<span class="normal">152</span>
-<span class="normal">153</span>
-<span class="normal">154</span>
-<span class="normal">155</span>
-<span class="normal">156</span>
-<span class="normal">157</span>
-<span class="normal">158</span>
-<span class="normal">159</span>
-<span class="normal">160</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">adata</span><span class="p">:</span> <span class="n">AnnData</span><span class="p">,</span> <span class="n">cell_type</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="normal">150</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">adata</span><span class="p">:</span> <span class="n">AnnData</span><span class="p">,</span> <span class="n">cell_type</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    __call__ runs the method</span>
 
@@ -2596,7 +2578,42 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/tasks/grn.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">422</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">387</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span>
+<span class="normal">393</span>
+<span class="normal">394</span>
+<span class="normal">395</span>
+<span class="normal">396</span>
+<span class="normal">397</span>
+<span class="normal">398</span>
+<span class="normal">399</span>
+<span class="normal">400</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span>
+<span class="normal">407</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span>
+<span class="normal">411</span>
+<span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span>
+<span class="normal">415</span>
+<span class="normal">416</span>
+<span class="normal">417</span>
+<span class="normal">418</span>
+<span class="normal">419</span>
+<span class="normal">420</span>
+<span class="normal">421</span>
+<span class="normal">422</span>
 <span class="normal">423</span>
 <span class="normal">424</span>
 <span class="normal">425</span>
@@ -2878,42 +2895,7 @@
 <span class="normal">701</span>
 <span class="normal">702</span>
 <span class="normal">703</span>
-<span class="normal">704</span>
-<span class="normal">705</span>
-<span class="normal">706</span>
-<span class="normal">707</span>
-<span class="normal">708</span>
-<span class="normal">709</span>
-<span class="normal">710</span>
-<span class="normal">711</span>
-<span class="normal">712</span>
-<span class="normal">713</span>
-<span class="normal">714</span>
-<span class="normal">715</span>
-<span class="normal">716</span>
-<span class="normal">717</span>
-<span class="normal">718</span>
-<span class="normal">719</span>
-<span class="normal">720</span>
-<span class="normal">721</span>
-<span class="normal">722</span>
-<span class="normal">723</span>
-<span class="normal">724</span>
-<span class="normal">725</span>
-<span class="normal">726</span>
-<span class="normal">727</span>
-<span class="normal">728</span>
-<span class="normal">729</span>
-<span class="normal">730</span>
-<span class="normal">731</span>
-<span class="normal">732</span>
-<span class="normal">733</span>
-<span class="normal">734</span>
-<span class="normal">735</span>
-<span class="normal">736</span>
-<span class="normal">737</span>
-<span class="normal">738</span>
-<span class="normal">739</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">default_benchmark</span><span class="p">(</span>
+<span class="normal">704</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">default_benchmark</span><span class="p">(</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">default_dataset</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;sroy&quot;</span><span class="p">,</span>
     <span class="n">cell_types</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
@@ -3851,15 +3833,7 @@
 <span class="normal">220</span>
 <span class="normal">221</span>
 <span class="normal">222</span>
-<span class="normal">223</span>
-<span class="normal">224</span>
-<span class="normal">225</span>
-<span class="normal">226</span>
-<span class="normal">227</span>
-<span class="normal">228</span>
-<span class="normal">229</span>
-<span class="normal">230</span>
-<span class="normal">231</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">adata</span><span class="p">:</span> <span class="n">AnnData</span><span class="p">):</span>
+<span class="normal">223</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">adata</span><span class="p">:</span> <span class="n">AnnData</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    __call__ calling the function</span>
 
@@ -3899,10 +3873,6 @@
         <span class="n">max_len</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_len</span><span class="p">,</span>
         <span class="n">how</span><span class="o">=</span><span class="s2">&quot;some&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">how</span> <span class="o">==</span> <span class="s2">&quot;most var&quot;</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">how</span><span class="p">,</span>
         <span class="n">genelist</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">genelist</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">how</span> <span class="o">!=</span> <span class="s2">&quot;random expr&quot;</span> <span class="k">else</span> <span class="p">[],</span>
-        <span class="n">downsample</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">downsample</span><span class="p">,</span>
-        <span class="n">save_output</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;collator_output_</span><span class="si">{</span><span class="n">num</span><span class="si">}</span><span class="s2">.txt&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">downsample</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-        <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span>
         <span class="n">adataset</span><span class="p">,</span>
@@ -3915,6 +3885,7 @@
     <span class="n">model</span><span class="o">.</span><span class="n">doplot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">doplot</span>
     <span class="n">model</span><span class="o">.</span><span class="n">on_predict_epoch_start</span><span class="p">()</span>
     <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+    <span class="n">stored_noisy</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">device</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">type</span>
     <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">(),</span> <span class="n">torch</span><span class="o">.</span><span class="n">autocast</span><span class="p">(</span><span class="n">device_type</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">dataloader</span><span class="p">):</span>
@@ -3923,6 +3894,14 @@
                 <span class="n">batch</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span>
                 <span class="n">batch</span><span class="p">[</span><span class="s2">&quot;depth&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span>
             <span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">downsample</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">expression</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">downsample_profile</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">downsample</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">stored_noisy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">stored_noisy</span> <span class="o">=</span> <span class="n">expression</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">stored_noisy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+                    <span class="p">[</span><span class="n">stored_noisy</span><span class="p">,</span> <span class="n">expression</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span>
+                <span class="p">)</span>
             <span class="n">model</span><span class="o">.</span><span class="n">_predict</span><span class="p">(</span>
                 <span class="n">gene_pos</span><span class="p">,</span>
                 <span class="n">expression</span><span class="p">,</span>
@@ -3957,19 +3936,6 @@
     <span class="n">pred_adata</span> <span class="o">=</span> <span class="n">concat</span><span class="p">(</span><span class="n">pred_adata</span><span class="p">)</span>
     <span class="n">metrics</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">downsample</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">noisy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;collator_output_</span><span class="si">{</span><span class="n">num</span><span class="si">}</span><span class="s2">.txt&quot;</span><span class="p">)</span>
-        <span class="n">loc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;collator_output_</span><span class="si">{</span><span class="n">num</span><span class="si">}</span><span class="s2">.txt_loc&quot;</span><span class="p">)</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;collator_output_</span><span class="si">{</span><span class="n">num</span><span class="si">}</span><span class="s2">.txt&quot;</span><span class="p">)</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;collator_output_</span><span class="si">{</span><span class="n">num</span><span class="si">}</span><span class="s2">.txt_loc&quot;</span><span class="p">)</span>
-        <span class="c1"># Sort loc indices per row and apply same sorting to noisy expression matrix</span>
-        <span class="n">sorted_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">loc</span><span class="p">])</span>
-        <span class="c1"># Create row indices array for advanced indexing</span>
-        <span class="n">row_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">loc</span><span class="p">))[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
-        <span class="c1"># Sort loc and noisy using the row-wise indices</span>
-        <span class="k">del</span> <span class="n">loc</span>
-        <span class="n">noisy</span> <span class="o">=</span> <span class="n">noisy</span><span class="p">[</span><span class="n">row_indices</span><span class="p">,</span> <span class="n">sorted_indices</span><span class="p">]</span>
-        <span class="k">del</span> <span class="n">sorted_indices</span><span class="p">,</span> <span class="n">row_indices</span>
-
         <span class="n">reco</span> <span class="o">=</span> <span class="n">pred_adata</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="s2">&quot;scprint_mu&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">pred_adata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">adata</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">adata</span><span class="p">[</span><span class="n">random_indices</span><span class="p">,</span> <span class="n">adata</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">pred_adata</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">index</span><span class="p">)]</span>
@@ -3986,7 +3952,7 @@
         <span class="p">]</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
 
         <span class="n">corr_coef</span><span class="p">,</span> <span class="n">p_value</span> <span class="o">=</span> <span class="n">spearmanr</span><span class="p">(</span>
-            <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">reco</span><span class="p">[</span><span class="n">true</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">],</span> <span class="n">noisy</span><span class="p">[</span><span class="n">true</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">],</span> <span class="n">true</span><span class="p">[</span><span class="n">true</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]])</span><span class="o">.</span><span class="n">T</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">reco</span><span class="p">[</span><span class="n">true</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">],</span> <span class="n">stored_noisy</span><span class="p">[</span><span class="n">true</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">],</span> <span class="n">true</span><span class="p">[</span><span class="n">true</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]])</span><span class="o">.</span><span class="n">T</span>
         <span class="p">)</span>
         <span class="n">metrics</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;reco2noisy&quot;</span><span class="p">:</span> <span class="n">corr_coef</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
@@ -4117,7 +4083,15 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/tasks/denoise.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">241</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
 <span class="normal">242</span>
 <span class="normal">243</span>
 <span class="normal">244</span>
@@ -4136,15 +4110,7 @@
 <span class="normal">257</span>
 <span class="normal">258</span>
 <span class="normal">259</span>
-<span class="normal">260</span>
-<span class="normal">261</span>
-<span class="normal">262</span>
-<span class="normal">263</span>
-<span class="normal">264</span>
-<span class="normal">265</span>
-<span class="normal">266</span>
-<span class="normal">267</span>
-<span class="normal">268</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">default_benchmark</span><span class="p">(</span>
+<span class="normal">260</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">default_benchmark</span><span class="p">(</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">default_dataset</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">FILE_DIR</span>
     <span class="o">+</span> <span class="s2">&quot;/../../data/gNNpgpo6gATjuxTE7CCp.h5ad&quot;</span><span class="p">,</span>  <span class="c1"># r4iCehg3Tw5IbCLiCIbl</span>
@@ -4200,7 +4166,15 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scprint/tasks/denoise.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">368</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">360</span>
+<span class="normal">361</span>
+<span class="normal">362</span>
+<span class="normal">363</span>
+<span class="normal">364</span>
+<span class="normal">365</span>
+<span class="normal">366</span>
+<span class="normal">367</span>
+<span class="normal">368</span>
 <span class="normal">369</span>
 <span class="normal">370</span>
 <span class="normal">371</span>
@@ -4217,15 +4191,7 @@
 <span class="normal">382</span>
 <span class="normal">383</span>
 <span class="normal">384</span>
-<span class="normal">385</span>
-<span class="normal">386</span>
-<span class="normal">387</span>
-<span class="normal">388</span>
-<span class="normal">389</span>
-<span class="normal">390</span>
-<span class="normal">391</span>
-<span class="normal">392</span>
-<span class="normal">393</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">split_molecules</span><span class="p">(</span>
+<span class="normal">385</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">split_molecules</span><span class="p">(</span>
     <span class="n">umis</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="n">data_split</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">overlap_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
