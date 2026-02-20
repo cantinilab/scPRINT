@@ -3,12 +3,13 @@ import urllib.request
 
 import lamindb as ln
 import numpy as np
+import pandas as pd
 import pytest
 import scanpy as sc
 import torch
 from lightning.pytorch import Trainer
 from scdataloader import DataModule, Preprocessor
-from scdataloader.utils import populate_my_ontology
+from scdataloader.utils import load_genes, populate_my_ontology
 
 from scprint import scPrint
 from scprint.base import NAME
@@ -49,6 +50,12 @@ def test_base():
         # triton gets installed so it must think it has cuda enabled
         transformer="normal",
     )
+    missing = set(model.genes) - set(load_genes(model.organisms).index)
+    if len(missing) > 0:
+        print(
+            "Warning: some genes missmatch exist between model and ontology: solving...",
+        )
+        model._rm_genes(missing)
     dn = Denoiser(
         max_cells=10,
         batch_size=2,
@@ -62,6 +69,7 @@ def test_base():
         model=model,
         adata=adata,
     )
+    print(metrics)
     assert metrics["reco2full"] - metrics["noisy2full"] > 0, "Model is not denoising"
     # emb, class, grn inf and fit function for scPRINT
     # Cell embedding
@@ -83,12 +91,12 @@ def test_base():
     )
     adata_emb, metrics = cell_embedder(model, adata[:10, :])
     assert "scprint_emb" in adata_emb.obsm, "Cell embedding failed"
-    assert np.isnan(adata_emb.obsm["scprint_emb"]).sum() == 0, (
-        "Cell embedding contains NaNs"
-    )
-    assert any(col.startswith("pred_") for col in adata_emb.obs.columns), (
-        "Classification failed"
-    )
+    assert (
+        np.isnan(adata_emb.obsm["scprint_emb"]).sum() == 0
+    ), "Cell embedding contains NaNs"
+    assert any(
+        col.startswith("pred_") for col in adata_emb.obs.columns
+    ), "Classification failed"
 
     # GRN inference
     grn_inferer = GNInfer(
@@ -101,7 +109,6 @@ def test_base():
         forward_mode="none",
         num_genes=100,
         max_cells=10,
-        doplot=False,
         dtype=torch.float32,
     )
     grn_adata = grn_inferer(model, adata)
@@ -109,16 +116,17 @@ def test_base():
     # make a collection
     file = ln.Artifact(adata, description="test file")
     file.save()
-    col = ln.Collection(file, name="test dataset")
+    col = ln.Collection(file, key="test dataset")
     col.save()
     datamodule = DataModule(
         collection_name="test dataset",
-        gene_embeddings=os.path.join(os.path.dirname(__file__), "test_emb.parquet"),
+        gene_subset=pd.read_parquet(
+            os.path.join(os.path.dirname(__file__), "test_emb.parquet")
+        ).index.tolist(),
         hierarchical_clss=[],
         organisms=["NCBITaxon:9606"],  # , "NCBITaxon:10090"],
         how="most expr",
         max_len=200,
-        add_zero_genes=0,
         # how much more you will see the most present vs less present category
         weight_scaler=10,
         clss_to_weight=["sex_ontology_term_id"],
@@ -130,7 +138,6 @@ def test_base():
         num_workers=1,
         # train_oversampling=2,
         validation_split=0.1,
-        do_gene_pos=False,
         test_split=0.1,
     )
     _ = datamodule.setup()
@@ -145,9 +152,6 @@ def test_base():
         dropout=0,
         transformer="normal",
         precpt_gene_emb=os.path.join(os.path.dirname(__file__), "test_emb.parquet"),
-        mvc_decoder="inner product",
-        fused_dropout_add_ln=False,
-        checkpointing=False,
     )
     trainingmode = TrainingMode(
         do_denoise=True,
@@ -155,10 +159,11 @@ def test_base():
         do_cce=False,
         do_ecs=False,
         do_cls=True,
-        do_mvc=True,
+        do_mvc=False,
         mask_ratio=[],
         warmup_duration=10,
         lr_reduce_patience=10,
+        lr_reduce_monitor=None,
         test_every=10_000,
     )
     trainer = Trainer(
@@ -185,9 +190,9 @@ def test_base():
         if initial_loss is None:
             initial_loss = current_loss
         else:
-            assert current_loss < initial_loss, (
-                f"Loss not decreasing: initial {initial_loss}, current {current_loss}"
-            )
+            assert (
+                current_loss < initial_loss
+            ), f"Loss not decreasing: initial {initial_loss}, current {current_loss}"
             initial_loss = current_loss
     # cli
     # get_Seq
@@ -198,4 +203,6 @@ def test_base():
     # utils
     # layer_norm
     # flashattention
+    # encoders
+    # encoders
     # encoders

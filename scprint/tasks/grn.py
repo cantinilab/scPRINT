@@ -2,15 +2,12 @@ import gc
 import os.path
 from typing import Any, List, Optional
 
-import hdbscan
 import joblib
 import networkx as nx
 import numpy as np
-import pandas as pd
 import scanpy as sc
 import scipy.sparse
 import seaborn as sns
-import sparse
 import torch
 import umap
 from anndata import AnnData
@@ -22,7 +19,6 @@ from grnndata import utils as grnutils
 from matplotlib import pyplot as plt
 from scdataloader import Collator, Preprocessor
 from scdataloader.data import SimpleAnnDataset
-from scdataloader.utils import load_genes
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -52,7 +48,6 @@ class GNInfer:
         apc: bool = False,
         known_grn: Optional[any] = None,
         symmetrize: bool = False,
-        doplot: bool = True,
         comp_attn: bool = True,
         max_cells: int = 0,
         forward_mode: str = "none",
@@ -81,7 +76,6 @@ class GNInfer:
             apc (bool, optional): Whether to apply Average Product Correction. Defaults to False.
             known_grn (optional): Known gene regulatory network to use as a reference. Defaults to None.
             symmetrize (bool, optional): Whether to symmetrize the adjacency matrix. Defaults to False.
-            doplot (bool, optional): Whether to generate plots. Defaults to True.
             max_cells (int, optional): Maximum number of cells to consider. Defaults to 0.
             forward_mode (str, optional): Mode for forward pass. Defaults to "none".
             genes (list, optional): List of genes to consider. Defaults to an empty list.
@@ -96,21 +90,17 @@ class GNInfer:
         self.layer = layer
         self.locname = locname
         self.how = how
-        assert (
-            self.how
-            in [
-                "most var within",
-                "most var across",
-                "random expr",
-                "given",
-                "most expr",
-            ]
-        ), "how must be one of 'most var within', 'most var across', 'random expr', 'given', 'most expr'"
+        assert self.how in [
+            "most var within",
+            "most var across",
+            "random expr",
+            "given",
+            "most expr",
+        ], "how must be one of 'most var within', 'most var across', 'random expr', 'given', 'most expr'"
         self.num_genes = num_genes
         self.preprocess = preprocess
         self.cell_type_col = cell_type_col
         self.filtration = filtration
-        self.doplot = doplot
         self.genes = genes
         self.apc = apc
         self.dtype = dtype
@@ -232,7 +222,6 @@ class GNInfer:
             shuffle=False,
         )
         model.attn.comp_attn = self.head_agg == "mean_full"
-        model.doplot = self.doplot
         model.on_predict_epoch_start()
         model.eval()
         device = model.device.type
@@ -268,7 +257,7 @@ class GNInfer:
                     get_attention_layer=layer if type(layer) is list else [layer],
                 )
             torch.cuda.empty_cache()
-                
+
         return subadata
 
     def aggregate(self, attn, genes):
@@ -283,30 +272,6 @@ class GNInfer:
             if self.how == "random expr"
             else [i for i in genes if i in self.curr_genes]
         )
-        if self.doplot:
-            sns.set_theme(
-                style="white", context="poster", rc={"figure.figsize": (14, 10)}
-            )
-            fit = umap.UMAP()
-            mm = fit.fit_transform(attn[0, :, 0, 0, :].detach().cpu().numpy())
-            labels = hdbscan.HDBSCAN(
-                min_samples=10,
-                min_cluster_size=100,
-            ).fit_predict(mm)
-            plt.scatter(mm[:, 0], mm[:, 1], c=labels)
-            plt.title(f"Qs @H{0}")
-            plt.show()
-            mm = fit.fit_transform(attn[0, :, 1, 0, :].detach().cpu().numpy())
-            labels = hdbscan.HDBSCAN(
-                min_samples=10,
-                min_cluster_size=100,
-            ).fit_predict(mm)
-            plt.scatter(mm[:, 0], mm[:, 1], c=labels)
-            plt.title(f"Ks @H{0}")
-            plt.show()
-        # attn = attn[:, :, 0, :, :].permute(0, 2, 1, 3) @ attn[:, :, 1, :, :].permute(
-        #    0, 2, 3, 1
-        # )
         attns = None
         Qs = (
             attn[:, :, 0, :, :]

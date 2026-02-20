@@ -6,7 +6,6 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 from torch.autograd import Function
-from torch.distributions import NegativeBinomial
 
 # import ot
 # from ot.gromov import gromov_wasserstein, fused_gromov_wasserstein
@@ -39,65 +38,7 @@ def masked_mae(input: Tensor, target: Tensor, mask: Tensor) -> Tensor:
     """
     mask = mask.float()
     loss = F.l1_loss(input * mask, target * mask, reduction="sum")
-    return loss / mask.sum()
-
-
-def masked_nb(input: Tensor, target: Tensor, mask: Tensor) -> Tensor:
-    """
-    Compute the masked negative binomial loss between input and target.
-    """
-    mask = mask.float()
-    nb = torch.distributions.NegativeBinomial(total_count=target, probs=input)
-    masked_log_probs = nb.log_prob(target) * mask
-    return -masked_log_probs.sum() / mask.sum()
-
-
-# FROM SCVI
-def nb(target: Tensor, mu: Tensor, theta: Tensor, eps=1e-8):
-    """
-    Computes the negative binomial (NB) loss.
-
-    This function was adapted from scvi-tools.
-
-    Args:
-        target (Tensor): Ground truth data.
-        mu (Tensor): Means of the negative binomial distribution (must have positive support).
-        theta (Tensor): Inverse dispersion parameter (must have positive support).
-        eps (float, optional): Numerical stability constant. Defaults to 1e-8.
-
-    Returns:
-        Tensor: NB loss value.
-    """
-    if theta.ndimension() == 1:
-        theta = theta.view(1, theta.size(0))
-
-    log_theta_mu_eps = torch.log(theta + mu + eps)
-    res = (
-        theta * (torch.log(theta + eps) - log_theta_mu_eps)
-        + target * (torch.log(mu + eps) - log_theta_mu_eps)
-        + torch.lgamma(target + theta)
-        - torch.lgamma(theta)
-        - torch.lgamma(target + 1)
-    )
-
-    return -res.mean()
-
-
-def nb_dist(x: Tensor, mu: Tensor, theta: Tensor, eps=1e-8):
-    """
-    nb_dist Computes the negative binomial distribution.
-
-    Args:
-        x (Tensor): Torch Tensor of observed data.
-        mu (Tensor): Torch Tensor of means of the negative binomial distribution (must have positive support).
-        theta (Tensor): Torch Tensor of inverse dispersion parameter (must have positive support).
-        eps (float, optional): Numerical stability constant. Defaults to 1e-8.
-
-    Returns:
-        Tensor: Negative binomial loss value.
-    """
-    loss = -NegativeBinomial(mu=mu, theta=theta).log_prob(x)
-    return loss
+    return loss / mask.sum()    
 
 
 def zinb(

@@ -109,10 +109,6 @@ class Denoiser:
             max_len=self.max_len,
             how="some" if self.how == "most var" else self.how,
             genelist=self.genelist if self.how != "random expr" else [],
-            downsample=self.downsample,
-            save_output=f"collator_output_{num}.txt"
-            if self.downsample is not None
-            else None,
         )
         dataloader = DataLoader(
             adataset,
@@ -125,6 +121,7 @@ class Denoiser:
         model.doplot = self.doplot
         model.on_predict_epoch_start()
         model.eval()
+        stored_noisy = None
         device = model.device.type
         with torch.no_grad(), torch.autocast(device_type=device, dtype=self.dtype):
             for batch in tqdm(dataloader):
@@ -133,6 +130,14 @@ class Denoiser:
                     batch["x"].to(device),
                     batch["depth"].to(device),
                 )
+                if self.downsample is not None:
+                    expression = utils.downsample_profile(expression, self.downsample)
+                if stored_noisy is None:
+                    stored_noisy = expression.cpu().numpy()
+                else:
+                    stored_noisy = np.concatenate(
+                        [stored_noisy, expression.cpu().numpy()], axis=0
+                    )
                 model._predict(
                     gene_pos,
                     expression,
@@ -167,19 +172,6 @@ class Denoiser:
         pred_adata = concat(pred_adata)
         metrics = None
         if self.downsample is not None:
-            noisy = np.loadtxt(f"collator_output_{num}.txt")
-            loc = np.loadtxt(f"collator_output_{num}.txt_loc")
-            os.remove(f"collator_output_{num}.txt")
-            os.remove(f"collator_output_{num}.txt_loc")
-            # Sort loc indices per row and apply same sorting to noisy expression matrix
-            sorted_indices = np.array([np.argsort(row) for row in loc])
-            # Create row indices array for advanced indexing
-            row_indices = np.arange(len(loc))[:, np.newaxis]
-            # Sort loc and noisy using the row-wise indices
-            del loc
-            noisy = noisy[row_indices, sorted_indices]
-            del sorted_indices, row_indices
-
             reco = pred_adata.layers["scprint_mu"].data.reshape(pred_adata.shape[0], -1)
             adata = (
                 adata[random_indices, adata.var.index.isin(pred_adata.var.index)]
@@ -196,7 +188,7 @@ class Denoiser:
             ].toarray()
 
             corr_coef, p_value = spearmanr(
-                np.vstack([reco[true != 0], noisy[true != 0], true[true != 0]]).T
+                np.vstack([reco[true != 0], stored_noisy[true != 0], true[true != 0]]).T
             )
             metrics = {
                 "reco2noisy": corr_coef[0, 1],

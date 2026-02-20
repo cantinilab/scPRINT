@@ -69,6 +69,11 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         dropout: float = 0.1,
         use_metacell_token: bool = False,
         lr: float = 0.0001,
+        # flash attn for argparse
+        num_heads_kv=None,
+        residual_in_fp32=None,
+        checkpointing=None,
+        fused_dropout_add_ln=None,
         **flash_attention_kwargs,
     ):
         """
@@ -305,6 +310,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 nlayers=nlayers,
                 cross_attn=cell_specific_blocks,
                 use_flash_attn=(transformer == "flash"),
+                num_heads_kv=num_heads_kv,
+                residual_in_fp32=residual_in_fp32,
+                checkpointing=checkpointing,
+                fused_dropout_add_ln=fused_dropout_add_ln,
                 **flash_attention_kwargs,
             )
         if cell_specific_blocks:
@@ -315,6 +324,10 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 dropout=dropout,
                 cross_attn=True,
                 use_flash_attn=(transformer == "flash"),
+                num_heads_kv=num_heads_kv,
+                residual_in_fp32=residual_in_fp32,
+                checkpointing=checkpointing,
+                fused_dropout_add_ln=fused_dropout_add_ln,
                 **flash_attention_kwargs,
             )
         else:
@@ -485,12 +498,15 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             self.save_hyperparameters()
 
     def _rm_genes(self, names):
-        tokeep = ~np.array([g in names for g in self.genes])
-        # Keep only embeddings for genes that are NOT being deleted
+        tokeep = torch.tensor(
+            [g not in names for g in self.genes],
+            dtype=torch.bool,
+            device=self.gene_encoder.embeddings.weight.device,
+        )
         kept_embeddings = self.gene_encoder.embeddings.weight.data[tokeep]
 
         # Create new embeddings layer with reduced vocabulary size
-        new_vocab_size = tokeep.sum()
+        new_vocab_size = int(tokeep.sum().item())
         new_gene_encoder = encoders.GeneEncoder(new_vocab_size, self.d_model)
         # Copy the kept embeddingss to the new encoder
         new_gene_encoder.embeddings.weight.data = kept_embeddings
