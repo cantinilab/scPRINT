@@ -1,5 +1,5 @@
 .ONESHELL:
-ENV_PREFIX=$(shell python -c "if __import__('pathlib').Path('.venv/bin/pip').exists(): print('.venv/bin/')")
+ENV_PREFIX=$(shell python -c "if __import__('pathlib').Path('scprint-env/bin/pip').exists(): print('scprint-env/bin/')")
 USING_POETRY=$(shell grep "tool.poetry" pyproject.toml && echo "yes")
 
 .PHONY: help
@@ -59,11 +59,11 @@ clean:            ## Clean unused files.
 .PHONY: virtualenv
 virtualenv:       ## Create a virtual environment.
 	@echo "creating virtualenv ..."
-	@rm -rf .venv
-	@uv venv
-	@source .venv/bin/activate
+	@rm -rf scprint-env
+	@uv venv scprint-env
+	@source scprint-env/bin/activate
 	@make install
-	@echo "!!! Please run 'source .venv/bin/activate' to enable the environment !!!"
+	@echo "!!! Please run 'source scprint-env/bin/activate' to enable the environment !!!"
 
 .PHONY: release
 release:          ## Create a new tag for release.
