@@ -5087,9 +5087,9 @@ dependencies = [
     { name = "torchdata" },
     { name = "zarr" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/46/de/06d0cd48d8f28aa3bc0efa02299f745c9d0837802f83a57bba6195508aa1/scdataloader-2.1.1.tar.gz", hash = "sha256:61f746dfba338fdcc5b7536d0cd288440e46ad131c531bc37463701f14f94aa6", size = 58750 }
+sdist = { url = "https://files.pythonhosted.org/packages/2e/30/6fd803cdfd63a5d0f4f52853cbbcd16883266a3722d040ee334e52bf5f47/scdataloader-2.1.2.tar.gz", hash = "sha256:c84fff58918c41943c9be0f4ecccfa34b78f9980f3658f353a974db444f8f607", size = 58847 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d2/42/4baf17e209836e2c97cf96f46bf234ecaf4b7141ae49ca4c20b08ce081c4/scdataloader-2.1.1-py3-none-any.whl", hash = "sha256:a85a309203ff72b1367c47f5f6f21253ebab708d1bc3eb0d36e05abde0432d25", size = 62100 },
+    { url = "https://files.pythonhosted.org/packages/f6/ab/ec97962bfff0ced6b8bac9d9672a4f1aecfa1bf230b74fdf01978154d96e/scdataloader-2.1.2-py3-none-any.whl", hash = "sha256:97db16cbee48bb8c3e65309379c1e8495521889608a2e2041fdc8ac640bfff38", size = 62193 },
 ]
 
 [[package]]
@@ -5281,7 +5281,7 @@ wheels = [
 
 [[package]]
 name = "scprint"
-version = "2.3.7"
+version = "2.3.8"
 source = { editable = "." }
 dependencies = [
     { name = "array-api-compat" },
@@ -5412,7 +5412,7 @@ requires-dist = [
     { name = "pytorch-lightning", specifier = ">=2.3.0" },
     { name = "rich", specifier = ">=10.0.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6.4" },
-    { name = "scdataloader", specifier = ">=2.1.0" },
+    { name = "scdataloader", specifier = ">=2.1.2" },
     { name = "scib", specifier = ">=1.0.0" },
     { name = "scib-metrics", specifier = ">=0.1.0" },
     { name = "scikit-learn", specifier = "==1.6.0" },
