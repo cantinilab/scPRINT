@@ -77,6 +77,27 @@ def protein_embeddings_generator(
                     logits_output.embeddings[0].mean(0).cpu().numpy().tolist()
                 )
                 names.append(record.id)
+    elif embedder == "gena_lm":
+        from .protein_embedder import GenaLM
+
+        # Use cDNA sequences instead of protein sequences
+        fasta_path_cdna = utils.load_fasta_species(
+            species=organism, output_path=fasta_path, load=["cdna"], cache=cache
+        )[0]
+        fasta_name_cdna = fasta_path_cdna.split("/")[-1]
+        utils.utils.run_command(["gunzip", fasta_path_cdna])
+        found_cdna, naming_df_cdna = utils.subset_fasta(
+            genedf.index.tolist() if genedf is not None else None,
+            subfasta_path=fasta_path + "subset_cdna.fa",
+            fasta_path=fasta_path + fasta_name_cdna[:-3],
+            drop_unknown_seq=False,
+            subset_protein_coding=False,
+        )
+        gena_embedder = GenaLM()
+        prot_embeddings = gena_embedder(
+            fasta_path + "subset_cdna.fa", device="cuda" if cuda else "cpu"
+        )
+        naming_df = naming_df_cdna
     else:
         raise ValueError(f"Embedder {embedder} not supported")
     # load the data and erase / zip the rest
@@ -101,9 +122,18 @@ def protein_embeddings_generator(
     # utils.utils.run_command(["gzip", fasta_path + fasta_file[:-3]])
     #
     m = AdaptiveAvgPool1d(embedding_size)
-    prot_embeddings = pd.DataFrame(
-        data=m(torch.tensor(np.array(prot_embeddings))), index=names
-    )
+    if isinstance(prot_embeddings, pd.DataFrame):
+        # ESM2 and GenaLM already return DataFrames with the correct index
+        _index = prot_embeddings.index
+        prot_embeddings = pd.DataFrame(
+            data=m(torch.tensor(prot_embeddings.values.astype(float))),
+            index=_index,
+        )
+    else:
+        # ESM3 returns a list with a separate names list
+        prot_embeddings = pd.DataFrame(
+            data=m(torch.tensor(np.array(prot_embeddings))), index=names
+        )
     # rna_embeddings = pd.DataFrame(
     #    data=m(torch.tensor(rna_embeddings.values)), index=rna_embeddings.index
     # )
