@@ -1712,13 +1712,19 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             mdir = "data/"
         if not os.path.exists(mdir):
             os.makedirs(mdir)
+        # When keep_all_cls_pred=True, self.pred is a dict of per-head logits
+        # of different sizes. utils.make_adata expects an int-tensor of
+        # argmaxes (one column per class) and would crash on a dict, so we
+        # pass None: the full per-head logits are written into adata.obs by
+        # the Embedder caller (see scprint.tasks.cell_emb.Embedder.__call__).
+        pred_for_make = None if isinstance(self.pred, dict) else self.pred
         adata, fig = utils.make_adata(
             pos=self.pos,
             expr_pred=self.expr_pred,
             genes=self.genes,
             embs=self.embs,
             classes=self.classes,
-            pred=self.pred,
+            pred=pred_for_make,
             attention=self.attn.get(),
             label_decoders=self.label_decoders,
             labels_hierarchy=self.labels_hierarchy,
