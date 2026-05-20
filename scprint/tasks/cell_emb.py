@@ -200,15 +200,22 @@ class Embedder:
         pred_adata.obs.index = adata.obs.index
         adata.obs = pd.concat([adata.obs, pred_adata.obs], axis=1)
         if self.keep_all_cls_pred:
-            allclspred = model.pred
-            columns = []
+            # model.pred is a dict[clsname -> tensor[n_cells, n_classes_cl]]
+            # (heads have different n_classes), so concatenate per head.
+            dfs = []
             for cl in model.classes:
                 n = model.label_counts[cl]
-                columns += [model.label_decoders[cl][i] for i in range(n)]
-            allclspred = pd.DataFrame(
-                allclspred, columns=columns, index=adata.obs.index
-            )
-            adata.obs = pd.concat(adata.obs, allclspred)
+                columns = [model.label_decoders[cl][i] for i in range(n)]
+                tensor = model.pred[cl]
+                if hasattr(tensor, "detach"):
+                    tensor = tensor.detach().cpu().numpy()
+                dfs.append(
+                    pd.DataFrame(
+                        tensor, columns=columns, index=adata.obs.index
+                    )
+                )
+            allclspred = pd.concat(dfs, axis=1)
+            adata.obs = pd.concat([adata.obs, allclspred], axis=1)
 
         metrics = {}
         if self.doclass and not self.keep_all_cls_pred:
