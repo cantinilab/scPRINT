@@ -199,16 +199,39 @@ class Embedder:
 
         pred_adata.obs.index = adata.obs.index
         adata.obs = pd.concat([adata.obs, pred_adata.obs], axis=1)
-        if self.keep_all_cls_pred:
-            allclspred = model.pred
-            columns = []
+        if self.keep_all_cls_pred and model.classes and model.pred is not None:
+            # model.pred is a dict[clsname -> tensor[n_cells, n_classes_cl]]
+            # (heads have different n_classes), so concatenate per head.
+            # Note: these are raw logits straight from the classification
+            # heads (ClsDecoder), not softmax probabilities. Column names
+            # are prefixed with the class id so they don't collide with
+            # the standard pred_<cls> argmax columns.
+            dfs = []
             for cl in model.classes:
+                if cl not in model.pred:
+                    continue
                 n = model.label_counts[cl]
-                columns += [model.label_decoders[cl][i] for i in range(n)]
-            allclspred = pd.DataFrame(
-                allclspred, columns=columns, index=adata.obs.index
-            )
-            adata.obs = pd.concat(adata.obs, allclspred)
+                columns = [
+                    f"{cl}__{model.label_decoders[cl][i]}" for i in range(n)
+                ]
+                tensor = model.pred[cl]
+                if hasattr(tensor, "detach"):
+                    tensor = tensor.detach().cpu().numpy()
+                if tensor.shape[0] != len(adata.obs.index):
+                    # _predict resets self.pred to None when max_size_in_mem
+                    # is exceeded (chunked logging). In that case the buffer
+                    # only has the last chunk -- align by the trailing rows.
+                    sliced_index = adata.obs.index[-tensor.shape[0]:]
+                    df = pd.DataFrame(tensor, columns=columns, index=sliced_index)
+                    df = df.reindex(adata.obs.index)
+                else:
+                    df = pd.DataFrame(
+                        tensor, columns=columns, index=adata.obs.index
+                    )
+                dfs.append(df)
+            if dfs:
+                allclspred = pd.concat(dfs, axis=1)
+                adata.obs = pd.concat([adata.obs, allclspred], axis=1)
 
         metrics = {}
         if self.doclass and not self.keep_all_cls_pred:

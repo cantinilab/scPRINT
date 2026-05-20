@@ -1374,11 +1374,15 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         """@see pl.LightningModule"""
         self.embs = self.all_gather(self.embs).view(-1, self.embs.shape[-1])
         self.info = self.all_gather(self.info).view(-1, self.info.shape[-1])
-        self.pred = (
-            self.all_gather(self.pred).view(-1, self.pred.shape[-1])
-            if self.pred is not None
-            else None
-        )
+        if self.pred is None:
+            pass
+        elif isinstance(self.pred, dict):
+            self.pred = {
+                k: self.all_gather(v).view(-1, v.shape[-1])
+                for k, v in self.pred.items()
+            }
+        else:
+            self.pred = self.all_gather(self.pred).view(-1, self.pred.shape[-1])
         self.pos = self.all_gather(self.pos).view(-1, self.pos.shape[-1])
         if self.trainer.state.stage != "sanity_check":
             if self.trainer.is_global_zero:
@@ -1568,20 +1572,23 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
         if self.embs is None:
             self.embs = torch.mean(cell_embs[:, ind, :], dim=1)
             # self.embs = output["cls_output_" + "cell_type_ontology_term_id"]
-            self.pred = (
-                torch.stack(
+            if len(self.classes) == 0:
+                self.pred = None
+            elif self.keep_all_cls_pred:
+                # Heads have different n_classes (e.g. 424 vs 62), so a
+                # stacked tensor is not well-defined. Store per-class logits
+                # in a dict so downstream code can concat per head.
+                self.pred = {
+                    clsname: output["cls_output_" + clsname]
+                    for clsname in self.classes
+                }
+            else:
+                self.pred = torch.stack(
                     [
-                        (
-                            torch.argmax(output["cls_output_" + clsname], dim=1)
-                            if not self.keep_all_cls_pred
-                            else output["cls_output_" + clsname]
-                        )
+                        torch.argmax(output["cls_output_" + clsname], dim=1)
                         for clsname in self.classes
                     ]
                 ).transpose(0, 1)
-                if len(self.classes) > 0
-                else None
-            )
             self.pos = gene_pos
             self.expr_pred = (
                 [output["mean"], output["disp"], output["zero_logits"]]
@@ -1593,25 +1600,27 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
                 # [self.embs, output["cls_output_" + "cell_type_ontology_term_id"]]
                 [self.embs, torch.mean(cell_embs[:, ind, :], dim=1)]
             )
-            self.pred = torch.cat(
-                [
-                    self.pred,
-                    (
+            if len(self.classes) == 0:
+                pass  # keep self.pred = None
+            elif self.keep_all_cls_pred:
+                for clsname in self.classes:
+                    self.pred[clsname] = torch.cat(
+                        [self.pred[clsname], output["cls_output_" + clsname]]
+                    )
+            else:
+                self.pred = torch.cat(
+                    [
+                        self.pred,
                         torch.stack(
                             [
-                                (
-                                    torch.argmax(output["cls_output_" + clsname], dim=1)
-                                    if not self.keep_all_cls_pred
-                                    else output["cls_output_" + clsname]
+                                torch.argmax(
+                                    output["cls_output_" + clsname], dim=1
                                 )
                                 for clsname in self.classes
                             ]
-                        ).transpose(0, 1)
-                        if len(self.classes) > 0
-                        else None
-                    ),
-                ],
-            )
+                        ).transpose(0, 1),
+                    ],
+                )
             self.pos = torch.cat([self.pos, gene_pos])
             self.expr_pred = (
                 [
@@ -1703,13 +1712,19 @@ class scPrint(L.LightningModule, PyTorchModelHubMixin):
             mdir = "data/"
         if not os.path.exists(mdir):
             os.makedirs(mdir)
+        # When keep_all_cls_pred=True, self.pred is a dict of per-head logits
+        # of different sizes. utils.make_adata expects an int-tensor of
+        # argmaxes (one column per class) and would crash on a dict, so we
+        # pass None: the full per-head logits are written into adata.obs by
+        # the Embedder caller (see scprint.tasks.cell_emb.Embedder.__call__).
+        pred_for_make = None if isinstance(self.pred, dict) else self.pred
         adata, fig = utils.make_adata(
             pos=self.pos,
             expr_pred=self.expr_pred,
             genes=self.genes,
             embs=self.embs,
             classes=self.classes,
-            pred=self.pred,
+            pred=pred_for_make,
             attention=self.attn.get(),
             label_decoders=self.label_decoders,
             labels_hierarchy=self.labels_hierarchy,
