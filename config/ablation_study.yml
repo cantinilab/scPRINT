@@ -50,7 +50,6 @@ model:
   checkpointing: False
   cell_specific_blocks: False
   fused_dropout_add_ln: False
-  prenorm: True
   fused_mlp: False
   fused_bias_fc: False
   drop_path_rate: 0
@@ -62,8 +61,6 @@ data:
   organisms:
     - NCBITaxon:9606
     - NCBITaxon:10090
-  gene_position_tolerance: 10_000
-  gene_embeddings: ./data/main/gene_embeddings.parquet
   collection_name: scPRINT-V2 full #scPRINT-V2 (good quality)
   how: random expr
   max_len: 2200
@@ -71,8 +68,6 @@ data:
   prefetch_factor: 3
   #  metacell_mode: 0.2
   weight_scaler: 200
-  do_gene_pos: ./data/main/biomart_pos.parquet
-  add_zero_genes: 0
   validation_split: 0.05
   n_samples_per_epoch: 200000
   test_split: 0.02
