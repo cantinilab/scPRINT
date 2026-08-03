@@ -98,6 +98,39 @@ def test_base():
         col.startswith("pred_") for col in adata_emb.obs.columns
     ), "Classification failed"
 
+    # Regression test for #16: keep_all_cls_pred=True with heads of
+    # different n_classes used to raise
+    #   RuntimeError: stack expects each tensor to be equal size
+    # because the per-head logits were stacked along a new dim. The fix
+    # stores them in a dict[clsname -> tensor] and the Embedder writes
+    # one column per (class, label) into adata.obs.
+    cell_embedder_all = Embedder(
+        batch_size=2,
+        num_workers=1,
+        how="random expr",
+        max_len=300,
+        doclass=True,
+        pred_embedding=[
+            "cell_type_ontology_term_id",
+            "disease_ontology_term_id",
+        ],
+        doplot=False,
+        keep_all_cls_pred=True,
+        dtype=torch.float32,
+    )
+    adata_emb_all, _ = cell_embedder_all(model, adata[:6, :])
+    # Per-head probability/logit columns are emitted with the
+    # <class>__<label> prefix so they don't clash with the pred_* argmax.
+    all_cols = list(adata_emb_all.obs.columns)
+    assert any(c.startswith("cell_type_ontology_term_id__") for c in all_cols), (
+        "keep_all_cls_pred=True: missing per-class columns for cell_type"
+    )
+    assert any(c.startswith("disease_ontology_term_id__") for c in all_cols), (
+        "keep_all_cls_pred=True: missing per-class columns for disease"
+    )
+    # And no row was dropped.
+    assert adata_emb_all.n_obs == 6
+
     # GRN inference
     grn_inferer = GNInfer(
         layer=[0, 1],

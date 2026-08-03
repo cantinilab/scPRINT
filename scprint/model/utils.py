@@ -2,6 +2,7 @@ import gc
 import json
 import math
 import os.path
+import warnings
 from collections import Counter
 from typing import Dict, List, Optional, Union
 
@@ -124,11 +125,24 @@ def make_adata(
     accuracy = {}
     if pred is not None:
         for clss in classes:
+            # `translate` maps ontology ids to human-readable names for the
+            # convenience `conv_*` columns. It can raise on ids it cannot
+            # resolve (e.g. comma-joined CellxGene ethnicity terms); since
+            # these columns are cosmetic, warn and skip rather than aborting
+            # the whole prediction run. See cantinilab/scPRINT#49.
             if gtclass is not None:
-                tr = translate(adata.obs[clss].tolist(), clss)
+                try:
+                    tr = translate(adata.obs[clss].tolist(), clss)
+                except Exception as e:
+                    warnings.warn(f"could not translate ontology ids for '{clss}': {e}")
+                    tr = None
                 if tr is not None:
                     adata.obs["conv_" + clss] = adata.obs[clss].replace(tr)
-            tr = translate(adata.obs["pred_" + clss].tolist(), clss)
+            try:
+                tr = translate(adata.obs["pred_" + clss].tolist(), clss)
+            except Exception as e:
+                warnings.warn(f"could not translate ontology ids for 'pred_{clss}': {e}")
+                tr = None
             if tr is not None:
                 adata.obs["conv_pred_" + clss] = adata.obs["pred_" + clss].replace(tr)
             res = []
