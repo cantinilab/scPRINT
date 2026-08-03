@@ -54,6 +54,9 @@ class MyCLI(LightningCLI):
         )
         parser.link_arguments("data.classes", "model.classes", apply_on="instantiate")
         parser.link_arguments(
+            "data.gene_embeddings", "model.precpt_gene_emb", apply_on="parse"
+        )
+        parser.link_arguments(
             "data.organisms", "model.organisms", apply_on="instantiate"
         )
         parser.link_arguments(
